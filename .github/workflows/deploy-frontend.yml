@@ -23,6 +23,10 @@ jobs:
             set -e
             cd /home/ec2-user/repocheck
             git pull origin develop
+              if ! command -v yarn >/dev/null 2>&1; then
+                echo "Installing yarn globally..."
+                npm install -g yarn
+            fi
             cd frontend
             yarn install --frozen-lockfile
             yarn build
