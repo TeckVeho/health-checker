@@ -1,0 +1,29 @@
+name: Deploy Frontend on frontend/src Change (develop branch)
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'frontend/src/**'
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOYSERVERSECRET }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 57.180.91.172 >> ~/.ssh/known_hosts
+
+      - name: Run deploy script on 57.180.91.172
+        run: |
+          ssh -i ~/.ssh/id_rsa ec2-user@57.180.91.172 << 'EOF'
+            set -e
+            cd /home/ec2-user/repocheck
+            git pull origin develop
+            cd frontend
+            yarn install --frozen-lockfile
+            yarn build
+            pm2 restart ecosystem.config.cjs
+          EOF
