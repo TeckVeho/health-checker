@@ -1,7 +1,7 @@
 // src/features/alert/alertModel.ts
 
 import { Model, DataTypes, Optional } from 'sequelize';
-import sequelize from '@config/database';
+import sequelize from '../../config/database';
 
 // TypeScript用の属性定義
 export interface AlertAttributes {
@@ -15,6 +15,7 @@ export interface AlertAttributes {
   filePath?: string;
   lineNumber?: number;
   codeSnippet?: string;
+  branch?: string;
   detectCount: number;
   lastDetectedAt?: Date;
   isIgnored: boolean;
@@ -42,6 +43,7 @@ class Alert extends Model<AlertAttributes, AlertCreationAttributes> implements A
   public filePath?: string;
   public lineNumber?: number;
   public codeSnippet?: string;
+  public branch?: string;
   public detectCount!: number;
   public lastDetectedAt?: Date;
   public isIgnored!: boolean;
@@ -101,6 +103,10 @@ export const alertAttributes = {
     type: DataTypes.TEXT,
     allowNull: true,
     field: 'code_snippet',
+  },
+  branch: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
   },
   detectCount: {
     type: DataTypes.INTEGER,
@@ -176,7 +182,16 @@ Alert.init(alertAttributes, {
     {
       name: 'unique_health_issue',
       unique: true,
-      fields: ['owner', 'repo', 'check_type', 'title', 'file_path', 'line_number', 'code_snippet'],
+      fields: [
+        'owner',
+        'repo',
+        'check_type',
+        'title',
+        'file_path',
+        'line_number',
+        'code_snippet',
+        'branch',
+      ],
     },
   ],
 });

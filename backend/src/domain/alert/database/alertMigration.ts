@@ -1,6 +1,6 @@
 import { QueryInterface, QueryTypes } from 'sequelize';
 import { alertAttributes } from '../alertModel';
-import { mapUniqueIndexes } from '@utils/databaseUtils';
+import { mapUniqueIndexes } from '../../../utils/databaseUtils';
 
 const tableName = 'alerts';
 export async function up(queryInterface: QueryInterface) {

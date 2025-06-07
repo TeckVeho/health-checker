@@ -11,14 +11,12 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "@nuxtjs/tailwindcss": "^6.12.2",
     "@primevue/forms": "^4.3.5",
     "@primevue/themes": "^4.3.5",
     "nuxt": "^3.13.2",
     "primeicons": "^7.0.0",
     "primevue": "^4.3.5",
-    "vue": "latest",
-    "vue-router": "latest"
+    "vue": "latest"
   },
   "resolutions": {
     "rollup": "4.24.0"

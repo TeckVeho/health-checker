@@ -1,6 +1,6 @@
 import { QueryInterface, QueryTypes } from 'sequelize';
 import { repoAttributes } from '../repoModel';
-import { mapUniqueIndexes } from '@utils/databaseUtils';
+import { mapUniqueIndexes } from '../../../utils/databaseUtils';
 
 const tableName = 'repos';
 export async function up(queryInterface: QueryInterface) {

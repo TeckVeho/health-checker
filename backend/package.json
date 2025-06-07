@@ -1,5 +1,5 @@
 {
-  "name": "popoco",
+  "name": "health-checker",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -29,16 +29,15 @@
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.5",
-    "eslint": "^8.57.1",
     "express": "^4.21.1",
     "express-promise-router": "^4.1.1",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.11.3",
-    "pg": "^8.16.0",
     "sequelize": "^6.37.4",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "wrap-ansi": "6.2.0"
+    "wrap-ansi": "6.2.0",
+    "zod": "^3.25.51"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^11.0.1",
@@ -66,6 +65,7 @@
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "eslint": "^8.57.1"
   }
 }

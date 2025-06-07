@@ -2,8 +2,8 @@
 
 import Repo from './repoModel';
 import { UniqueConstraintError, QueryTypes } from 'sequelize';
-import sequelize from '@config/database';
-import getMessage from '@utils/message';
+import sequelize from '../../config/database';
+import getMessage from '../../utils/message';
 import { Octokit } from '@octokit/rest';
 import { InferAttributes } from 'sequelize';
 

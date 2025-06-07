@@ -11,11 +11,22 @@ export async function gitleaksScanner(owner: string, repo: string): Promise<void
     throw new Error('GITHUB_WORKSPACE is required');
   }
 
+  // ▼ 現在のブランチ名を .git/HEAD から取得
+  const headPath = path.join(workspace, '.git', 'HEAD');
+  let branch = 'unknown';
+  try {
+    const headContent = await fs.readFile(headPath, 'utf-8');
+    const match = headContent.match(/^ref: refs\/heads\/(.+)\s*$/);
+    if (match) branch = match[1];
+  } catch (err) {
+    console.warn(`⚠️ Failed to read .git/HEAD for branch name:`, err);
+  }
+
   const findings = await runGitleaks(workspace);
   const timestamp = format(new Date(), 'yyyyMMddHHmmss');
 
   const issues = await Promise.all(
-    findings.map(async (item: any) => {// eslint-disable-line @typescript-eslint/no-explicit-any
+    findings.map(async (item: any) => {
       const absFile = item.File ?? '';
       const lineNumber = item.StartLine ?? 0;
       let matchedLine = '';
@@ -35,7 +46,8 @@ export async function gitleaksScanner(owner: string, repo: string): Promise<void
       return {
         owner,
         repo,
-        checkType: 'gitleaks',
+        branch,
+        checkType: 'exposed_secret_key',
         title: item.RuleID ?? 'Unknown rule',
         description: item.Description ?? '',
         severity: 'high',
@@ -52,6 +64,7 @@ export async function gitleaksScanner(owner: string, repo: string): Promise<void
     const keyFields = {
       owner: issue.owner,
       repo: issue.repo,
+      branch: issue.branch,
       checkType: issue.checkType,
       title: issue.title,
       filePath: issue.filePath,
@@ -91,13 +104,14 @@ export async function gitleaksScanner(owner: string, repo: string): Promise<void
     where: {
       owner,
       repo,
-      checkType: 'gitleaks',
+      branch,
+      checkType: 'exposed_secret_key',
       systemResolved: false,
     },
   });
 
   for (const row of existing) {
-    const key = [row.getDataValue('owner'), row.getDataValue('repo'), row.getDataValue('checkType'), row.getDataValue('title'), row.getDataValue('filePath'), row.getDataValue('lineNumber'), row.getDataValue('codeSnippet')].join('||');
+    const key = [row.getDataValue('owner'), row.getDataValue('repo'), row.getDataValue('branch'), row.getDataValue('checkType'), row.getDataValue('title'), row.getDataValue('filePath'), row.getDataValue('lineNumber'), row.getDataValue('codeSnippet')].join('||');
 
     if (!detectedKeys.has(key)) {
       await row.update({
@@ -108,7 +122,7 @@ export async function gitleaksScanner(owner: string, repo: string): Promise<void
   }
 }
 
-async function runGitleaks(workspace: string): Promise<any[]> {// eslint-disable-line @typescript-eslint/no-explicit-any
+async function runGitleaks(workspace: string): Promise<any[]> {
   return new Promise((resolve, reject) => {
     const tmpPath = path.join(workspace, `gitleaks-result-${randomUUID()}.json`);
     const cmd = `gitleaks detect --no-git --source=${workspace} --report-format=json --report-path=${tmpPath} --redact=0`;

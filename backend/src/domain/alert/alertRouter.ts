@@ -4,13 +4,9 @@ import AlertController from './alertController';
 const router = Router();
 
 
-// ② DB保存済みの複数リポジトリのヘルスチェック（条件付き）
-router.post('/check/:owner', AlertController.checkStoredReposSummary);
-
-// ③ 特定リポジトリのヘルスチェック
+router.post('/check/:owner', AlertController.checkStoredRepos);
 router.post('/check/:owner/:repo', AlertController.runManualAlert);
-
 router.post('/summary', AlertController.getSummary);
-
+router.get('/:owner/:repo', AlertController.listRepoAlerts);
 
 export default router;

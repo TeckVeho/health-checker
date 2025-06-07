@@ -5,9 +5,9 @@ import request from 'supertest';
 import { expect } from 'chai';
 import express from 'express';
 import routes from '../../../router';
-import sequelize from '@config/database';
+import sequelize from '../../../config/database';
 import setupAssociations from '@config/associations';
-import getMessage from '@utils/message';
+import getMessage from '../../../utils/message';
 
 setupAssociations();
 

@@ -1,6 +1,6 @@
 import { readdirSync, statSync } from 'fs';
 import path from 'path';
-import sequelize from '@config/database';
+import sequelize from '../config/database';
 
 /**
  * Recursively find all migration files ending with .ts in the provided directory

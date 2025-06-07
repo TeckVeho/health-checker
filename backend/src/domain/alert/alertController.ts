@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import AlertService from './alertService';
-import getMessage from '@utils/message';
+import getMessage from '../../utils/message';
 import { z } from 'zod';
+
+
+
 
 const RepoListSchema = z.array(
   z.object({
@@ -16,7 +19,7 @@ class AlertController {
   static async getSummary(req: Request, res: Response, next: NextFunction) {
     try {
       const repoList = RepoListSchema.parse(req.body);
-      const summary = await AlertService.getSummary(repoList);
+      const summary = await AlertService.getSeveritySummary(repoList);
       res.json(summary);
     } catch (error) {
       console.error('Error fetching health summary:', error);
@@ -28,15 +31,16 @@ class AlertController {
    * POST /check/repos
    * 指定オーナーの保存済みリポジトリに対して一括ヘルスチェックを実行
    */
-  static async checkStoredReposSummary(req: Request, res: Response, next: NextFunction) {
+  static async checkStoredRepos(req: Request, res: Response, next: NextFunction) {
     const owner = req.params.owner;
+    const activeWithinDays = req.query.activeWithinDays ? Number(req.query.activeWithinDays) : undefined;
 
     if (!owner) {
       return res.status(400).json({ message: 'Missing required field: owner' });
     }
 
     try {
-      const results = await AlertService.checkStoredRepos(owner);
+      const results = await AlertService.checkStoredRepos(owner, activeWithinDays);
       res.status(200).json({
         message: getMessage('SUCCESS.CHECK_SUCCESS', 'repositories'),
         results,
@@ -68,6 +72,29 @@ class AlertController {
       });
     } catch (error) {
       console.error(`Error checking ${owner}/${repo}:`, error);
+      next(error);
+    }
+  }
+
+  /**
+   * GET /:owner/:repo
+   * 指定されたリポジトリのアラート一覧を取得
+   */
+  static async listRepoAlerts(req: Request, res: Response, next: NextFunction) {
+    const { owner, repo } = req.params;
+
+    if (!owner || !repo) {
+      return res.status(400).json({ message: 'Missing required fields: owner and repo' });
+    }
+
+    try {
+      const alerts = await AlertService.getAlertsByRepo(owner, repo);
+      res.status(200).json({
+        message: getMessage('SUCCESS.FETCH_SUCCESS', `${owner}/${repo}`),
+        alerts,
+      });
+    } catch (error) {
+      console.error(`Error fetching alerts for ${owner}/${repo}:`, error);
       next(error);
     }
   }

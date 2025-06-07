@@ -1,5 +1,5 @@
 import { Model, DataTypes } from 'sequelize';
-import sequelize from '@config/database';
+import sequelize from '../../config/database';
 
 // Attributes for github_repos table
 export const repoAttributes = {
@@ -61,9 +61,6 @@ export const repoAttributes = {
     type: DataTypes.DATE,
     allowNull: true,
     field: 'last_activity_at',
-    get() {
-      return 'lastActivityAt';
-    },
   },
   createdAt: {
     type: DataTypes.DATE,

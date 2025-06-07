@@ -1,6 +1,6 @@
 import { readdirSync, statSync } from 'fs';
 import path from 'path';
-import sequelize from '@config/database';
+import sequelize from '../config/database';
 
 /**
  * Recursively find all seeder files ending with *Seeder.ts in the provided directory

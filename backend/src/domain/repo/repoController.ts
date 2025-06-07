@@ -2,7 +2,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import RepoService from './repoService';
-import getMessage from '@utils/message';
+import getMessage from '../../utils/message';
 
 class RepoController {
   static async getAllRepos(req: Request, res: Response, next: NextFunction) {

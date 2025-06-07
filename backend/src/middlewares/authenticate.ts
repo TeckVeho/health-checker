@@ -1,8 +1,6 @@
 // src/middleware/authenticate.ts
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import User from '../domain/repo/repoModel';
-import getMessage from '@utils/message';
+import getMessage from '../utils/message';
 
 interface AuthenticatedRequest extends Request {
   user?: { id: number; email: string };

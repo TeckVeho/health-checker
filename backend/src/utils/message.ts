@@ -9,7 +9,8 @@ const messages = {
     ACCEPTED: 'The request has been accepted for processing, but the processing has not been completed.',
     PARTIAL_CONTENT: 'The server is delivering only part of the resource due to a range header sent by the client.',
     FILE_UPLOAD_SUCCESS: 'File "{0}" has been uploaded successfully.',
-    CHECK_SUCCESS: 'Health check completed successfully.', // ✅ 追加
+    CHECK_SUCCESS: 'Check completed successfully.',
+    FETCH_SUCCESS: 'Fetch completed successfully.',
   },
   ERROR: {
     CREATE_ERROR: 'Failed to create {0}.',
