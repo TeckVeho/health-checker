@@ -1,6 +1,6 @@
 <template>
     <div class="p-6 space-y-6">
-        <h1 class="text-3xl font-bold text-white">GitHub Repo Health Checker</h1>
+        <h1 class="text-3xl font-bold text-white">GitHub Health Checker!</h1>
 
         <!-- Filter Card -->
         <Card class="w-full shadow-sm border border-gray-200 mb-4 rounded-xl">
