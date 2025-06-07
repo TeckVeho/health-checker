@@ -5,13 +5,10 @@ on:
     branches: [develop]
     paths:
       - 'frontend/src/**'
-
   workflow_dispatch:
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Set up SSH
         run: |
@@ -19,39 +16,21 @@ jobs:
           echo "${{ secrets.DEPLOYSERVERSECRET }}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 57.180.91.172 >> ~/.ssh/known_hosts
-
       - name: Run deploy script on 57.180.91.172
         run: |
           ssh -i ~/.ssh/id_rsa ec2-user@57.180.91.172 << 'EOF'
             set -e
-
-            echo "Starting deployment..."
             cd /home/ec2-user/repocheck
-
-            echo "Resetting local changes and pulling latest code..."
             git reset --hard HEAD
             git clean -fd
             git pull origin develop
-
-            echo "Using Node.js 22 via NVM..."
             source ~/.nvm/nvm.sh
             nvm use 22
-
-            echo "Checking if yarn is installed..."
             if ! command -v yarn >/dev/null 2>&1; then
-              echo "Installing yarn..."
               npm install -g yarn
             fi
-
-            echo "Installing frontend dependencies..."
             cd frontend
             yarn install --frozen-lockfile
-
-            echo "Building frontend..."
             yarn build
-
-            echo "Restarting PM2 process..."
             pm2 restart ecosystem.config.cjs
-
-            echo "Deployment completed."
           EOF

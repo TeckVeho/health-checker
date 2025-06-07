@@ -1,5 +1,4 @@
 name: Deploy Backend on backend/src Change (develop branch)
-
 on:
   push:
     branches: [develop]
@@ -9,7 +8,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Set up SSH
         run: |
@@ -17,15 +15,21 @@ jobs:
           echo "${{ secrets.DEPLOYSERVERSECRET }}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 57.180.91.172 >> ~/.ssh/known_hosts
-
       - name: Run deploy script on 57.180.91.172
         run: |
           ssh -i ~/.ssh/id_rsa ec2-user@57.180.91.172 << 'EOF'
             set -e
             cd /home/ec2-user/repocheck
+            git reset --hard HEAD
+            git clean -fd
             git pull origin develop
+            source ~/.nvm/nvm.sh
+            nvm use 22
+            if ! command -v yarn >/dev/null 2>&1; then
+              npm install -g yarn
+            fi
             cd backend
             yarn install --frozen-lockfile
             yarn build
-            pm2 restart ecosystem.config.js
+            pm2 restart ecosystem.config.cjs
           EOF
