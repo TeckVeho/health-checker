@@ -14,7 +14,7 @@ jobs:
       - name: Set up SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOYSERVERSECRET }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.DEPLOYSERVERSECRET }}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 57.180.91.172 >> ~/.ssh/known_hosts
 
