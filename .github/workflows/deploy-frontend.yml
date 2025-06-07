@@ -1,30 +1,48 @@
 name: Deploy Frontend on frontend/src Change (develop branch)
+
 on:
   push:
     branches: [develop]
     paths:
       - 'frontend/src/**'
+
   workflow_dispatch:
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set up SSH
+      - name: Start SSH Setup
+        run: echo "🔧 Starting SSH key setup..."
+
+      - name: Set up SSH key and known_hosts
         run: |
           mkdir -p ~/.ssh
+          echo "🔐 Writing private key to ~/.ssh/id_rsa..."
           echo "${{ secrets.DEPLOYSERVERSECRET }}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          echo "🔐 Private key permission set. Scanning SSH host key..."
           ssh-keyscan -H 57.180.91.172 >> ~/.ssh/known_hosts
+          echo "✅ SSH key and known_hosts set up completed."
 
-      - name: Run deploy script on 57.180.91.172
+      - name: Run remote deploy script
         run: |
+          echo "🚀 Connecting to 57.180.91.172 and running deploy commands..."
           ssh -i ~/.ssh/id_rsa ec2-user@57.180.91.172 << 'EOF'
-            set -e
+            echo "🖥️ Connected to remote host as: $(whoami)"
+            echo "📂 Current directory before cd: $(pwd)"
             cd /home/ec2-user/repocheck
+            echo "📂 Moved to repo directory: $(pwd)"
+            echo "📦 Running git pull..."
             git pull origin develop
+            echo "📦 Entering frontend directory..."
             cd frontend
+            echo "📦 Installing dependencies..."
             yarn install --frozen-lockfile
+            echo "🛠️ Building frontend..."
             yarn build
+            echo "🔁 Restarting PM2 process..."
             pm2 restart ecosystem.config.cjs
+            echo "✅ Remote deployment completed."
           EOF
