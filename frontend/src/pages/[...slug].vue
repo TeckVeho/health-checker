@@ -71,15 +71,17 @@ import Column from 'primevue/column'
 import Tag from 'primevue/tag'
 
 const checkTypeLabels = {
-    issue_format_violation: 'Issue Format Violation',
-    pull_request_format_violation: 'Pull Request Format Violation',
+
     default_branch_violation: 'Default Branch Violation',
     branch_name_violation: 'Branch Name Violation',
     branch_protect_rule_violation: 'Branch Protect Rule Violation',
+    exposed_secret_key: 'Exposed Secret Key',
+
+    issue_format_violation: 'Issue Format Violation',
+    pull_request_format_violation: 'Pull Request Format Violation',
     no_unit_test_ci: 'No Unit Test CI',
     security_risk: 'Security Risk',
     performance_issue: 'Performance Issue',
-    exposed_secret_key: 'Exposed Secret Key',
 }
 
 const route = useRoute()

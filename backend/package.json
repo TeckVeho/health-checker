@@ -15,7 +15,9 @@
     "db:clear": "ts-node -r tsconfig-paths/register ./src/database/clear-all.ts",
     "db:drop": "ts-node -r tsconfig-paths/register ./src/database/drop-all.ts",
     "command": "ts-node ./src/commands",
-    "format": "prettier --write \"src/**/*.{ts,tsx,js,json,css,md}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,json,css,md}\"",
+    "repo:sync": "ts-node -r tsconfig-paths/register src/commands/syncRepos.ts",
+    "alert": "ts-node -r tsconfig-paths/register src/commands/alertRunner.ts"
   },
   "keywords": [],
   "author": "",

@@ -162,6 +162,7 @@ class RepoService {
     });
 
     for (const repo of repos) {
+      console.log(`Sync ${repo.owner.login}/${repo.name}`);
       try {
         const { data: fullRepo } = await octokit.repos.get({
           owner: repo.owner.login,
