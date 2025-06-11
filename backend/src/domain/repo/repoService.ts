@@ -36,16 +36,14 @@ class RepoService {
   }> {
     const offset = (page - 1) * limit;
     const isSortByActivity = sort === 'last_activity_at';
-  
+
     const { rows: data, count: total } = await Repo.findAndCountAll({
       attributes: this.repoAttributes,
       offset,
       limit,
-      order: isSortByActivity
-        ? [['lastActivityAt', 'DESC']]
-        : [[sort, 'DESC']],
+      order: isSortByActivity ? [['lastActivityAt', 'DESC']] : [[sort, 'DESC']],
     });
-  
+
     return {
       data,
       pagination: {
@@ -215,19 +213,38 @@ class RepoService {
           console.warn(`⚠️ Failed to fetch PRs for ${repo.name}`, err);
         }
 
-        const [record] = await Repo.upsert({
-          name: fullRepo.name,
-          owner: fullRepo.owner.login,
-          description: fullRepo.description ?? '',
-          topics,
-          isPrivate: fullRepo.private,
-          lastCommitAt,
-          lastIssueCreatedAt,
-          lastPrCreatedAt,
-          pushedAt,
+        const existing = await Repo.findOne({
+          where: {
+            owner: fullRepo.owner.login,
+            name: fullRepo.name,
+          },
         });
 
-        insertedRepos.push(record.toJSON() as RepoData);
+        if (existing) {
+          await existing.update({
+            description: fullRepo.description ?? '',
+            topics,
+            isPrivate: fullRepo.private,
+            lastCommitAt,
+            lastIssueCreatedAt,
+            lastPrCreatedAt,
+            pushedAt,
+          });
+          insertedRepos.push(existing.toJSON() as RepoData);
+        } else {
+          const created = await Repo.create({
+            name: fullRepo.name,
+            owner: fullRepo.owner.login,
+            description: fullRepo.description ?? '',
+            topics,
+            isPrivate: fullRepo.private,
+            lastCommitAt,
+            lastIssueCreatedAt,
+            lastPrCreatedAt,
+            pushedAt,
+          });
+          insertedRepos.push(created.toJSON() as RepoData);
+        }
       } catch (err) {
         console.error(`❌ Failed to process repo: ${repo.name}`, err);
       }
