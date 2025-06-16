@@ -140,34 +140,23 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
           owner,
           repo,
         });
-
         console.log(`📦 Fetched ${rulesetsRes.data.length} rulesets for ${owner}/${repo}`);
-
         for (const ruleset of rulesetsRes.data) {
           console.log(`🔍 Checking ruleset: ${ruleset.name || 'unnamed'} (enforcement=${ruleset.enforcement})`);
-
           if (ruleset.enforcement !== 'active') continue;
-
-          // 🔽 個別に ruleset の詳細情報を取得
           const { data: fullRuleset } = await octokit.request('GET /repos/{owner}/{repo}/rulesets/{ruleset_id}', {
             owner,
             repo,
             ruleset_id: ruleset.id, // eslint-disable-line @typescript-eslint/naming-convention
           });
-
-          console.dir(fullRuleset, { depth: null });
-
           const includes = fullRuleset.conditions?.ref_name?.include ?? [];
-
           console.log(`📂 Target branches (include): ${includes.join(', ') || '(none)'}`);
-
           const matches = includes.some((pattern: string) => {
             if (pattern === branch || pattern === '*') return true;
 
             const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
             return regex.test(branch);
           });
-
           if (matches) {
             console.log(`✅ Ruleset applies to branch: ${branch}`);
             protectedBranch = true;
