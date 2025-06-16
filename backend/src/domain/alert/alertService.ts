@@ -114,7 +114,7 @@ class AlertService {
 
   static async checkStoredRepos(owner: string, activeWithinDays?: number): Promise<Record<string, unknown>[]> {
     const whereClause: any = { owner };
-    activeWithinDays =14;
+    activeWithinDays = 14;
     if (activeWithinDays !== undefined) {
       const cutoffDate = subDays(new Date(), activeWithinDays);
       whereClause.last_activity_at = { [Op.gte]: cutoffDate };
@@ -149,13 +149,26 @@ class AlertService {
   }
 
   static async runAlert(options: ManualCheckOptions): Promise<Record<string, unknown>> {
-    const { owner, repo } = options;
-    await checkBranches(owner, repo);
-    await cloneRepo(owner, repo);
-    await gitleaksScanner(owner, repo);
-    return {
-      status: 'cloned',
-    };
+    const { owner, repo, checks } = options;
+
+    const results: Record<string, unknown> = {};
+
+    if (!checks || checks.includes('branch')) {
+      await checkBranches(owner, repo);
+      results.branch = 'checked';
+    }
+
+    if (!checks || checks.includes('clone')) {
+      await cloneRepo(owner, repo);
+      results.clone = 'done';
+    }
+
+    if (!checks || checks.includes('gitleaks')) {
+      await gitleaksScanner(owner, repo);
+      results.gitleaks = 'done';
+    }
+
+    return results;
   }
 }
 
