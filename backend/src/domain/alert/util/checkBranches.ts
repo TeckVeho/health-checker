@@ -141,13 +141,20 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
           repo,
         });
 
+        console.log(`📦 Fetched ${rulesetsRes.data.length} rulesets for ${owner}/${repo}`);
+
         for (const ruleset of rulesetsRes.data) {
+          console.log(`🔍 Checking ruleset: ${ruleset.name || 'unnamed'} (enforcement=${ruleset.enforcement})`);
+
           if (ruleset.enforcement !== 'active') continue;
 
           const branches = ruleset.conditions?.ref_name?.include ?? [];
+          console.log(`📂 Target branches: ${branches.join(', ') || '(none)'}`);
+
           const matches = branches.some((b: string) => b === branch || b === '*');
 
           if (matches) {
+            console.log(`✅ Ruleset applies to branch: ${branch}`);
             protectedBranch = true;
             break;
           }
