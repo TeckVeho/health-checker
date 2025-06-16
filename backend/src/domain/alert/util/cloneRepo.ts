@@ -7,16 +7,16 @@ const execAsync = promisify(exec);
 
 /**
  * 指定された GitHub リポジトリをローカルに clone または pull する
- * GITHUB_WORKSPACE に直接 clone される（サブディレクトリは作られない）
+ * GITHUB_LOCAL_WORKSPACE に直接 clone される（サブディレクトリは作られない）
  *
  * @param owner GitHub アカウント名
  * @param repo リポジトリ名
  * @returns clone/pull されたローカルパス
  */
 export async function cloneRepo(owner: string, repo: string): Promise<string> {
-  const workspace = process.env.GITHUB_WORKSPACE;
+  const workspace = process.env.GITHUB_LOCAL_WORKSPACE;
   if (!workspace) {
-    throw new Error('GITHUB_WORKSPACE is required');
+    throw new Error('GITHUB_LOCAL_WORKSPACE is required');
   }
 
   const targetPath = workspace; // サブディレクトリは作らない

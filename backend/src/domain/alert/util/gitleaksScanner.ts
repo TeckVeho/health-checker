@@ -6,9 +6,9 @@ import { format } from 'date-fns';
 import Alert from '../alertModel';
 
 export async function gitleaksScanner(owner: string, repo: string): Promise<void> {
-  const workspace = process.env.GITHUB_WORKSPACE;
+  const workspace = process.env.GITHUB_LOCAL_WORKSPACE;
   if (!workspace) {
-    throw new Error('GITHUB_WORKSPACE is required');
+    throw new Error('GITHUB_LOCAL_WORKSPACE is required');
   }
 
   // ▼ 現在のブランチ名を .git/HEAD から取得
