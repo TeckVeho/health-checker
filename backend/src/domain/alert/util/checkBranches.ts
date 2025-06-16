@@ -24,7 +24,6 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
     console.error(`❌ Failed to fetch default branch for ${owner}/${repo}:`, err);
   }
 
-  // ▼ Report default_branch_violation (if not "develop", mark as high severity)
   if (defaultBranch !== 'develop') {
     const checkType = 'default_branch_violation';
     const title = `default-branch:${defaultBranch}`;
@@ -84,6 +83,7 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
       const title = `branch:${branch}`;
       const description = `Branch '${branch}' does not exist.`;
       const key = [owner, repo, checkType, title, filePath, lineNumber, codeSnippet, branch].join('||');
+      console.log(`🚨 Detected: ${key}`);
 
       await Alert.findOrCreate({
         where: { owner, repo, checkType, title, filePath, lineNumber, codeSnippet, branch },
@@ -120,10 +120,8 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
       continue;
     }
 
-    // ▼ Check if the branch is protected (classic or ruleset)
     let protectedBranch = false;
 
-    // Check classic protection
     try {
       await octokit.repos.getBranchProtection({ owner, repo, branch });
       protectedBranch = true;
@@ -133,7 +131,6 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
       }
     }
 
-    // Check ruleset protection (only if classic not present)
     if (!protectedBranch) {
       try {
         const rulesetsRes = await octokit.request('GET /repos/{owner}/{repo}/rulesets', {
@@ -149,21 +146,30 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
             repo,
             ruleset_id: ruleset.id, // eslint-disable-line @typescript-eslint/naming-convention
           });
-          const includes = fullRuleset.conditions?.ref_name?.include ?? [];
-          console.log(`📂 Target branches (include): ${includes.join(', ') || '(none)'}`);
-          const matches = includes.some((pattern: string) => {
-            if (pattern === branch || pattern === '*') return true;
 
-            const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
-            return regex.test(branch);
-          });
+          const includes = fullRuleset.conditions?.ref_name?.include ?? [];
+          const patterns = (fullRuleset.conditions?.ref_name as any)?.patterns ?? [];
+
+          console.log(`📂 Target branches (include): ${includes.join(', ') || '(none)'}`);
+          console.log(`📂 Target branches (patterns): ${patterns.join(', ') || '(none)'}`);
+
+          const matches =
+            includes.some((pattern: string) => {
+              const clean = pattern.replace(/^refs\/heads\//, '');
+              return clean === branch || clean === '*';
+            }) ||
+            patterns.some((pattern: string) => {
+              const clean = pattern.replace(/^refs\/heads\//, '');
+              const regex = new RegExp('^' + clean.replace(/\*/g, '.*') + '$');
+              return regex.test(branch);
+            });
+
           if (matches) {
             console.log(`✅ Ruleset applies to branch: ${branch}`);
             protectedBranch = true;
             break;
           }
         }
-        
       } catch (rulesetErr) {
         console.error(`❌ Error checking rulesets for ${owner}/${repo}:`, rulesetErr);
       }
@@ -174,6 +180,7 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
       const title = `branch-unprotected:${branch}`;
       const description = `Branch '${branch}' exists but is not protected.`;
       const key = [owner, repo, checkType, title, filePath, lineNumber, codeSnippet, branch].join('||');
+      console.log(`🚨 Detected: ${key}`);
 
       await Alert.findOrCreate({
         where: { owner, repo, checkType, title, filePath, lineNumber, codeSnippet, branch },
@@ -210,7 +217,8 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
     }
   }
 
-  // ▼ Automatically resolve previously detected alerts that are no longer found
+  console.log(`🧾 detectedKeySet: ${JSON.stringify([...detectedKeySet], null, 2)}`);
+
   const existing = await Alert.findAll({
     where: {
       owner,
@@ -226,10 +234,13 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
     const key = [row.getDataValue('owner'), row.getDataValue('repo'), row.getDataValue('checkType'), row.getDataValue('title'), row.getDataValue('filePath') ?? '', row.getDataValue('lineNumber') ?? -1, row.getDataValue('codeSnippet') ?? '', row.getDataValue('branch') ?? ''].join('||');
 
     if (!detectedKeySet.has(key)) {
+      console.log(`🛠 Resolving: ${key}`);
       await row.update({
         systemResolved: true,
         systemResolvedReason: `${resolveTimestamp}:Automatically resolved: not detected`,
       });
+    } else {
+      console.log(`✅ Still active: ${key}`);
     }
   }
 
