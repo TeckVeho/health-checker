@@ -33,14 +33,13 @@ class AlertController {
    */
   static async checkStoredRepos(req: Request, res: Response, next: NextFunction) {
     const owner = req.params.owner;
-    const activeWithinDays = req.query.activeWithinDays ? Number(req.query.activeWithinDays) : undefined;
 
     if (!owner) {
       return res.status(400).json({ message: 'Missing required field: owner' });
     }
 
     try {
-      const results = await AlertService.checkStoredRepos(owner, activeWithinDays);
+      const results = await AlertService.checkStoredRepos(owner);
       res.status(200).json({
         message: getMessage('SUCCESS.CHECK_SUCCESS', 'repositories'),
         results,
