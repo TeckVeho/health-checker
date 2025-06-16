@@ -8,12 +8,6 @@ import { QueryTypes, Op } from 'sequelize';
 import Alert from './alertModel';
 import { subDays } from 'date-fns'; 
 
-type ManualCheckOptions = {
-  owner: string;
-  repo: string;
-  checks?: string[];
-};
-
 class AlertService {
   static async getAlertsByRepo(owner: string, repo: string) {
     const alerts = await Alert.findAll({

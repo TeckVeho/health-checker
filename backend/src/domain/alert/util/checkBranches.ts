@@ -148,10 +148,25 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
 
           if (ruleset.enforcement !== 'active') continue;
 
-          const branches = ruleset.conditions?.ref_name?.include ?? [];
-          console.log(`📂 Target branches: ${branches.join(', ') || '(none)'}`);
+          // 🔽 個別に ruleset の詳細情報を取得
+          const { data: fullRuleset } = await octokit.request('GET /repos/{owner}/{repo}/rulesets/{ruleset_id}', {
+            owner,
+            repo,
+            ruleset_id: ruleset.id, // eslint-disable-line @typescript-eslint/naming-convention
+          });
 
-          const matches = branches.some((b: string) => b === branch || b === '*');
+          console.dir(fullRuleset, { depth: null });
+
+          const includes = fullRuleset.conditions?.ref_name?.include ?? [];
+
+          console.log(`📂 Target branches (include): ${includes.join(', ') || '(none)'}`);
+
+          const matches = includes.some((pattern: string) => {
+            if (pattern === branch || pattern === '*') return true;
+
+            const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+            return regex.test(branch);
+          });
 
           if (matches) {
             console.log(`✅ Ruleset applies to branch: ${branch}`);
@@ -159,6 +174,7 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
             break;
           }
         }
+        
       } catch (rulesetErr) {
         console.error(`❌ Error checking rulesets for ${owner}/${repo}:`, rulesetErr);
       }
