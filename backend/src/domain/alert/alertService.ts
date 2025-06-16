@@ -44,7 +44,7 @@ class AlertService {
         severity,
         COUNT(*) AS count
       FROM alerts
-      WHERE (owner, repo) IN (${conditionClauses}) AND is_ignored = false
+      WHERE (owner, repo) IN (${conditionClauses}) AND is_ignored = false AND system_resolved = false
       GROUP BY owner, repo, severity
       `,
       {
@@ -87,7 +87,7 @@ class AlertService {
         check_type AS "checkType",
         COUNT(*) AS count
       FROM alerts
-      WHERE (owner, repo) IN (${conditionClauses}) AND is_ignored = false
+      WHERE (owner, repo) IN (${conditionClauses}) AND is_ignored = false AND system_resolved = false
       GROUP BY owner, repo, check_type
       `,
       {
