@@ -1,45 +1,43 @@
+// backend/src/database/migrate-all.ts
 import { readdirSync, statSync } from 'fs';
 import path from 'path';
 import sequelize from '../config/database';
 
 /**
- * Recursively find all migration files ending with .ts in the provided directory
+ * 再帰的にすべての *Model.ts を import して Sequelize に登録する
  */
-function getMigrationFiles(dir: string): string[] {
-  let migrationFiles: string[] = [];
+function importAllModels(dir: string): void {
   const items = readdirSync(dir);
 
   for (const item of items) {
     const itemPath = path.join(dir, item);
-    const itemStat = statSync(itemPath);
+    const stat = statSync(itemPath);
 
-    if (itemStat.isDirectory()) {
-      migrationFiles = migrationFiles.concat(getMigrationFiles(itemPath)); // Recursively search subdirectories
-    } else if (itemStat.isFile() && item.endsWith('Migration.ts')) {
-      migrationFiles.push(itemPath); // Add .ts files to migration list
+    if (stat.isDirectory()) {
+      importAllModels(itemPath);
+    } else if (stat.isFile() && item.endsWith('Model.ts')) {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      require(itemPath); // 動的 import でモデルが self-register
+      console.log(`Model loaded: ${itemPath}`);
     }
   }
-
-  return migrationFiles;
 }
 
 (async () => {
   try {
-    const featuresPath = path.join(__dirname, '../domain');
-    const migrationFiles = getMigrationFiles(featuresPath);
+    const domainPath = path.join(__dirname, '../domain');
+    importAllModels(domainPath);
 
-    for (const file of migrationFiles) {
-      console.log(`Running migration: ${file}`);
-      const { up } = await import(file);
-      await up(sequelize.getQueryInterface());
-
-      console.log(`Migration ${file} executed successfully.`);
-    }
-
-    console.log('All migrations executed successfully.');
+    /**
+     * - 初回作成      : sync()
+     * - スキーマ差分  : sync({ alter: true })  ※本番環境は要バックアップ
+     * - 全再生成      : sync({ force: true })  ※開発用
+     */
+    await sequelize.sync();
+    console.log('All tables are in sync ✨');
     process.exit(0);
   } catch (error) {
-    console.error('Error executing migrations:', error);
+    console.error('Error during schema sync:', error);
     process.exit(1);
   }
 })();

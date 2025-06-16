@@ -13,8 +13,6 @@ yarn-error.log*
 pnpm-debug.log*
 .vscode/
 .idea/
-test-command.txt
-
 
 # ──────────────
 # Backend (Express)

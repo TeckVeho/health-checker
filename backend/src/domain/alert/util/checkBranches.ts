@@ -24,7 +24,6 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
     console.error(`❌ Failed to fetch default branch for ${owner}/${repo}:`, err);
   }
 
-  // ▼ default_branch_violation を記録（developでないなら high）
   if (defaultBranch !== 'develop') {
     const checkType = 'default_branch_violation';
     const title = `default-branch:${defaultBranch}`;
@@ -33,16 +32,7 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
     const key = [owner, repo, checkType, title, filePath, lineNumber, codeSnippet, branch].join('||');
 
     await Alert.findOrCreate({
-      where: {
-        owner,
-        repo,
-        checkType,
-        title,
-        filePath,
-        lineNumber,
-        codeSnippet,
-        branch,
-      },
+      where: { owner, repo, checkType, title, filePath, lineNumber, codeSnippet, branch },
       defaults: {
         owner,
         repo,
@@ -95,16 +85,7 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
       const key = [owner, repo, checkType, title, filePath, lineNumber, codeSnippet, branch].join('||');
 
       await Alert.findOrCreate({
-        where: {
-          owner,
-          repo,
-          checkType,
-          title,
-          filePath,
-          lineNumber,
-          codeSnippet,
-          branch,
-        },
+        where: { owner, repo, checkType, title, filePath, lineNumber, codeSnippet, branch },
         defaults: {
           owner,
           repo,
@@ -138,15 +119,42 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
       continue;
     }
 
-    let protectedBranch = true;
+    // 🛡 保護ブランチかチェック（classic + ruleset両方考慮）
+    let protectedBranch = false;
+
+    // Classic check
     try {
       await octokit.repos.getBranchProtection({ owner, repo, branch });
+      protectedBranch = true;
     } catch (err: any) {
-      if (err.status === 404) {
-        protectedBranch = false;
-      } else {
-        console.error(`❌ Error checking protection ${owner}/${repo}@${branch}:`, err);
+      if (err.status !== 404) {
+        console.error(`❌ Error checking classic protection ${owner}/${repo}@${branch}:`, err);
       }
+    }
+
+    // Ruleset check (only if classic was not present)
+    if (!protectedBranch) {
+      try {
+        const rulesetsRes = await octokit.request('GET /repos/{owner}/{repo}/rulesets', {
+          owner,
+          repo,
+        });
+
+        for (const ruleset of rulesetsRes.data) {
+          if (ruleset.enforcement !== 'active') continue;
+
+          const branches = ruleset.conditions?.ref_name?.include ?? [];
+          const matches = branches.some((b: string) => b === branch || b === '*');
+
+          if (matches) {
+            protectedBranch = true;
+            break;
+          }
+        }
+      } catch (rulesetErr) {
+        console.error(`❌ Error checking rulesets for ${owner}/${repo}:`, rulesetErr);
+      }
+      
     }
 
     if (!protectedBranch) {
@@ -156,16 +164,7 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
       const key = [owner, repo, checkType, title, filePath, lineNumber, codeSnippet, branch].join('||');
 
       await Alert.findOrCreate({
-        where: {
-          owner,
-          repo,
-          checkType,
-          title,
-          filePath,
-          lineNumber,
-          codeSnippet,
-          branch,
-        },
+        where: { owner, repo, checkType, title, filePath, lineNumber, codeSnippet, branch },
         defaults: {
           owner,
           repo,
@@ -199,7 +198,7 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
     }
   }
 
-  // ▼ 古い未検出のアラートを自動解決
+  // 古い未検出のアラートを自動解決
   const existing = await Alert.findAll({
     where: {
       owner,

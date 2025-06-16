@@ -1,0 +1,39 @@
+version: '3.9'
+
+services:
+  mysql:
+    image: mysql:8.0.36
+    container_name: health-checker-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: health-checker
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: health-checker-123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - local-net
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: health-checker-phpmyadmin
+    restart: always
+    ports:
+      - "3307:80"
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: root
+    depends_on:
+      - mysql
+    networks:
+      - local-net
+
+volumes:
+  mysql-data:
+
+networks:
+  local-net:
+    driver: bridge

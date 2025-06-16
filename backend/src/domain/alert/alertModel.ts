@@ -168,7 +168,6 @@ export const alertAttributes = {
     field: 'created_at',
   },
 };
-
 Alert.init(alertAttributes, {
   sequelize,
   modelName: 'Alert',
@@ -176,24 +175,26 @@ Alert.init(alertAttributes, {
   timestamps: false,
   underscored: true,
   indexes: [
-    { fields: ['owner', 'repo'] },
-    { fields: ['check_type'] },
-    { fields: ['last_detected_at'] },
+    { fields: [{ name: 'owner' }, { name: 'repo' }] },
+    { fields: [{ name: 'check_type' }] },
+    { fields: [{ name: 'last_detected_at' }] },
     {
       name: 'unique_health_issue',
       unique: true,
       fields: [
-        'owner',
-        'repo',
-        'check_type',
-        'title',
-        'file_path',
-        'line_number',
-        'code_snippet',
-        'branch',
+        { name: 'owner', length: 100 },
+        { name: 'repo', length: 100 },
+        { name: 'check_type', length: 50 },
+        { name: 'title', length: 50 },
+        { name: 'file_path', length: 255 },
+        { name: 'line_number' },
+        { name: 'code_snippet', length: 255 },
+        { name: 'branch', length: 50 },
       ],
     },
   ],
 });
+
+
 
 export default Alert;

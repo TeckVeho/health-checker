@@ -103,16 +103,16 @@ Repo.init(repoAttributes, {
   timestamps: true,
   underscored: true,
   indexes: [
-    { fields: ['created_at'] },
-    { fields: ['last_commit_at'] },
-    { fields: ['last_issue_created_at'] },
-    { fields: ['last_pr_created_at'] },
-    { fields: ['pushed_at'] },
-    { fields: ['last_activity_at'] },
+    { fields: [{ name: 'created_at' }] },
+    { fields: [{ name: 'last_commit_at' }] },
+    { fields: [{ name: 'last_issue_created_at' }] },
+    { fields: [{ name: 'last_pr_created_at' }] },
+    { fields: [{ name: 'pushed_at' }] },
+    { fields: [{ name: 'last_activity_at' }] },
     {
       name: 'unique_owner_name',
       unique: true,
-      fields: ['owner', 'name'],
+      fields: [{ name: 'owner' }, { name: 'name' }],
     },
   ],
 });
