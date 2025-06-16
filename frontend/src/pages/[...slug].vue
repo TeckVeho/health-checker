@@ -92,7 +92,7 @@ const loading = ref(true)
 const config = useRuntimeConfig()
 
 const visibleAlerts = computed(() =>
-    alerts.value.filter((a) => !a.isIgnored)
+    alerts.value.filter((a) => !a.isIgnored && !a.systemResolved)
 )
 
 const formatDate = (dateStr) => {
