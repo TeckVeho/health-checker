@@ -8,7 +8,11 @@
             <span class="tracking-wide">Back to Dashboard</span>
         </NuxtLink>
         <h2 class="text-2xl font-semibold text-white">
-            Alerts for {{ owner }}/{{ repo }}
+            Alerts for 
+            <a :href="`https://github.com/${owner}/${repo}`"
+                class="text-white underline hover:text-blue-400 transition-colors" target="_blank"
+                rel="noopener noreferrer">{{ owner }}/{{ repo }}
+            </a>
         </h2>
         <div v-if="loading">Loading alerts...</div>
 
