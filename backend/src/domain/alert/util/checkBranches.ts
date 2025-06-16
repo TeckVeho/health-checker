@@ -24,6 +24,7 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
     console.error(`❌ Failed to fetch default branch for ${owner}/${repo}:`, err);
   }
 
+  // ▼ Report default_branch_violation (if not "develop", mark as high severity)
   if (defaultBranch !== 'develop') {
     const checkType = 'default_branch_violation';
     const title = `default-branch:${defaultBranch}`;
@@ -119,10 +120,10 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
       continue;
     }
 
-    // 🛡 保護ブランチかチェック（classic + ruleset両方考慮）
+    // ▼ Check if the branch is protected (classic or ruleset)
     let protectedBranch = false;
 
-    // Classic check
+    // Check classic protection
     try {
       await octokit.repos.getBranchProtection({ owner, repo, branch });
       protectedBranch = true;
@@ -132,7 +133,7 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
       }
     }
 
-    // Ruleset check (only if classic was not present)
+    // Check ruleset protection (only if classic not present)
     if (!protectedBranch) {
       try {
         const rulesetsRes = await octokit.request('GET /repos/{owner}/{repo}/rulesets', {
@@ -154,7 +155,6 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
       } catch (rulesetErr) {
         console.error(`❌ Error checking rulesets for ${owner}/${repo}:`, rulesetErr);
       }
-      
     }
 
     if (!protectedBranch) {
@@ -198,7 +198,7 @@ export async function checkBranches(owner: string, repo: string): Promise<{ owne
     }
   }
 
-  // 古い未検出のアラートを自動解決
+  // ▼ Automatically resolve previously detected alerts that are no longer found
   const existing = await Alert.findAll({
     where: {
       owner,
