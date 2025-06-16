@@ -11,7 +11,7 @@ import { subDays } from 'date-fns';
 type ManualCheckOptions = {
   owner: string;
   repo: string;
-  checks: string[];
+  checks?: string[];
 };
 
 class AlertService {
@@ -111,30 +111,45 @@ class AlertService {
 
     return summary;
   }
+  static async runAlert(options: { owner: string; repo: string; checks?: string[] }): Promise<Record<string, unknown>> {
+    const { owner, repo, checks } = options;
+    const effectiveChecks = checks ?? ['branch', 'clone', 'gitleaks'];
+    const results: Record<string, unknown> = {};
 
-  static async checkStoredRepos(owner: string, activeWithinDays?: number): Promise<Record<string, unknown>[]> {
-    const whereClause: any = { owner };
-    activeWithinDays = 14;
-    if (activeWithinDays !== undefined) {
-      const cutoffDate = subDays(new Date(), activeWithinDays);
-      whereClause.last_activity_at = { [Op.gte]: cutoffDate };
+    if (effectiveChecks.includes('clone')) {
+      await cloneRepo(owner, repo);
+      results.clone = 'done';
     }
 
-    const repos = await Repo.findAll({ where: whereClause });
+    if (effectiveChecks.includes('branch')) {
+      await checkBranches(owner, repo);
+      results.branch = 'checked';
+    }
 
+    if (effectiveChecks.includes('gitleaks')) {
+      if (!effectiveChecks.includes('clone')) {
+        await cloneRepo(owner, repo); // ensure gitleaks has source
+      }
+      await gitleaksScanner(owner, repo);
+      results.gitleaks = 'done';
+    }
+
+    return results;
+  }
+
+  static async checkStoredRepos(owner: string, checks?: string[]): Promise<Record<string, unknown>[]> {
+    const whereClause: any = { owner };
+    const activeWithinDays = 14;
+    const cutoffDate = subDays(new Date(), activeWithinDays);
+    whereClause.last_activity_at = { [Op.gte]: cutoffDate };
+
+    const repos = await Repo.findAll({ where: whereClause });
     const results: Record<string, unknown>[] = [];
 
     for (const repo of repos) {
       try {
-        await cloneRepo(repo.owner, repo.name);
-        await checkBranches(repo.owner, repo.name);
-        await cloneRepo(repo.owner, repo.name);
-        await gitleaksScanner(repo.owner, repo.name);
-
-        results.push({
-          repo: repo.name,
-          status: 'scanned',
-        });
+        const result = await this.runAlert({ owner: repo.owner, repo: repo.name, checks });
+        results.push({ repo: repo.name, ...result });
       } catch (err) {
         console.error(`❌ Failed to process ${repo.name}`, err);
         results.push({
@@ -143,29 +158,6 @@ class AlertService {
           error: (err as Error).message,
         });
       }
-    }
-
-    return results;
-  }
-
-  static async runAlert(options: ManualCheckOptions): Promise<Record<string, unknown>> {
-    const { owner, repo, checks } = options;
-
-    const results: Record<string, unknown> = {};
-
-    if (!checks || checks.includes('branch')) {
-      await checkBranches(owner, repo);
-      results.branch = 'checked';
-    }
-
-    if (!checks || checks.includes('clone')) {
-      await cloneRepo(owner, repo);
-      results.clone = 'done';
-    }
-
-    if (!checks || checks.includes('gitleaks')) {
-      await gitleaksScanner(owner, repo);
-      results.gitleaks = 'done';
     }
 
     return results;

@@ -2,28 +2,18 @@ import 'dotenv/config';
 import AlertService from '../domain/alert/alertService';
 
 async function main() {
-  const [owner, repoOrDays, checksArg] = process.argv.slice(2);
+  const [checksArg, owner, repo] = process.argv.slice(2);
 
-  if (!owner) {
-    console.error('❌ Usage: npm run alert -- <owner> [repo] [check1,check2,...]');
+  if (!checksArg || !owner) {
+    console.error('❌ Usage: yarn alert <checks> <owner> [repo]');
+    console.error('   <checks>: branch | clone | gitleaks | branch|gitleaks');
     process.exit(1);
   }
 
-  if (repoOrDays && repoOrDays.match(/^\d+$/)) {
-    // === stored: owner + activeWithinDays (optional)
-    const activeWithinDays = Number(repoOrDays);
-    try {
-      const results = await AlertService.checkStoredRepos(owner, activeWithinDays);
-      console.log(JSON.stringify(results, null, 2));
-    } catch (error) {
-      console.error('❌ Error checking stored repositories:', error);
-      process.exit(1);
-    }
-  } else if (repoOrDays) {
-    // === manual: owner + repo (+ optional checks)
-    const repo = repoOrDays;
-    const checks = checksArg ? checksArg.split(',') : [];
+  const checks = checksArg === 'all' ? undefined : checksArg.split('|');
 
+  if (repo) {
+    // Single repository
     try {
       const result = await AlertService.runAlert({ owner, repo, checks });
       console.log(`✅ Manual check done for ${owner}/${repo}`);
@@ -33,12 +23,12 @@ async function main() {
       process.exit(1);
     }
   } else {
-    // === stored: only owner
+    // All repositories
     try {
-      const results = await AlertService.checkStoredRepos(owner, undefined);
+      const results = await AlertService.checkStoredRepos(owner, checks);
       console.log(JSON.stringify(results, null, 2));
     } catch (error) {
-      console.error('❌ Error checking stored repositories:', error);
+      console.error(`❌ Error checking stored repositories:`, error);
       process.exit(1);
     }
   }
