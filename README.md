@@ -1,5 +1,5 @@
 
-# 🧭 Health Checker
+# Github Health Checker
 
 This is a full-stack web application to monitor the health of GitHub repositories and raise alerts based on customizable conditions.
 
@@ -13,7 +13,7 @@ project-root/
 ├── docker-compose.yml  # MySQL & phpMyAdmin services
 ├── .env.localsample    # Sample env file for local setup
 └── docs/           # Documentation directory (this file)
-
+```
 
 ## Overview
 
@@ -28,7 +28,7 @@ The project consists of:
 For complete setup instructions, please refer to the guide in [`docs/local-setup.md`](./docs/local-setup.md).
 
 ---
-## 🧩 Requirements
+## Requirements
 
 | Tool      | Version              |
 |-----------|----------------------|
