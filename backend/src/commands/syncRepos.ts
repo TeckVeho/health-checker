@@ -8,7 +8,7 @@ async function main() {
   const owner = args[0];
 
   if (!owner) {
-    console.error('❌ Usage: npm run syncRepos -- <owner>');
+    console.error('❌ Usage: yarn repo:sync <owner>');
     process.exit(1);
   }
 
