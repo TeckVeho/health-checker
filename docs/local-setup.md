@@ -42,6 +42,20 @@ GITHUB_LOCAL_WORKSPACE="C:/Users/yourname/Documents/github-workspace"
 > This is where cloned GitHub repositories will be copied to.
 > If the directory already contains files, they might be overwritten during sync.
 
+Please generate the `GITHUB_API_KEY` yourself by following these steps:
+1. Go to [https://github.com/settings/tokens](https://github.com/settings/tokens)
+2. Click **“Generate new token”**
+3. Select **“Generate new personal access token (classic)”**
+4. Under **“Select scopes”**, check all permissions under:
+
+   * `repo`
+   * `project`
+5. Scroll down and click **“Generate token”**
+6. Copy the token shown — this will be your `GITHUB_API_KEY`
+As for the `OPENAI_API_KEY`, you can leave it empty for now. We’ll issue one later.
+
+
+
 ### 3. Start MySQL & phpMyAdmin via Docker Compose
 
 ```bash
