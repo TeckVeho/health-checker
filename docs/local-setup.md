@@ -4,18 +4,6 @@ This guide describes how to set up the local development environment for the pro
 
 ---
 
-## Project Structure
-
-```
-project-root/
-├── backend/        # Express.js app
-├── frontend/       # Nuxt 3 + Vue
-├── docker-compose.yml  # MySQL & phpMyAdmin services
-├── .env.localsample    # Sample env file for local setup
-└── docs/           # Documentation directory (this file)
-```
----
-
 ## Step-by-Step Setup
 
 ### 1. Clone the Repository
