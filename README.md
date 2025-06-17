@@ -33,7 +33,7 @@ For complete setup instructions, please refer to the guide in [`docs/local-setup
 
 | Tool      | Version              |
 |-----------|----------------------|
-| Node.js   | `>=18`               |
+| Node.js   | `=22`               |
 | Yarn      | `>=1`             |
 | Docker    | Required for DB setup |
 
