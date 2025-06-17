@@ -2,7 +2,7 @@ name: Deploy Frontend on frontend/src Change (develop branch)
 
 on:
   push:
-    branches: [develop]
+    branches: [production]
     paths:
       - 'frontend/src/**'
   workflow_dispatch:
