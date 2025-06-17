@@ -1,8 +1,7 @@
 // src/features/repo/repoService.ts
 
 import Repo from './repoModel';
-import { UniqueConstraintError, QueryTypes } from 'sequelize';
-import sequelize from '../../config/database';
+import { UniqueConstraintError } from 'sequelize';
 import getMessage from '../../utils/message';
 import { Octokit } from '@octokit/rest';
 import { InferAttributes } from 'sequelize';
@@ -53,41 +52,6 @@ class RepoService {
         totalPages: Math.ceil(total / limit),
       },
     };
-  }
-
-  static async getHealthSummary(repoList: { owner: string; repo: string }[]): Promise<Record<string, Record<string, number>>> {
-    if (repoList.length === 0) return {};
-
-    const conditions = repoList.map(({ owner, repo }) => `('${owner}', '${repo}')`).join(', ');
-
-    const results = await sequelize.query<{
-      owner: string;
-      repo: string;
-      checkType: string;
-      count: number;
-    }>(
-      `
-      SELECT
-        owner,
-        repo,
-        check_type AS "checkType",
-        COUNT(*) AS count
-      FROM alerts
-      WHERE (owner, repo) IN (${conditions}) and is_ignored = false
-      GROUP BY owner, repo, check_type
-      `,
-      { type: QueryTypes.SELECT }
-    );
-
-    const summary: Record<string, Record<string, number>> = {};
-
-    for (const row of results) {
-      const key = `${row.owner}/${row.repo}`;
-      if (!summary[key]) summary[key] = {};
-      summary[key][row.checkType] = Number(row.count);
-    }
-
-    return summary;
   }
 
   static async getRepoById(id: number): Promise<Repo | null> {
@@ -213,6 +177,9 @@ class RepoService {
           console.warn(`⚠️ Failed to fetch PRs for ${repo.name}`, err);
         }
 
+        // Compute latest activity
+        const lastActivityAt = [lastCommitAt, lastIssueCreatedAt, lastPrCreatedAt, pushedAt].filter((d): d is Date => d instanceof Date).sort((a, b) => b.getTime() - a.getTime())[0] ?? null;
+
         const existing = await Repo.findOne({
           where: {
             owner: fullRepo.owner.login,
@@ -229,6 +196,7 @@ class RepoService {
             lastIssueCreatedAt,
             lastPrCreatedAt,
             pushedAt,
+            lastActivityAt,
           });
           insertedRepos.push(existing.toJSON() as RepoData);
         } else {
@@ -242,6 +210,7 @@ class RepoService {
             lastIssueCreatedAt,
             lastPrCreatedAt,
             pushedAt,
+            lastActivityAt,
           });
           insertedRepos.push(created.toJSON() as RepoData);
         }
@@ -249,7 +218,6 @@ class RepoService {
         console.error(`❌ Failed to process repo: ${repo.name}`, err);
       }
     }
-
     return insertedRepos;
   }
 }
