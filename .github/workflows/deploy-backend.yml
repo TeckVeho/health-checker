@@ -1,7 +1,7 @@
 name: Deploy Backend on backend/src Change (develop branch)
 on:
   push:
-    branches: [develop]
+    branches: [production]
     paths:
       - 'backend/src/**'
   workflow_dispatch:
