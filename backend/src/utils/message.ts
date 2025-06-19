@@ -11,6 +11,7 @@ const messages = {
     FILE_UPLOAD_SUCCESS: 'File "{0}" has been uploaded successfully.',
     CHECK_SUCCESS: 'Check completed successfully.',
     FETCH_SUCCESS: 'Fetch completed successfully.',
+    REVIEW_SUCCESS: 'Review completed successfully.',
   },
   ERROR: {
     CREATE_ERROR: 'Failed to create {0}.',
