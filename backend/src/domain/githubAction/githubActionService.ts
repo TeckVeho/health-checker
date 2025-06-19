@@ -29,7 +29,7 @@ export class GithubActionService {
       pushCheck(false, 'AI review skipped due to insufficient PR body');
     } else if (prBody.length + diffs.length > 20000) {
       console.log(`[DEBUG] Total patch size: ${diffs.length} chars`);
-      pushCheck(false, 'Bodysize + Diff size is acceptable for AI review');
+      pushCheck(false, 'Body size + Diff size is acceptable for AI review');
     } else {
       const { type, prBodyResult, prBodyReason, diffResult, diffReason } = await PRCheck.runUnifiedLLMReview(pr, diffs);
 
