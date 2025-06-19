@@ -10,22 +10,7 @@ export class PRCheck {
     return !body || body.trim().length === 0;
   }
   static hasAILogUrl(body: string): boolean {
-    const aiServiceDomains = [
-      'chatgpt.com',
-      'openai.com',
-      'claude.ai',
-      'bard.google.com',
-      'gemini.google.com',
-      'huggingface.co',
-      'poe.com',
-      'perplexity.ai',
-      'deepseek.com',
-      '58llm',
-      'dodoai',
-      'llm.dev',
-      'chatanywhere.com',
-      'openrouter.ai',
-    ];
+    const aiServiceDomains = ['chatgpt.com', 'openai.com', 'claude.ai', 'bard.google.com', 'gemini.google.com', 'huggingface.co', 'poe.com', 'perplexity.ai', 'deepseek.com', '58llm', 'dodoai', 'llm.dev', 'chatanywhere.com', 'openrouter.ai'];
     return aiServiceDomains.some((domain) => {
       const regex = new RegExp(`https://[^\\s)]*${domain}[^\\s)]*`, 'i');
       return regex.test(body);
@@ -43,10 +28,19 @@ export class PRCheck {
   static hasTestEvidence(body: string): boolean {
     const testLogRegex = /\b(yarn|npm|php\s+artisan)\b.*test/i;
     const looseTestKeywordRegex = /\b(yarn|npm|php\s+artisan)\b/i;
+
     const screenshotRegex = /!\[.*\]\(.*\.(png|jpg|jpeg|gif|mp4)\)/i;
+    const githubImageRegex = /https:\/\/github\.com\/user-attachments\/assets\/[^\s)]+/i;
+
     const githubActionsRegex = /https:\/\/github\.com\/.*\/runs\//i;
 
-    return testLogRegex.test(body) || screenshotRegex.test(body) || githubActionsRegex.test(body) || looseTestKeywordRegex.test(body);
+    return (
+      testLogRegex.test(body) ||
+      looseTestKeywordRegex.test(body) ||
+      screenshotRegex.test(body) ||
+      githubImageRegex.test(body) ||
+      githubActionsRegex.test(body)
+    );
   }
 
   static hasAIReviewComment(comments: string[]): boolean {
