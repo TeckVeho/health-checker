@@ -4,18 +4,6 @@ This guide describes how to set up the local development environment for the pro
 
 ---
 
-## Project Structure
-
-```
-project-root/
-├── backend/        # Express.js app
-├── frontend/       # Nuxt 3 + Vue
-├── docker-compose.yml  # MySQL & phpMyAdmin services
-├── .env.localsample    # Sample env file for local setup
-└── docs/           # Documentation directory (this file)
-```
----
-
 ## Step-by-Step Setup
 
 ### 1. Clone the Repository
@@ -53,6 +41,20 @@ GITHUB_LOCAL_WORKSPACE="C:/Users/yourname/Documents/github-workspace"
 > ⚠️ **Important**: `GITHUB_LOCAL_WORKSPACE` should point to an **empty directory on your local machine**.
 > This is where cloned GitHub repositories will be copied to.
 > If the directory already contains files, they might be overwritten during sync.
+
+Please generate the `GITHUB_API_KEY` yourself by following these steps:
+1. Go to [https://github.com/settings/tokens](https://github.com/settings/tokens)
+2. Click **“Generate new token”**
+3. Select **“Generate new personal access token (classic)”**
+4. Under **“Select scopes”**, check all permissions under:
+
+   * `repo`
+   * `project`
+5. Scroll down and click **“Generate token”**
+6. Copy the token shown — this will be your `GITHUB_API_KEY`
+As for the `OPENAI_API_KEY`, you can leave it empty for now. We’ll issue one later.
+
+
 
 ### 3. Start MySQL & phpMyAdmin via Docker Compose
 
