@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import repoRouter from './domain/repo/repoRouter';
 import alertRouter from './domain/alert/alertRouter';
+import githubActionRouter from './domain/githubAction/githubActionRouter';
 
 const router = Router();
 
@@ -9,5 +10,5 @@ router.get('/', (req, res) => {
 });
 router.use('/repos', repoRouter);
 router.use('/alerts', alertRouter);
-
+router.use('/github-action', githubActionRouter);
 export default router;
