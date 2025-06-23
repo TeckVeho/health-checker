@@ -27,7 +27,7 @@ export class GithubActionService {
 
     if (!hasBody) {
       pushCheck(false, 'AI review skipped due to insufficient PR body');
-    } else if (prBody.length + diffs.length > 20000) {
+    } else if (prBody.length + diffs.length > 100*1000) {
       console.log(`[DEBUG] Total patch size: ${diffs.length} chars`);
       pushCheck(false, 'Body size + Diff size is acceptable for AI review');
     } else {

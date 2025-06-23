@@ -1,0 +1,26 @@
+name: PR Review Trigger
+
+on:
+  pull_request:
+    types: [opened, synchronize, edited]
+
+jobs:
+  call-review-api:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Extract owner and repo
+        id: extract
+        run: |
+          OWNER=$(echo "${GITHUB_REPOSITORY}" | cut -d'/' -f1)
+          REPO=$(echo "${GITHUB_REPOSITORY}" | cut -d'/' -f2)
+          echo "owner=$OWNER" >> $GITHUB_OUTPUT
+          echo "repo=$REPO" >> $GITHUB_OUTPUT
+
+      - name: Call PR Review API with curl
+        run: |
+          AUTH=$(echo -n "${{ secrets.HEALTHCHECK_CREDENTIALS }}" | base64)
+          curl -X POST "https://repocheck.vw-dev.com/api/github-action/prreview" \
+            -H "Authorization: Basic $AUTH" \
+            -H "Content-Type: application/json" \
+            -d "{\"owner\":\"${{ steps.extract.outputs.owner }}\",\"repo\":\"${{ steps.extract.outputs.repo }}\",\"pullNumber\":${{ github.event.pull_request.number }}}"
