@@ -1,10 +1,13 @@
 // src/features/repo/repoService.ts
 
 import Repo from './repoModel';
-import { UniqueConstraintError } from 'sequelize';
+import {Op, UniqueConstraintError} from 'sequelize';
 import getMessage from '../../utils/message';
 import { Octokit } from '@octokit/rest';
 import { InferAttributes } from 'sequelize';
+import { graphql } from '@octokit/graphql';
+import CommonUtils from '../../utils/CommonUtils'
+
 
 const githubToken = process.env.GITHUB_API_KEY;
 if (!githubToken) throw new Error('GITHUB_API_KEY is required');
@@ -60,7 +63,7 @@ class RepoService {
     });
   }
 
-  static async createRepo(repoData: { name: string; owner: string; description?: string; topics?: string[]; isPrivate?: boolean }): Promise<number> {
+  static async createRepo(repoData: { name: string; owner: string; description?: string; topics?: string[]; isPrivate?: boolean,sp?:number }): Promise<number> {
     try {
       const repo = await Repo.create(repoData);
       return repo.id!;
@@ -220,6 +223,235 @@ class RepoService {
     }
     return insertedRepos;
   }
+  static async syncReposFromGithubWithProjectId(params: {
+    owner: string;
+    projectId?: number; // projectNumber (not project_id)
+  }) {
+    const { owner, projectId: projectNumber } = params;
+    const graphqlWithAuth = graphql.defaults({
+      headers: { authorization: `token ${githubToken}` },
+    });
+
+    const insertedRepos: RepoData[] = [];
+    if (projectNumber){
+      return await this.syncReposFromGithubFollowProjectNumber(owner,projectNumber,graphqlWithAuth,insertedRepos);
+    }else {
+      return await this.syncReposFromGithubFollowAllProjectNumber(owner,graphqlWithAuth,insertedRepos);
+    }
+
+  }
+  private static  async syncReposFromGithubFollowProjectNumber(  owner: string, projectNumber: number, graphqlWithAuth: any, insertedRepos: RepoData[]){
+    const queryGraphql = CommonUtils.getGraphQLQuery('project_number');
+    const result = await graphqlWithAuth(queryGraphql, {
+      org: owner,
+      number: projectNumber,
+    }) as {
+      organization: {
+        projectV2: {
+          items: {
+            nodes: any[];
+          };
+        };
+      };
+    };
+    const items = result.organization.projectV2.items?.nodes ?? [];
+    if (items.length === 0) {
+      console.warn(`⚠️ No items found in project ${projectNumber} of ${owner}`);
+      return insertedRepos;
+    }
+    const lastContent = items.find(i => i.content?.__typename === 'Issue')?.content?.repository;
+    const existingRepo = await Repo.findOne({
+      where: {
+        name: lastContent.name,
+        owner: lastContent.owner.login,
+      },
+    });
+    const repoData = {
+      name: lastContent.name,
+      owner: lastContent.owner.login,
+      description: lastContent.description ?? '',
+      topics: lastContent.repositoryTopics?.nodes?.map((n: { topic?: { name?: string } }) => n.topic?.name).filter(Boolean) ?? [],
+      isPrivate: lastContent.isPrivate,
+      sp: projectNumber,
+    };
+
+    if (existingRepo) {
+      await this.updateRepo(existingRepo.id, repoData);
+    } else {
+      await this.createRepo(repoData);
+    }
+
+    return insertedRepos;
+  }
+  private static async syncReposFromGithubFollowAllProjectNumber(
+      owner: string,
+      graphqlWithAuth: any,
+      insertedRepos: RepoData[],
+  ) {
+    const query = CommonUtils.getGraphQLQuery('all_project_number');
+    let projectNodes: any[] = [];
+
+    try {
+      const allProjectsRes = await graphqlWithAuth(query, { org: owner });
+      projectNodes = allProjectsRes.organization.projectsV2.nodes;
+    } catch (err) {
+      console.warn(`❌ Failed to fetch all projects for ${owner}:`, err);
+      return insertedRepos;
+    }
+
+    const result: {
+      projectNumber: number;
+      projectTitle: string;
+      repositoryName: string;
+    }[] = [];
+
+    for (const project of projectNodes) {
+      if (!project.id) continue;
+
+      let allItems: any[] = [];
+      try {
+        allItems = await this.fetchAllItemsForProject(project.id, graphqlWithAuth);
+      } catch (err) {
+        console.warn(`❌ Failed to fetch items for project ${project.number}:`, err);
+        continue;
+      }
+
+      const issueItems = this.extractIssueItems(allItems);
+      const repoMap = this.buildRepoMapFromIssues(issueItems, owner);
+
+      try {
+        await this.saveLastIssueRepo(issueItems, project.number);
+      } catch (err) {
+        console.warn(`❌ Failed to save last issue repo in project ${project.number}:`, err);
+      }
+
+      for (const [repoName, repoInfo] of repoMap.entries()) {
+        result.push({
+          projectNumber: project.number,
+          projectTitle: project.title,
+          repositoryName: repoName,
+        });
+
+        try {
+          await this.saveOrUpdateRepo({
+            ...repoInfo,
+            sp: project.number,
+          });
+        } catch (err) {
+          console.warn(`❌ Failed to saveOrUpdate repo ${repoName} in project ${project.number}:`, err);
+        }
+      }
+    }
+
+    return insertedRepos;
+  }
+
+  private static async fetchAllItemsForProject(
+      projectId: string,
+      graphqlWithAuth: any
+  ): Promise<any[]> {
+    const query = CommonUtils.getGraphQLQuery('pagination_project_number');
+    let allItems: any[] = [];
+    let afterCursor: string | null = null;
+    let hasNextPage = true;
+
+    try {
+      while (hasNextPage) {
+        const response: any = await graphqlWithAuth(query, {
+          projectId,
+          after: afterCursor,
+        });
+
+        const items = response?.node?.items?.nodes || [];
+        allItems.push(...items);
+
+        hasNextPage = response.node.items.pageInfo.hasNextPage;
+        afterCursor = response.node.items.pageInfo.endCursor;
+      }
+    } catch (err) {
+      console.warn(`❌ Error in fetchAllItemsForProject(${projectId}):`, err);
+      throw err; // propagate để hàm gọi có thể xử lý
+    }
+
+    return allItems;
+  }
+
+  private static extractIssueItems(allItems: any[]): any[] {
+    return allItems.filter(
+        item =>
+            item.content?.__typename === 'Issue' &&
+            item.content.repository?.name
+    );
+  }
+
+  private static buildRepoMapFromIssues(issueItems: any[], defaultOwner: string): Map<string, any> {
+    const repoMap = new Map<string, any>();
+
+    for (const item of issueItems) {
+      const repo = item.content.repository;
+      if (!repo?.name) continue;
+
+      const repoKey = repo.name;
+      if (!repoMap.has(repoKey)) {
+        repoMap.set(repoKey, {
+          name: repo.name,
+          owner: repo.owner?.login ?? defaultOwner,
+          description: repo.description ?? '',
+          topics:
+              repo.repositoryTopics?.nodes
+                  ?.map((n: { topic?: { name?: string } }) => n.topic?.name)
+                  .filter(Boolean) ?? [],
+          isPrivate: repo.isPrivate ?? false,
+        });
+      }
+    }
+
+    return repoMap;
+  }
+
+  private static async saveLastIssueRepo(issueItems: any[], projectNumber: number) {
+    const lastRepo = issueItems.at(-1)?.content?.repository;
+    if (!lastRepo?.name || !lastRepo.owner?.login) return;
+
+    const repoData = {
+      name: lastRepo.name,
+      owner: lastRepo.owner.login,
+      description: lastRepo.description ?? '',
+      topics: lastRepo.repositoryTopics?.nodes
+          ?.map((n: { topic?: { name?: string } }) => n.topic?.name)
+          .filter(Boolean) ?? [],
+      isPrivate: lastRepo.isPrivate,
+      sp: projectNumber,
+    };
+
+    try {
+      await this.saveOrUpdateRepo(repoData as any);
+    } catch (err) {
+      console.warn(`❌ Failed in saveLastIssueRepo (project ${projectNumber}, repo ${repoData.name}):`, err);
+      throw err;
+    }
+  }
+
+  private static async saveOrUpdateRepo(repoData: RepoData & { sp: number }) {
+    try {
+      const existingRepo = await Repo.findOne({
+        where: {
+          name: repoData.name,
+          owner: repoData.owner,
+        },
+      });
+
+      if (existingRepo) {
+        await this.updateRepo(existingRepo.id, repoData);
+      } else {
+        await this.createRepo(repoData);
+      }
+    } catch (err) {
+      console.warn(`❌ Failed in saveOrUpdateRepo (repo: ${repoData.name}):`, err);
+      throw err;
+    }
+  }
+
 }
 
 export default RepoService;

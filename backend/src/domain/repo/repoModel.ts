@@ -16,6 +16,10 @@ export const repoAttributes = {
       notEmpty: { msg: 'Invalid or missing name' },
     },
   },
+  sp: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
   owner: {
     type: DataTypes.STRING(255),
     allowNull: false,
@@ -80,6 +84,7 @@ export const repoAttributes = {
 class Repo extends Model {
   public id!: number;
   public name!: string;
+  public sp?: number;
   public owner!: string;
   public description?: string;
   public topics?: string[];
