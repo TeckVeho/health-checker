@@ -18,9 +18,12 @@ export class PRCheck {
   }
   static isTemplateOnly(body: string): boolean {
     const normalized = body.trim().toLowerCase();
-    const section = '## description';
-    const regex = new RegExp(`${section}\s*[-\n]*\s*$`, 'i');
-    const isDescriptionUntouched = regex.test(normalized);
+    const descriptionSection = normalized.match(/##\s*description\s*([\s\S]*?)(##|$)/i);
+    const descriptionContent = descriptionSection?.[1]?.trim() ?? '';
+    if (descriptionContent.length >= 200) {
+      return false;
+    }
+    const isDescriptionUntouched = descriptionContent === '' || descriptionContent.toLowerCase().includes('rewrite the summary of the tasks');
     const knownPlaceholderPhrases = ['rewrite the summary of the tasks performed for this issue and its goal', 'record the notes and requirements related to the order of merging', 'provide the logs of dodoai during the development process', 'include screenshots showing changes or fixes'];
     const containsPlaceholder = knownPlaceholderPhrases.some((phrase) => normalized.includes(phrase.toLowerCase()));
     return isDescriptionUntouched || containsPlaceholder;
@@ -34,13 +37,7 @@ export class PRCheck {
 
     const githubActionsRegex = /https:\/\/github\.com\/.*\/runs\//i;
 
-    return (
-      testLogRegex.test(body) ||
-      looseTestKeywordRegex.test(body) ||
-      screenshotRegex.test(body) ||
-      githubImageRegex.test(body) ||
-      githubActionsRegex.test(body)
-    );
+    return testLogRegex.test(body) || looseTestKeywordRegex.test(body) || screenshotRegex.test(body) || githubImageRegex.test(body) || githubActionsRegex.test(body);
   }
 
   static hasAIReviewComment(comments: string[]): boolean {
