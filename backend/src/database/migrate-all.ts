@@ -33,7 +33,7 @@ function importAllModels(dir: string): void {
      * - スキーマ差分  : sync({ alter: true })  ※本番環境は要バックアップ
      * - 全再生成      : sync({ force: true })  ※開発用
      */
-    await sequelize.sync({ force: true });
+    await sequelize.sync();
     console.log('All tables are in sync ✨');
     process.exit(0);
   } catch (error) {
