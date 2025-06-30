@@ -1,13 +1,10 @@
 // src/features/repo/repoService.ts
 
 import Repo from './repoModel';
-import {Op, UniqueConstraintError} from 'sequelize';
+import { UniqueConstraintError } from 'sequelize';
 import getMessage from '../../utils/message';
 import { Octokit } from '@octokit/rest';
 import { InferAttributes } from 'sequelize';
-import { graphql } from '@octokit/graphql';
-import CommonUtils from '../../utils/CommonUtils'
-
 
 const githubToken = process.env.GITHUB_API_KEY;
 if (!githubToken) throw new Error('GITHUB_API_KEY is required');
@@ -63,7 +60,7 @@ class RepoService {
     });
   }
 
-  static async createRepo(repoData: { name: string; owner: string; description?: string; topics?: string[]; isPrivate?: boolean,sp?:number }): Promise<number> {
+  static async createRepo(repoData: { name: string; owner: string; description?: string; topics?: string[]; isPrivate?: boolean }): Promise<number> {
     try {
       const repo = await Repo.create(repoData);
       return repo.id!;
@@ -76,14 +73,14 @@ class RepoService {
   }
 
   static async updateRepo(
-    id: number,
-    repoData: Partial<{
-      name: string;
-      owner: string;
-      description?: string;
-      topics?: string[];
-      isPrivate?: boolean;
-    }>
+      id: number,
+      repoData: Partial<{
+        name: string;
+        owner: string;
+        description?: string;
+        topics?: string[];
+        isPrivate?: boolean;
+      }>
   ): Promise<boolean> {
     try {
       const [affectedRows] = await Repo.update(repoData, {
