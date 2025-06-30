@@ -49,49 +49,54 @@ export class ProjectService {
   }
 
   static async getAllProjectsV2(owner: string): Promise<any[]> {
-    const query = `
-      query GetProjectsV2($owner: String!) {
-        organization(login: $owner) {
-          projectsV2(first: 100) {
-            nodes {
-              id
-              number
-              title
-              fields(first: 100) {
-                nodes {
-                  ... on ProjectV2Field {
-                    id
-                    name
-                    dataType
+    const allProjects: any[] = [];
+    let hasNextPage = true;
+    let cursor: string | null = null;
+
+    while (hasNextPage) {
+      const query = `
+        query GetProjectsV2($owner: String!, $after: String) {
+          organization(login: $owner) {
+            projectsV2(first: 100, after: $after) {
+              pageInfo {
+                hasNextPage
+                endCursor
+              }
+              nodes {
+                id
+                number
+                title
+                fields(first: 100) {
+                  nodes {
+                    ... on ProjectV2Field {
+                      id
+                      name
+                      dataType
+                    }
                   }
                 }
               }
             }
           }
         }
-        user(login: $owner) {
-          projectsV2(first: 100) {
-            nodes {
-              id
-              number
-              title
-              fields(first: 100) {
-                nodes {
-                  ... on ProjectV2Field {
-                    id
-                    name
-                    dataType
-                  }
-                }
-              }
-            }
-          }
-        }
+      `;
+
+      const variables: any = { owner };
+      if (cursor) {
+        variables.after = cursor;
       }
-    `;
-    const data = await graphqlWithAuth(query, { owner }) as any;
-    const projects = data.organization?.projectsV2?.nodes || data.user?.projectsV2?.nodes || [];
-    return projects;
+
+      const data = await graphqlWithAuth(query, variables) as any;
+      const projects = data.organization?.projectsV2?.nodes || [];
+      
+      allProjects.push(...projects);
+      
+      const pageInfo = data.organization?.projectsV2?.pageInfo;
+      hasNextPage = pageInfo?.hasNextPage || false;
+      cursor = pageInfo?.endCursor || null;
+    }
+
+    return allProjects;
   }
 
   static async createProjectV2Field(projectId: string, fieldName: string, dataType: string): Promise<any> {
