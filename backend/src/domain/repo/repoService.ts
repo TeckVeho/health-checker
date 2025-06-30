@@ -73,14 +73,14 @@ class RepoService {
   }
 
   static async updateRepo(
-      id: number,
-      repoData: Partial<{
-        name: string;
-        owner: string;
-        description?: string;
-        topics?: string[];
-        isPrivate?: boolean;
-      }>
+    id: number,
+    repoData: Partial<{
+      name: string;
+      owner: string;
+      description?: string;
+      topics?: string[];
+      isPrivate?: boolean;
+    }>
   ): Promise<boolean> {
     try {
       const [affectedRows] = await Repo.update(repoData, {
