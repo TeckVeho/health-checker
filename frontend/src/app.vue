@@ -8,3 +8,7 @@
 <script setup>
 import Toast from 'primevue/toast'
 </script>
+
+<style>
+@import '~/assets/css/global.css';
+</style>

@@ -28,7 +28,13 @@ export function useAlerts(owner: Ref<string | null>, repo: Ref<string | null>) {
     alerts.value.filter((a) => !a.isIgnored && !a.systemResolved)
   )
 
+  const resolvedAlerts = computed(() =>
+    alerts.value.filter((a) => !a.isIgnored && a.systemResolved)
+  )
+
   const hasAlerts = computed(() => visibleAlerts.value.length > 0)
+
+  const hasResolvedAlerts = computed(() => resolvedAlerts.value.length > 0)
 
   const alertCounts = computed(() => {
     const counts = { high: 0, middle: 0, low: 0 }
@@ -157,7 +163,9 @@ export function useAlerts(owner: Ref<string | null>, repo: Ref<string | null>) {
     
     // Computed
     visibleAlerts,
+    resolvedAlerts,
     hasAlerts,
+    hasResolvedAlerts,
     alertCounts,
     
     // Utility functions
