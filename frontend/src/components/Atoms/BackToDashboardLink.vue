@@ -17,7 +17,6 @@
 </template>
 
 <script setup>
-// log Review URL: https://58llm.link/main/restore/3099ceb9-1361-4a05-8659-c71b780dd431
 defineProps({
     to: {
         type: String,

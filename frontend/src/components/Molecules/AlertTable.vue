@@ -92,9 +92,12 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
+import { getFileUrlLegacy } from '~/utils/github'
+import { useAlerts } from '~/composables/useAlerts'
 
 const props = defineProps({
   alerts: {
@@ -144,12 +147,18 @@ const props = defineProps({
   },
 })
 
+// Use the shared useAlerts composable for formatDate
+const { formatDate } = useAlerts(ref(null), ref(null))
+
 // Utility functions
+const severityColorMap = {
+  high: 'danger',
+  middle: 'warning',
+  low: 'info'
+}
+
 const getSeverityColor = (level) => {
-  if (level === 'high') return 'danger'
-  if (level === 'middle') return 'warning'
-  if (level === 'low') return 'info'
-  return 'success'
+  return severityColorMap[level] || 'success'
 }
 
 const getCheckTypeLabel = (checkType) => {
@@ -157,27 +166,7 @@ const getCheckTypeLabel = (checkType) => {
 }
 
 const getFileUrl = (filePath, lineNumber, branch) => {
-  if (!props.owner || !props.repo) {
-    return '#'
-  }
-  const safeBranch = branch || 'develop'
-  return `https://github.com/${props.owner}/${props.repo}/blob/${safeBranch}/${filePath}#L${lineNumber}`
-}
-
-const formatDate = (dateStr) => {
-  if (!dateStr) return '-'
-  
-  try {
-    const d = new Date(dateStr)
-    if (isNaN(d.getTime())) return '-'
-    
-    const pad = (n) => n.toString().padStart(2, '0')
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
-      d.getHours()
-    )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
-  } catch (error) {
-    return '-'
-  }
+  return getFileUrlLegacy(props.owner, props.repo, filePath, lineNumber, branch)
 }
 
 const formatNotes = (notes) => {

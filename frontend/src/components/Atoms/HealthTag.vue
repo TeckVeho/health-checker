@@ -10,7 +10,6 @@
 </template>
 
 <script setup>
-// Log Review URL: https://58llm.link/main/restore/11dd4eae-668c-40bf-bd9f-0f1b6dd1f8c7
 import Tag from 'primevue/tag'
 import { computed } from 'vue'
 

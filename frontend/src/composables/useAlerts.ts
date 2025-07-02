@@ -3,11 +3,13 @@ import { useApi } from './useApi'
 import { useApiConfig } from './useApiConfig'
 import { useCustomToast } from './useCustomToast'
 import { apiService } from '~/utils/api'
+import { getFileUrl } from '~/utils/github'
+import { logError, getErrorMessage } from '~/utils/errors'
 import type { Alert, AlertsResponse } from '@/types/alerts'
 import { checkTypeLabels } from '@/types/alerts'
+import moment from 'moment'
 
 // Configuration constants
-const DEFAULT_BRANCH = 'develop'
 const VALID_SEVERITY_LEVELS = ['high', 'middle', 'low'] as const
 type SeverityLevel = typeof VALID_SEVERITY_LEVELS[number]
 
@@ -63,12 +65,14 @@ export function useAlerts(owner: Ref<string | null>, repo: Ref<string | null>) {
 
   // Utility functions
   const formatDate = (dateStr: string): string => {
-    const d = new Date(dateStr)
-    const pad = (n: number) => n.toString().padStart(2, '0')
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
-      d.getHours()
-    )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+    return moment(dateStr).format('YYYY-MM-DD HH:mm:ss')
   }
+
+  const severityMap = {
+    high: 'danger',
+    middle: 'warning',
+    low: 'info'
+  } as const
 
   const getSeverity = (level: string): string => {
     if (!validateLevel(level)) {
@@ -76,12 +80,7 @@ export function useAlerts(owner: Ref<string | null>, repo: Ref<string | null>) {
       return 'info'
     }
     
-    switch (level) {
-      case 'high': return 'danger'
-      case 'middle': return 'warning'
-      case 'low': return 'info'
-      default: return 'info'
-    }
+    return severityMap[level as keyof typeof severityMap] || 'info'
   }
 
   const getGitHubUrl = (filePath: string, lineNumber: number, branch?: string): string => {
@@ -89,15 +88,13 @@ export function useAlerts(owner: Ref<string | null>, repo: Ref<string | null>) {
       return '#'
     }
 
-    // Validate parameters
-    if (!filePath || !lineNumber || lineNumber < 1) {
-      console.warn('Invalid GitHub URL parameters:', { filePath, lineNumber, branch })
-      return '#'
-    }
-
-    const safeBranch = branch || DEFAULT_BRANCH
-    
-    return `https://github.com/${owner.value}/${repo.value}/blob/${safeBranch}/${filePath}#L${lineNumber}`
+    return getFileUrl({
+      owner: owner.value!,
+      repo: repo.value!,
+      filePath,
+      lineNumber,
+      branch
+    })
   }
 
   // Unified data fetching method
@@ -136,8 +133,8 @@ export function useAlerts(owner: Ref<string | null>, repo: Ref<string | null>) {
         const response = await fetchData()
         alerts.value = response.alerts || []
       } catch (err) {
-        console.error('Failed to fetch alerts:', err)
-        const errorMsg = err instanceof Error ? err.message : 'Failed to fetch alerts'
+        logError(err, 'fetchAlerts')
+        const errorMsg = getErrorMessage(err) || 'Failed to fetch alerts'
         error.value = errorMsg
         toast.error('Error Loading Alerts', errorMsg)
       } finally {
@@ -184,4 +181,3 @@ export function useAlerts(owner: Ref<string | null>, repo: Ref<string | null>) {
     clearAlerts,
   }
 }
-// Log Review URL: https://58llm.link/main/restore/1e03a522-8f49-4958-822a-6ef4232c5feb

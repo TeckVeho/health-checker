@@ -1,7 +1,13 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { apiService, type Repo, type AlertSummary } from '~/utils/api'
 import { useApi } from './useApi'
 import { useApiConfig } from './useApiConfig'
+
+const columns = [
+  { label: 'High', key: 'high', tagSeverity: 'danger' },
+  { label: 'Middle', key: 'middle', tagSeverity: 'warning' },
+  { label: 'Low', key: 'low', tagSeverity: 'info' },
+]
 
 export function useRepoHealth() {
   const { loading, error, callApi } = useApi()
@@ -10,15 +16,23 @@ export function useRepoHealth() {
   // Initialize API service with correct base URL
   apiService.init(apiBaseUrl)
 
-  const columns = [
-    { label: 'High', key: 'high', tagSeverity: 'danger' },
-    { label: 'Middle', key: 'middle', tagSeverity: 'warning' },
-    { label: 'Low', key: 'low', tagSeverity: 'info' },
-  ]
-
   const repos = ref<Repo[]>([])
   const health = ref<AlertSummary>({})
   const showOnlyActive = ref(true)
+  
+  // Cache the threshold date to avoid redundant computations
+  const thresholdDate = ref<Date | null>(null)
+  
+  // Update threshold when showOnlyActive changes
+  const updateThreshold = () => {
+    if (showOnlyActive.value) {
+      const threshold = new Date()
+      threshold.setDate(threshold.getDate() - 14)
+      thresholdDate.value = threshold
+    } else {
+      thresholdDate.value = null
+    }
+  }
 
   const tableData = computed(() =>
     repos.value.map((repo) => {
@@ -37,15 +51,20 @@ export function useRepoHealth() {
     })
   )
 
+  // Watch for changes in showOnlyActive to update threshold
+  watch(showOnlyActive, updateThreshold, { immediate: true })
+
   const filteredTableData = computed(() => {
     if (!showOnlyActive.value) return tableData.value
 
-    const threshold = new Date()
-    threshold.setDate(threshold.getDate() - 14)
+    // Use cached threshold date
+    if (!thresholdDate.value) {
+      updateThreshold()
+    }
 
     return tableData.value.filter((repo) => {
       const lastActivity = new Date(repo.lastActivityAt)
-      return !isNaN(lastActivity.getTime()) && lastActivity >= threshold
+      return !isNaN(lastActivity.getTime()) && lastActivity >= thresholdDate.value!
     })
   })
 
@@ -85,4 +104,3 @@ export function useRepoHealth() {
     fetchData,
   }
 }
-// Log Review URL: https://58llm.link/main/restore/79c49e3c-72f3-4857-8a63-650954ab622f

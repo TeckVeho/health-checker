@@ -10,7 +10,6 @@
     </div>
 </template>
 <script setup>
-// Log Review URL: https://58llm.link/main/restore/d4bf6a3e-4448-47f3-bce2-8ce1fdf5e459
 defineProps({
     text: {
         type: String,

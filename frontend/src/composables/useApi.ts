@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { apiService } from '~/utils/api'
+import { getErrorMessage, logError } from '~/utils/errors'
 
 export function useApi() {
   const loading = ref(false)
@@ -24,8 +25,8 @@ export function useApi() {
       const result = await apiCall()
       return result
     } catch (err) {
-      console.error('API call failed:', err)
-      error.value = err instanceof Error ? err.message : errorMessage
+      logError(err, 'callApi')
+      error.value = getErrorMessage(err) || errorMessage
       return null
     } finally {
       if (showLoading) {
