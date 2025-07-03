@@ -11,7 +11,6 @@
 </template>
 
 <script setup>
-// Log Review URL: https://58llm.link/main/restore/1c1fd98b-d763-4eff-aebc-5f05e840c267
 import Button from 'primevue/button'
 
 // Props with validation

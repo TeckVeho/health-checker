@@ -6,7 +6,7 @@
     {{ title }}
     <a 
       v-if="owner && repo"
-      :href="`https://github.com/${owner}/${repo}`"
+      :href="getRepositoryUrl(owner, repo)"
       class="text-white underline hover:text-blue-400 transition-colors" 
       target="_blank"
       rel="noopener noreferrer"
@@ -21,8 +21,9 @@
 </template>
 
 <script setup>
-// Log Review URL: https://58llm.link/main/restore/162adc4a-18cf-4048-9380-500d62c44b2c
-defineProps({
+import { getRepositoryUrl } from '~/utils/github'
+
+const props = defineProps({
   owner: {
     type: String,
     required: false,

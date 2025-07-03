@@ -19,7 +19,6 @@
 </template>
 
 <script setup>
-// Log Review URL: https://58llm.link/main/restore/79c08854-7e90-4653-acce-1a5719e0bd7e
 import Card from 'primevue/card'
 import HealthButton from '@/components/Atoms/HealthButton.vue'
 

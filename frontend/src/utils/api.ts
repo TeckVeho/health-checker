@@ -1,6 +1,6 @@
 import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
-import { useApiConfig } from '../composables/useApiConfig'
+import { createAppError, errorMessages, logError, type ErrorContext } from './errors'
 
 // Types
 export interface ApiResponse<T = any> {
@@ -45,14 +45,16 @@ export interface RequestOptions {
 class ApiClient {
   private client: AxiosInstance | null = null
   private config: ApiConfig
+  private apiBaseUrl?: string
 
-  constructor(config: Partial<ApiConfig> = {}) {
+  constructor(config: Partial<ApiConfig> = {}, apiBaseUrl?: string) {
     this.config = {
       baseURL: config.baseURL || 'http://localhost:3000',
       timeout: config.timeout || 10000,
       retryAttempts: config.retryAttempts || 3,
       retryDelay: config.retryDelay || 1000,
     }
+    this.apiBaseUrl = apiBaseUrl
   }
 
   private createClient(baseURL: string): AxiosInstance {
@@ -104,12 +106,12 @@ class ApiClient {
 
         // Handle common errors
         if (error.response?.status === 401) {
-          console.error('Unauthorized access - please login again')
+          logError(createAppError.auth(errorMessages.AUTH.UNAUTHORIZED), 'Response Interceptor')
           // Could trigger logout here
         } else if (error.response?.status === 500) {
-          console.error('Server error occurred - please try again later')
-        } else if (error.response?.status === 404) {
-          console.error('Resource not found')
+                      logError(createAppError.server('Server error occurred - please try again later'), 'Response Interceptor')
+          } else if (error.response?.status === 404) {
+            logError(createAppError.notFound('Resource not found'), 'Response Interceptor')
         }
         
         return Promise.reject(error)
@@ -120,9 +122,8 @@ class ApiClient {
   }
 
   private getClient(): AxiosInstance {
-    const { apiBaseUrl } = useApiConfig()
     if (!this.client) {
-      const baseURL = apiBaseUrl || this.config.baseURL
+      const baseURL = this.apiBaseUrl || this.config.baseURL
       this.client = this.createClient(baseURL)
     }
     return this.client
@@ -132,6 +133,12 @@ class ApiClient {
   setBaseURL(baseURL: string) {
     this.config.baseURL = baseURL
     this.client = this.createClient(baseURL)
+  }
+
+  // Method to set API base URL
+  setApiBaseUrl(apiBaseUrl: string) {
+    this.apiBaseUrl = apiBaseUrl
+    this.client = null // Reset client to use new base URL
   }
 
   // Generic request method
@@ -163,6 +170,7 @@ class ApiClient {
 // API Service Class
 export class ApiService {
   private client: ApiClient
+  private apiBaseUrl?: string
 
   constructor(config?: Partial<ApiConfig>) {
     this.client = new ApiClient(config)
@@ -170,15 +178,16 @@ export class ApiService {
 
   // Method to initialize with runtime config
   init(baseURL?: string) {
+    this.apiBaseUrl = baseURL
     if (baseURL) {
-      this.client.setBaseURL(baseURL)
+      this.client.setApiBaseUrl(baseURL)
     }
   }
 
   // Validation helpers
   private validateLimit(limit: number): number {
     if (limit < 1 || limit > 1000) {
-      throw new Error('Limit must be between 1 and 1000')
+      throw createAppError.validation(errorMessages.VALIDATION.LIMIT_RANGE, { limit })
     }
     return limit
   }
@@ -186,7 +195,7 @@ export class ApiService {
   private validateSort(sort: string): string {
     const validSorts = ['last_activity_at', 'name', 'owner', 'created_at']
     if (!validSorts.includes(sort)) {
-      throw new Error(`Invalid sort parameter. Must be one of: ${validSorts.join(', ')}`)
+      throw createAppError.validation(errorMessages.VALIDATION.INVALID_SORT(validSorts), { sort, validSorts })
     }
     return sort
   }
@@ -202,8 +211,9 @@ export class ApiService {
       )
       return response.data.data || []
     } catch (error) {
-      console.error('Failed to fetch repos:', error)
-      throw new Error(`Failed to fetch repositories: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      logError(error, 'getRepos')
+      const context: ErrorContext = { operation: 'fetch repositories', limit, sort }
+      throw createAppError.api(errorMessages.API.FETCH_FAILED('repositories'), context)
     }
   }
 
@@ -211,14 +221,15 @@ export class ApiService {
   async getAlertSummary(repos: Array<{ owner: string; repo: string }>): Promise<AlertSummary> {
     try {
       if (!Array.isArray(repos) || repos.length === 0) {
-        throw new Error('Repos array must not be empty')
+        throw createAppError.validation(errorMessages.VALIDATION.EMPTY_ARRAY, { repos })
       }
       
       const response = await this.client.post<AlertSummary>('/api/alerts/summary', repos)
       return response.data
     } catch (error) {
-      console.error('Failed to fetch alert summary:', error)
-      throw new Error(`Failed to fetch alert summary: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      logError(error, 'getAlertSummary')
+      const context: ErrorContext = { operation: 'fetch alert summary', reposCount: repos.length }
+      throw createAppError.api(errorMessages.API.FETCH_FAILED('alert summary'), context)
     }
   }
 
@@ -238,8 +249,15 @@ export class ApiService {
       const response = await this.client.request<T>(config)
       return response.data
     } catch (error) {
-      console.error(`Failed to fetch data from ${url}:`, error)
-      throw new Error(`API request failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      logError(error, 'fetchData')
+      const { method = 'GET', timeout } = options || {}
+      const context: ErrorContext = { 
+        operation: 'fetch data', 
+        url, 
+        method, 
+        timeout: timeout || this.client['config'].timeout 
+      }
+      throw createAppError.api(errorMessages.API.REQUEST_FAILED('API'), context)
     }
   }
 }

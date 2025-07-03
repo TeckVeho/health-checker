@@ -53,7 +53,6 @@
 </template>
 
 <script setup>
-// Log Review URL: https://58llm.link/main/restore/dad7079b-f12d-44b4-a7d2-fa5227424e38
 import { RouterLink } from 'vue-router'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
