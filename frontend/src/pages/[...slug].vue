@@ -1,143 +1,145 @@
 <template>
-    <div class="p-6 space-y-6">
-        <h1 class="text-3xl font-bold text-primary">GitHub Health Checker</h1>
+  <div class="p-6 space-y-8">
+    <HealthTitle title="GitHub Health Checker" />
 
-        <NuxtLink to="/"
-            class="back-link group inline-flex items-center gap-3 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 active:scale-95 transition-transform duration-200 no-underline">
-            <i class="pi pi-angle-left text-lg group-hover:-translate-x-1 transition-transform duration-150" />
-            <span class="tracking-wide">Back to Dashboard</span>
-        </NuxtLink>
-        <h2 class="text-2xl font-semibold text-white">
-            Alerts for 
-            <a :href="`https://github.com/${owner}/${repo}`"
-                class="text-white underline hover:text-blue-400 transition-colors" target="_blank"
-                rel="noopener noreferrer">{{ owner }}/{{ repo }}
-            </a>
+    <BackToDashboardLink />
+
+    <RepoAlertTitle :owner="owner" :repo="repo" />
+
+    <LoadingText v-if="loading" text="Loading alerts..." aria-label="Loading alert data" />
+
+    <!-- Unresolved Alerts Section -->
+    <div v-else-if="hasAlerts" class="space-y-4">
+      <div class="p-4">
+        <h2 class="text-xl font-bold text-red-800">
+          Active Alerts ({{ visibleAlerts.length }})
         </h2>
-        <div v-if="loading">Loading alerts...</div>
-
-        <DataTable v-else :value="visibleAlerts" class="p-datatable-sm shadow-md border border-gray-200 rounded-md"
-            stripedRows responsiveLayout="scroll" sortMode="multiple">
-            <Column field="severity" header="Severity" sortable>
-                <template #body="slotProps">
-                    <Tag :value="slotProps.data.severity" :severity="getSeverity(slotProps.data.severity)" />
-                </template>
-            </Column>
-
-            <Column field="checkType" header="Type" sortable>
-                <template #body="slotProps">
-                    {{ checkTypeLabels[slotProps.data.checkType] || slotProps.data.checkType }}
-                </template>
-            </Column>
-
-            <Column field="title" header="Title" sortable />
-            <Column field="description" header="Description" />
-
-            <Column field="filePath" header="File (Line)">
-                <template #body="slotProps">
-                    <a v-if="slotProps.data.filePath && slotProps.data.lineNumber"
-                        :href="getGitHubUrl(slotProps.data.filePath, slotProps.data.lineNumber, slotProps.data.branch)"
-                        class="text-blue-600 underline hover:text-blue-800" target="_blank" rel="noopener noreferrer">
-                        {{ slotProps.data.filePath }}:{{ slotProps.data.lineNumber }}
-                    </a>
-                    <span v-else>-</span>
-                </template>
-            </Column>
-
-            <Column field="codeSnippet" header="Code">
-                <template #body="slotProps">
-                    <pre class="whitespace-pre-wrap text-sm text-gray-700">
-  {{ slotProps.data.codeSnippet }}
-            </pre>
-                </template>
-            </Column>
-            <Column field="note" header="Note">
-                <template #body="slotProps">
-                    <span class="text-sm text-gray-800 whitespace-pre-wrap"
-                        v-html="(slotProps.data.notes || '-').replace(/\n/g, '<br>')" />
-                </template>
-            </Column>
-            <Column field="lastDetectedAt" header="Last Detected" sortable>
-                <template #body="slotProps">
-                    {{ formatDate(slotProps.data.lastDetectedAt) }}
-                </template>
-            </Column>
-        </DataTable>
+        <p class="text-sm text-red-600 mt-1">Issues that require immediate attention</p>
+      </div>
+      
+      <AlertTable 
+        :alerts="visibleAlerts"
+        :checkTypeLabels="checkTypeLabels"
+        :owner="owner"
+        :repo="repo"
+        :loading="loading"
+        empty-message="No active alerts found for this repository."
+        table-type="active"
+        custom-class="shadow-lg"
+      />
     </div>
+
+    <!-- Resolved Alerts Section -->
+    <div v-if="!loading && hasResolvedAlerts" class="space-y-4">
+      <div class="p-4">
+        <h2 class="text-xl font-bold text-green-800">
+          Resolved Alerts ({{ resolvedAlerts.length }})
+        </h2>
+        <p class="text-sm text-green-600 mt-1">Issues that have been automatically resolved</p>
+      </div>
+      
+      <AlertTable 
+        :alerts="resolvedAlerts"
+        :checkTypeLabels="checkTypeLabels"
+        :owner="owner"
+        :repo="repo"
+        :loading="false"
+        empty-message="No resolved alerts found for this repository."
+        table-type="resolved"
+        custom-class="shadow-lg"
+      />
+    </div>
+
+    <!-- No Alerts Message -->
+    <div v-if="!loading && !hasAlerts && !hasResolvedAlerts" class="text-center py-12">
+      <div class="max-w-md mx-auto">
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No Alerts Found</h3>
+        <p class="text-gray-500">This repository appears to be healthy with no active or resolved alerts.</p>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { useRuntimeConfig } from '#app'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Tag from 'primevue/tag'
+import { onMounted, watch } from 'vue'
+import { useCustomToast } from '~/composables/useCustomToast'
+import HealthTitle from '~/components/Atoms/HealthTitle.vue'
+import AlertTable from '~/components/Molecules/AlertTable.vue'
+import BackToDashboardLink from '~/components/Atoms/BackToDashboardLink.vue'
+import LoadingText from '~/components/Atoms/LoadingText.vue'
+import RepoAlertTitle from '~/components/Atoms/RepoAlertTitle.vue'
+import { useRouteParams } from '~/composables/useRouteParams'
+import { useAlerts } from '~/composables/useAlerts'
 
-const checkTypeLabels = {
+// Use toast for additional error handling
+const toast = useCustomToast()
 
-    default_branch_violation: 'Default Branch Violation',
-    branch_name_violation: 'Branch Name Violation',
-    branch_protect_rule_violation: 'Branch Protect Rule Violation',
-    exposed_secret_key: 'Exposed Secret Key',
+// Use route params composable
+const { owner, repo, hasValidParams } = useRouteParams()
 
-    issue_format_violation: 'Issue Format Violation',
-    pull_request_format_violation: 'Pull Request Format Violation',
-    no_unit_test_ci: 'No Unit Test CI',
-    security_risk: 'Security Risk',
-    performance_issue: 'Performance Issue',
-}
+// Use the alerts composable
+const {
+  loading,
+  error,
+  visibleAlerts,
+  checkTypeLabels,
+  fetchAlerts,
+  resolvedAlerts,
+  hasAlerts,
+  hasResolvedAlerts
+} = useAlerts(owner, repo)
 
-const route = useRoute()
-const [owner, repo] = route.params.slug || []
-const alerts = ref([])
-const loading = ref(true)
-
-const config = useRuntimeConfig()
-
-const visibleAlerts = computed(() =>
-    alerts.value.filter((a) => !a.isIgnored && !a.systemResolved)
-)
-
-const formatDate = (dateStr) => {
-    const d = new Date(dateStr)
-    const pad = (n) => n.toString().padStart(2, '0')
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
-        d.getHours()
-    )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
-}
-
-const getSeverity = (level) => {
-    if (level === 'high') return 'danger'
-    if (level === 'middle') return 'warning'
-    if (level === 'low') return 'info'
-    return 'success'
-}
-
-const getGitHubUrl = (filePath, lineNumber, branch) => {
-    const safeBranch = branch || 'main'
-    return `https://github.com/${owner}/${repo}/blob/${safeBranch}/${filePath}#L${lineNumber}`
-}
-
-onMounted(async () => {
-    if (!owner || !repo) return
-
+// Watch for route changes and refetch alerts
+watch([owner, repo], async ([newOwner, newRepo]) => {
+  if (newOwner && newRepo) {
     try {
-        const res = await fetch(`${config.public.apiBaseUrl}/api/alerts/${owner}/${repo}`)
-        const json = await res.json()
-        alerts.value = json.alerts || []
+      await fetchAlerts()
     } catch (err) {
-        console.error('Failed to fetch alerts:', err)
-    } finally {
-        loading.value = false
+      console.error('Error fetching alerts on route change:', err)
+      toast.error('Navigation Error', 'Failed to load alerts for the new repository')
     }
+  }
+}, { immediate: true })
+
+onMounted(() => {
+  // Only show warning for invalid routes, fetchAlerts is already called by watch with immediate: true
+  if (!hasValidParams.value) {
+    toast.warn('Invalid Route', 'Owner and repository parameters are required')
+  }
 })
 </script>
 
 <style scoped>
 .back-link:visited {
-    color: white !important;
-    text-decoration: none;
+  color: white !important;
+  text-decoration: none;
+}
+
+/* Ensure title styling is applied - only for section titles, not table headers */
+h2.text-red-800 {
+  color: #991b1b !important;
+  font-weight: 700 !important;
+  font-size: 1.25rem !important;
+  line-height: 1.75rem !important;
+}
+
+h2.text-green-800 {
+  color: #166534 !important;
+  font-weight: 700 !important;
+  font-size: 1.25rem !important;
+  line-height: 1.75rem !important;
+}
+
+p.text-red-600 {
+  color: #dc2626 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+}
+
+p.text-green-600 {
+  color: #16a34a !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
 }
 </style>
   

@@ -1,0 +1,105 @@
+/* Global Font Size Adjustments for Health Checker Project */
+
+/* PrimeVue DataTable Components */
+.p-datatable {
+    font-size: 0.875rem !important; /* 14px */
+  }
+  
+  .p-datatable .p-datatable-thead > tr > th {
+    font-size: 0.875rem !important; /* 14px */
+  }
+  
+  .p-datatable .p-datatable-tbody > tr > td {
+    font-size: 0.875rem !important; /* 14px */
+  }
+  
+  /* PrimeVue Tags */
+  .p-tag {
+    font-size: 0.75rem !important; /* 12px */
+    padding: 0.25rem 0.5rem !important;
+    border-radius: 0.375rem !important;
+  }
+  
+  /* PrimeVue Buttons */
+  .p-button {
+    font-size: 0.875rem !important; /* 14px */
+    padding: 0.5rem 1rem !important;
+  }
+  
+  /* PrimeVue Cards */
+  .p-card {
+    font-size: 0.875rem !important; /* 14px */
+  }
+  
+  /* Links in tables */
+  .p-datatable a {
+    font-size: 0.875rem !important; /* 14px */
+  }
+  
+  /* Code snippets in tables */
+  .p-datatable pre {
+    font-size: 0.75rem !important; /* 12px */
+  }
+  
+  /* Text utility classes */
+  .text-sm {
+    font-size: 0.875rem !important; /* 14px */
+  }
+  
+  .text-xs {
+    font-size: 0.75rem !important; /* 12px */
+  }
+  
+  /* Font medium class */
+  .font-medium {
+    font-size: 0.875rem !important; /* 14px */
+  }
+  
+  /* Page titles */
+  h1.text-3xl {
+    font-size: 1.75rem !important; /* 28px - reduced from 1.875rem */
+    line-height: 2rem !important;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .p-datatable {
+      font-size: 0.8125rem !important; /* 13px */
+    }
+    
+    .p-datatable .p-datatable-thead > tr > th,
+    .p-datatable .p-datatable-tbody > tr > td {
+      font-size: 0.8125rem !important; /* 13px */
+    }
+    
+    .p-button {
+      font-size: 0.8125rem !important; /* 13px */
+    }
+    
+    .p-tag {
+      font-size: 0.6875rem !important; /* 11px */
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .p-datatable {
+      font-size: 0.75rem !important; /* 12px */
+    }
+    
+    .p-datatable .p-datatable-thead > tr > th,
+    .p-datatable .p-datatable-tbody > tr > td {
+      font-size: 0.75rem !important; /* 12px */
+    }
+    
+    .p-button {
+      font-size: 0.75rem !important; /* 12px */
+    }
+    
+    .p-tag {
+      font-size: 0.625rem !important; /* 10px */
+    }
+    
+    .p-datatable pre {
+      font-size: 0.625rem !important; /* 10px */
+    }
+  } 
