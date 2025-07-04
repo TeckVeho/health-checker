@@ -4,6 +4,24 @@ import path from 'path';
 import sequelize from '../config/database';
 
 /**
+ * Import schema definitions directly and create tables
+ */
+async function createTablesFromSchemas(): Promise<void> {
+  // Import model classes to register them with Sequelize
+  // This is still needed because the models need to be registered
+  const domainPath = path.join(__dirname, '../domain');
+  importAllModels(domainPath);
+
+  /**
+   * - 初回作成      : sync()
+   * - スキーマ差分  : sync({ alter: true })  ※本番環境は要バックアップ
+   * - 全再生成      : sync({ force: true })  ※開発用
+   */
+  await sequelize.sync();
+  console.log('All tables are in sync ✨');
+}
+
+/**
  * 再帰的にすべての *Model.ts を import して Sequelize に登録する
  */
 function importAllModels(dir: string): void {
@@ -25,16 +43,7 @@ function importAllModels(dir: string): void {
 
 (async () => {
   try {
-    const domainPath = path.join(__dirname, '../domain');
-    importAllModels(domainPath);
-
-    /**
-     * - 初回作成      : sync()
-     * - スキーマ差分  : sync({ alter: true })  ※本番環境は要バックアップ
-     * - 全再生成      : sync({ force: true })  ※開発用
-     */
-    await sequelize.sync();
-    console.log('All tables are in sync ✨');
+    await createTablesFromSchemas();
     process.exit(0);
   } catch (error) {
     console.error('Error during schema sync:', error);
