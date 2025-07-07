@@ -13,6 +13,7 @@ export interface Repo {
   id: string
   owner: string
   name: string
+  description?: string
   lastActivityAt: string
   [key: string]: any
 }
@@ -193,7 +194,7 @@ export class ApiService {
   }
 
   private validateSort(sort: string): string {
-    const validSorts = ['last_activity_at', 'name', 'owner', 'created_at']
+    const validSorts = ['last_activity_at', 'name', 'owner', 'created_at', 'description']
     if (!validSorts.includes(sort)) {
       throw createAppError.validation(errorMessages.VALIDATION.INVALID_SORT(validSorts), { sort, validSorts })
     }

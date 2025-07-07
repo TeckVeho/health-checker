@@ -8,6 +8,7 @@ describe('RepoTable Logic', () => {
   const createMockRepoData = (overrides: any = {}) => ({
     name: 'test-repo',
     owner: 'test-owner',
+    description: 'A test repository for testing purposes',
     totalViolations: 5,
     high: 2,
     middle: 2,
@@ -63,6 +64,22 @@ describe('RepoTable Logic', () => {
       expect(repoWithMissingFields.owner).toBe('test-owner')
       expect(repoWithMissingFields.totalViolations).toBeUndefined()
       expect(repoWithMissingFields.high).toBeUndefined()
+    })
+
+    it('should handle repositories with description field', () => {
+      const repoWithDescription = createMockRepoData({
+        description: 'A detailed description of the repository'
+      })
+
+      expect(repoWithDescription.description).toBe('A detailed description of the repository')
+    })
+
+    it('should handle repositories without description', () => {
+      const repoWithoutDescription = createMockRepoData({
+        description: undefined
+      })
+
+      expect(repoWithoutDescription.description).toBeUndefined()
     })
   })
 
