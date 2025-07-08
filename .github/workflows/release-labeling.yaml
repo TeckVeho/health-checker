@@ -1,0 +1,107 @@
+name: Label Linked Issue When PR is Merged into Staging or Production
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - staging
+      - production
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: write
+
+jobs:
+  label_issue:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Label linked issues based on target branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const baseBranch = context.payload.pull_request.base.ref;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const label = baseBranch === 'production' ? 'production'
+                        : baseBranch === 'staging' ? 'staging'
+                        : null;
+
+            if (!label) {
+              console.log(`No label assigned for branch ${baseBranch}`);
+              return;
+            }
+
+            const commits = await github.rest.pulls.listCommits({
+              owner,
+              repo,
+              pull_number: prNumber
+            });
+
+            const commitShas = commits.data.map(c => c.sha);
+            const linkedPrs = new Map();
+
+            for (const sha of commitShas) {
+              const prs = await github.request(`GET /repos/${owner}/${repo}/commits/${sha}/pulls`, {
+                headers: {
+                  accept: "application/vnd.github.groot-preview+json"
+                }
+              });
+
+              for (const pr of prs.data) {
+                linkedPrs.set(pr.number, pr);
+              }
+            }
+
+            for (const [prNum] of linkedPrs.entries()) {
+              let issues = [];
+              let hasNextPage = true;
+              let endCursor = null;
+
+              while (hasNextPage) {
+                const query = `
+                  query ($owner: String!, $repo: String!, $prNum: Int!, $cursor: String) {
+                    repository(owner: $owner, name: $repo) {
+                      pullRequest(number: $prNum) {
+                        closingIssuesReferences(first: 50, after: $cursor) {
+                          nodes {
+                            number
+                          }
+                          pageInfo {
+                            hasNextPage
+                            endCursor
+                          }
+                        }
+                      }
+                    }
+                  }
+                `;
+
+                const result = await github.graphql(query, {
+                  owner,
+                  repo,
+                  prNum,
+                  cursor: endCursor
+                });
+
+                const data = result.repository.pullRequest.closingIssuesReferences;
+                issues = issues.concat(data.nodes);
+                hasNextPage = data.pageInfo.hasNextPage;
+                endCursor = data.pageInfo.endCursor;
+              }
+
+              for (const issue of issues) {
+                console.log(`Adding '${label}' label to issue #${issue.number}`);
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  labels: [label]
+                });
+              }
+            }
