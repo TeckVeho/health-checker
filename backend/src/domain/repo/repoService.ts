@@ -1,10 +1,19 @@
 // src/features/repo/repoService.ts
 
-import Repo from './repoModel';
+import { Model } from 'sequelize';
+import sequelize from '../../config/database';
+import { repoAttributes, repoModelOptions } from './repoSchema';
 import { UniqueConstraintError } from 'sequelize';
 import getMessage from '../../utils/message';
 import { Octokit } from '@octokit/rest';
 import { InferAttributes } from 'sequelize';
+
+// Define Repo model directly from schema
+class Repo extends Model {}
+Repo.init(repoAttributes, {
+  sequelize,
+  ...repoModelOptions,
+});
 
 const githubToken = process.env.GITHUB_API_KEY;
 if (!githubToken) throw new Error('GITHUB_API_KEY is required');
@@ -63,7 +72,7 @@ class RepoService {
   static async createRepo(repoData: { name: string; owner: string; description?: string; topics?: string[]; isPrivate?: boolean }): Promise<number> {
     try {
       const repo = await Repo.create(repoData);
-      return repo.id!;
+      return (repo as any).id!;
     } catch (error) {
       if (error instanceof UniqueConstraintError) {
         throw new Error(getMessage('ERROR.NAME_TAKEN', repoData.name));
@@ -109,7 +118,7 @@ class RepoService {
     const repo = await Repo.findOne({
       where: { name },
     });
-    if (repo && repo.id !== idToExclude) {
+    if (repo && (repo as any).id !== idToExclude) {
       return false;
     }
     return true;

@@ -1,16 +1,26 @@
 // backend/src/database/migrate-all.ts
-import { readdirSync, statSync } from 'fs';
-import path from 'path';
+import { Model } from 'sequelize';
 import sequelize from '../config/database';
+import { repoAttributes, repoModelOptions } from '../domain/repo/repoSchema';
+import { alertAttributes, alertModelOptions } from '../domain/alert/alertSchema';
 
 /**
- * Import schema definitions directly and create tables
+ * Create tables directly from schema definitions without importing model classes
  */
 async function createTablesFromSchemas(): Promise<void> {
-  // Import model classes to register them with Sequelize
-  // This is still needed because the models need to be registered
-  const domainPath = path.join(__dirname, '../domain');
-  importAllModels(domainPath);
+  // Define Repo model directly from schema
+  class Repo extends Model {}
+  Repo.init(repoAttributes, {
+    sequelize,
+    ...repoModelOptions,
+  });
+
+  // Define Alert model directly from schema
+  class Alert extends Model {}
+  Alert.init(alertAttributes, {
+    sequelize,
+    ...alertModelOptions,
+  });
 
   /**
    * - 初回作成      : sync()
@@ -19,26 +29,6 @@ async function createTablesFromSchemas(): Promise<void> {
    */
   await sequelize.sync();
   console.log('All tables are in sync ✨');
-}
-
-/**
- * 再帰的にすべての *Model.ts を import して Sequelize に登録する
- */
-function importAllModels(dir: string): void {
-  const items = readdirSync(dir);
-
-  for (const item of items) {
-    const itemPath = path.join(dir, item);
-    const stat = statSync(itemPath);
-
-    if (stat.isDirectory()) {
-      importAllModels(itemPath);
-    } else if (stat.isFile() && item.endsWith('Model.ts')) {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      require(itemPath); // 動的 import でモデルが self-register
-      console.log(`Model loaded: ${itemPath}`);
-    }
-  }
 }
 
 (async () => {
