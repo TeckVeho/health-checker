@@ -48,6 +48,96 @@ export function useAlerts(owner: Ref<string | null>, repo: Ref<string | null>) {
     return counts
   })
 
+  // Health summary data
+  const health = ref<{
+    total: number
+    high: number
+    middle: number
+    low: number
+  }>({
+    total: 0,
+    high: 0,
+    middle: 0,
+    low: 0
+  })
+
+  const healthTableData = ref<Array<{
+    severity: string
+    count: number
+    percentage: number
+    tagSeverity: string | null
+    isTotal: boolean
+  }>>([])
+
+  const healthColumns = [
+    { label: 'High', key: 'high', tagSeverity: 'danger' },
+    { label: 'Middle', key: 'middle', tagSeverity: 'warning' },
+    { label: 'Low', key: 'low', tagSeverity: 'info' },
+  ]
+
+  // Prepare table data for DataTable
+  const prepareHealthTableData = () => {
+    const data = []
+    
+    // Add severity rows
+    healthColumns.forEach(col => {
+      data.push({
+        severity: col.label,
+        count: (health.value as any)[col.key] || 0,
+        percentage: health.value.total > 0 ? Math.round(((health.value as any)[col.key] || 0) / health.value.total * 100) : 0,
+        tagSeverity: col.tagSeverity,
+        isTotal: false
+      })
+    })
+    
+    // Add total row
+    data.push({
+      severity: 'Total',
+      count: health.value.total,
+      percentage: 100,
+      tagSeverity: null,
+      isTotal: true
+    })
+    
+    healthTableData.value = data
+  }
+
+  // Fetch health summary data
+  const fetchHealthSummary = async (): Promise<void> => {
+    if (!validateParams()) {
+      return
+    }
+
+    try {
+      const summaryData = await callApi(
+        () => apiService.getAlertSummary([{ owner: owner.value!, repo: repo.value! }]),
+        { errorMessage: 'Failed to fetch alert summary' }
+      )
+
+      if (summaryData) {
+        const healthData = `${owner.value}/${repo.value}`
+        let total = 0
+        
+        for (const col of healthColumns) {
+          const val = summaryData[healthData]?.[col.key as keyof typeof summaryData[typeof healthData]] ?? 0
+          total += val
+        }
+        
+        health.value = {
+          total: total,
+          high: summaryData[healthData]?.['high'] ?? 0,
+          middle: summaryData[healthData]?.['middle'] ?? 0,
+          low: summaryData[healthData]?.['low'] ?? 0,
+        }
+        
+        prepareHealthTableData()
+      }
+    } catch (err) {
+      console.error('Error fetching health summary:', err)
+      toast.error('Failed to Load Health Summary', 'Unable to fetch health summary data')
+    }
+  }
+
   // Validation helpers
   const validateParams = (): boolean => {
     if (!owner.value || !repo.value) {
@@ -164,6 +254,12 @@ export function useAlerts(owner: Ref<string | null>, repo: Ref<string | null>) {
     hasAlerts,
     hasResolvedAlerts,
     alertCounts,
+    
+    // Health summary
+    health: readonly(health),
+    healthTableData: readonly(healthTableData),
+    healthColumns,
+    fetchHealthSummary,
     
     // Utility functions
     formatDate,
