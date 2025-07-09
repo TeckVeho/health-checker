@@ -14,22 +14,24 @@ export class GithubActionService {
       .join('\n\n');
     const prBody = pr.body ?? '';
 
-    const pushCheck = (condition: boolean, label: string) => {
-      checklist.push(`${condition ? '✅' : '❌'} ${label}`);
+    const pushCheck = (condition: boolean, label: string, customIcon?: string) => {
+      const icon = customIcon ?? (condition ? '✅' : '❌');
+      checklist.push(`${icon} ${label}`);
     };
 
     // [Check]  Linked issue
     const issueNumber = await GitHubUtility.getLinkedIssueNumber(owner, repo, prNumber);
     pushCheck(!!issueNumber, 'Issue is linked');
+
     // [Check]  PR body includes meaningful content
     const hasBody = PRCheck.hasMeaningfulBody(prBody);
     pushCheck(hasBody, 'PR body includes meaningful content');
 
     if (!hasBody) {
       pushCheck(false, 'AI review skipped due to insufficient PR body');
-    } else if (prBody.length + diffs.length > 100*1000) {
+    } else if (prBody.length + diffs.length > 150 * 1000) {
       console.log(`[DEBUG] Total patch size: ${diffs.length} chars`);
-      pushCheck(false, 'Body size + Diff size is acceptable for AI review');
+      pushCheck(false, 'Body size + Diff size is acceptable for AI review', '❓');
     } else {
       const { type, prBodyResult, prBodyReason, diffResult, diffReason } = await PRCheck.runUnifiedLLMReview(pr, diffs);
 
