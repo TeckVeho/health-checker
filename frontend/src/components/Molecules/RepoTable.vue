@@ -5,9 +5,12 @@
       :class="['p-datatable-sm shadow-md border border-gray-200 rounded-md', tableClass]"
       stripedRows 
       responsiveLayout="scroll" 
-      sortMode="multiple"
+      sortMode="single"
+      :sortField="sortState?.field"
+      :sortOrder="sortState?.order === 'desc' ? -1 : 1"
       :loading="loading"
       :empty-message="emptyMessage"
+      @sort="onSort"
     >
       <Column field="name" header="Repository" sortable>
         <template #body="slotProps">
@@ -66,7 +69,7 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import HealthTag from '@/components/Atoms/HealthTag.vue'
 
-defineProps({
+const props = defineProps({
   tableData: {
     type: Array,
     required: true,
@@ -97,7 +100,20 @@ defineProps({
     required: false,
     default: '',
   },
+  sortState: {
+    type: Object,
+    required: false,
+    default: () => ({ field: 'lastActivityAt', order: 'desc' }),
+  },
 })
+
+const emit = defineEmits(['sort-change'])
+
+const onSort = (event) => {
+  const field = event.sortField || event.field
+  const order = event.sortOrder === -1 ? 'desc' : 'asc'
+  emit('sort-change', field, order)
+}
 </script>
 
 <style scoped>

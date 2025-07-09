@@ -6,7 +6,7 @@
         <RepoFilterCard
             :showOnlyActive="showOnlyActive"
             :loading="loading"
-            @toggle-active="showOnlyActive = !showOnlyActive"
+            @toggle-active="handleToggleFilter"
         />
 
         <!-- Loading -->
@@ -20,9 +20,11 @@
         <!-- Repo Table -->
         <div v-else>
             <RepoTable 
-                :tableData="filteredTableData" 
+                :tableData="sortedTableData" 
                 :columns="columns"
                 :loading="loading"
+                :sortState="sortState"
+                @sort-change="handleSortChange"
                 empty-message="No repositories found. Try adjusting your filters."
             />
         </div>
@@ -44,10 +46,21 @@ const {
   columns,
   repos,
   showOnlyActive,
-  filteredTableData,
+  sortedTableData,
+  sortState,
+  updateSortState,
+  toggleShowOnlyActive,
   fetchData,
   loading,
 } = useRepoHealth()
+
+const handleSortChange = (field, order) => {
+  updateSortState(field, order)
+}
+
+const handleToggleFilter = () => {
+  toggleShowOnlyActive()
+}
 
 async function fetchAndToast() {
   try {
