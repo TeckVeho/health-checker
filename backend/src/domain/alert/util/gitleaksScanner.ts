@@ -3,7 +3,16 @@ import fs from 'fs/promises';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { format } from 'date-fns';
-import Alert from '../alertModel';
+import { Model } from 'sequelize';
+import sequelize from '../../../config/database';
+import { alertAttributes, alertModelOptions } from '../alertSchema';
+
+// Define Alert model directly from schema
+class Alert extends Model {}
+Alert.init(alertAttributes, {
+  sequelize,
+  ...alertModelOptions,
+});
 
 export async function gitleaksScanner(owner: string, repo: string): Promise<void> {
   const workspace = process.env.GITHUB_LOCAL_WORKSPACE;
@@ -89,7 +98,7 @@ export async function gitleaksScanner(owner: string, repo: string): Promise<void
 
     if (!created) {
       await record.update({
-        detectCount: record.detectCount + 1,
+        detectCount: (record as any).detectCount + 1,
         lastDetectedAt: new Date(),
         systemResolved: false,
         systemResolvedReason: undefined,

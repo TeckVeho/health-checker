@@ -1,11 +1,26 @@
-import Repo from '../repo/repoModel';
+import { Model } from 'sequelize';
+import sequelize from '../../config/database';
+import { repoAttributes, repoModelOptions } from '../repo/repoSchema';
+import { alertAttributes, alertModelOptions } from './alertSchema';
 import { cloneRepo } from './util/cloneRepo';
 import { gitleaksScanner } from './util/gitleaksScanner';
 import { checkBranches, type AlertCandidate } from './util/checkBranches';
-import sequelize from '../../config/database';
 import { QueryTypes, Op } from 'sequelize';
-import Alert from './alertModel';
 import { subDays, format } from 'date-fns';
+
+// Define Repo model directly from schema
+class Repo extends Model {}
+Repo.init(repoAttributes, {
+  sequelize,
+  ...repoModelOptions,
+});
+
+// Define Alert model directly from schema
+class Alert extends Model {}
+Alert.init(alertAttributes, {
+  sequelize,
+  ...alertModelOptions,
+});
 
 class AlertService {
   static async getAlertsByRepo(owner: string, repo: string) {
@@ -146,7 +161,7 @@ class AlertService {
       }).then(async ([record, created]) => {
         if (!created) {
           await record.update({
-            detectCount: record.detectCount + 1,
+            detectCount: (record as any).detectCount + 1,
             lastDetectedAt: timestamp,
             systemResolved: false,
             systemResolvedReason: undefined,
@@ -230,12 +245,12 @@ class AlertService {
 
     for (const repo of repos) {
       try {
-        const result = await this.runAlert({ owner: repo.owner, repo: repo.name, checks });
-        results.push({ repo: repo.name, ...result });
+        const result = await this.runAlert({ owner: (repo as any).owner, repo: (repo as any).name, checks });
+        results.push({ repo: (repo as any).name, ...result });
       } catch (err) {
-        console.error(`❌ Failed to process ${repo.name}`, err);
+        console.error(`❌ Failed to process ${(repo as any).name}`, err);
         results.push({
-          repo: repo.name,
+          repo: (repo as any).name,
           status: 'error',
           error: (err as Error).message,
         });

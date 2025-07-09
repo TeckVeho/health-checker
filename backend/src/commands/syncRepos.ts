@@ -16,7 +16,7 @@ async function main() {
     console.log(`🔄 Syncing repositories for owner: ${owner}`);
     const savedRepos = await RepoService.syncReposFromGithub(owner);
     savedRepos.forEach((repo) => {
-      console.log(`- ${repo.owner}/${repo.name}`);
+      console.log(`- ${(repo as any).owner}/${(repo as any).name}`);
     });
   } catch (error) {
     console.error('❌ Error syncing repositories:', error);
