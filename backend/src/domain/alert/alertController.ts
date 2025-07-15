@@ -27,6 +27,17 @@ class AlertController {
     }
   }
 
+  static async getCheckTypeSummary(req: Request, res: Response, next: NextFunction) {
+    try {
+      const repoList = RepoListSchema.parse(req.body);
+      const summary = await AlertService.getSummary(repoList);
+      res.json(summary);
+    } catch (error) {
+      console.error('Error fetching check type summary:', error);
+      next(error);
+    }
+  }
+
   /**
    * POST /check/repos
    * 指定オーナーの保存済みリポジトリに対して一括ヘルスチェックを実行
