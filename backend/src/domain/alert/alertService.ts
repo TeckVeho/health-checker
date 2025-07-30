@@ -4,6 +4,7 @@ import { repoAttributes, repoModelOptions } from '../repo/repoSchema';
 import { alertAttributes, alertModelOptions } from './alertSchema';
 import { cloneRepo } from './util/cloneRepo';
 import { gitleaksScanner } from './util/gitleaksScanner';
+import { auditScanner } from './util/auditScanner';
 import { checkBranches, type AlertCandidate } from './util/checkBranches';
 import { QueryTypes, Op } from 'sequelize';
 import { subDays, format } from 'date-fns';
@@ -210,7 +211,7 @@ class AlertService {
 
   static async runAlert(options: { owner: string; repo: string; checks?: string[] }): Promise<Record<string, unknown>> {
     const { owner, repo, checks } = options;
-    const effectiveChecks = checks ?? ['branch', 'clone', 'gitleaks'];
+    const effectiveChecks = checks ?? ['branch', 'clone', 'gitleaks', 'audit'];
     const results: Record<string, unknown> = {};
 
     if (effectiveChecks.includes('clone')) {
@@ -229,6 +230,14 @@ class AlertService {
       }
       await gitleaksScanner(owner, repo);
       results.gitleaks = 'done';
+    }
+
+    if (effectiveChecks.includes('audit')) {
+      if (!effectiveChecks.includes('clone')) {
+        await cloneRepo(owner, repo); // ensure audit has source
+      }
+      await auditScanner(owner, repo);
+      results.audit = 'done';
     }
 
     return results;
