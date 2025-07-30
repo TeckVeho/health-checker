@@ -20,9 +20,7 @@ export interface Repo {
 
 export interface AlertSummary {
   [repoKey: string]: {
-    high: number
-    middle: number
-    low: number
+    [key: string]: number
   }
 }
 
@@ -231,6 +229,22 @@ export class ApiService {
       logError(error, 'getAlertSummary')
       const context: ErrorContext = { operation: 'fetch alert summary', reposCount: repos.length }
       throw createAppError.api(errorMessages.API.FETCH_FAILED('alert summary'), context)
+    }
+  }
+
+  // Alert methods
+  async getAlertSummaryByCheckType(repos: Array<{ owner: string; repo: string }>): Promise<AlertSummary> {
+    try {
+      if (!Array.isArray(repos) || repos.length === 0) {
+        throw createAppError.validation(errorMessages.VALIDATION.EMPTY_ARRAY, { repos })
+      }
+      
+      const response = await this.client.post<AlertSummary>('/api/alerts/summary-by-checktype', repos)
+      return response.data
+    } catch (error) {
+      logError(error, 'getAlertSummaryByCheckType')
+      const context: ErrorContext = { operation: 'fetch alert summary by check type', reposCount: repos.length }
+      throw createAppError.api(errorMessages.API.FETCH_FAILED('alert summary by check type'), context)
     }
   }
 

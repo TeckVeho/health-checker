@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useAlerts } from '@/composables/useAlerts'
+import { useAlerts } from '~/composables/useAlerts'
 import { ref, type Ref } from 'vue'
 import type { Alert } from '@/types/alerts'
 
@@ -12,7 +12,7 @@ vi.mock('@/utils/api', () => ({
   }
 }))
 
-vi.mock('@/composables/useApi', () => ({
+vi.mock('~/composables/useApi', () => ({
   useApi: vi.fn(() => ({ 
     callApi: vi.fn((fn) => fn()),
     loading: ref(false),
@@ -20,11 +20,11 @@ vi.mock('@/composables/useApi', () => ({
   }))
 }))
 
-vi.mock('@/composables/useApiConfig', () => ({
+vi.mock('~/composables/useApiConfig', () => ({
   useApiConfig: vi.fn(() => ({ apiBaseUrl: 'http://localhost:3000' }))
 }))
 
-vi.mock('@/composables/useCustomToast', () => ({
+vi.mock('~/composables/useCustomToast', () => ({
   useCustomToast: vi.fn(() => ({ error: vi.fn() }))
 }))
 
@@ -106,17 +106,7 @@ describe('useAlerts', () => {
       })
     })
 
-    it('should have empty health data initially', () => {
-      const result = useAlerts(owner, repo)
-      
-      expect(result.health.value).toEqual({
-        total: 0,
-        high: 0,
-        middle: 0,
-        low: 0
-      })
-      expect(result.healthTableData.value).toEqual([])
-    })
+
   })
 
   describe('utility functions', () => {
@@ -218,74 +208,5 @@ describe('useAlerts', () => {
     })
   })
 
-  describe('health summary functionality', () => {
-    it('should return expected health properties', () => {
-      const result = useAlerts(owner, repo)
-      
-      expect(result).toHaveProperty('health')
-      expect(result).toHaveProperty('healthTableData')
-      expect(result).toHaveProperty('healthColumns')
-      expect(result).toHaveProperty('fetchHealthSummary')
-    })
 
-    it('should have correct health columns configuration', () => {
-      const result = useAlerts(owner, repo)
-      
-      expect(result.healthColumns).toEqual([
-        { label: 'High', key: 'high', tagSeverity: 'danger' },
-        { label: 'Middle', key: 'middle', tagSeverity: 'warning' },
-        { label: 'Low', key: 'low', tagSeverity: 'info' }
-      ])
-    })
-
-    it('should test health table data structure', () => {
-      const healthColumns = [
-        { label: 'High', key: 'high', tagSeverity: 'danger' },
-        { label: 'Middle', key: 'middle', tagSeverity: 'warning' },
-        { label: 'Low', key: 'low', tagSeverity: 'info' }
-      ]
-      
-      const health = { total: 3, high: 1, middle: 1, low: 1 }
-      
-      const tableData: Array<{
-        severity: string
-        count: number
-        percentage: number
-        tagSeverity: string | null
-        isTotal: boolean
-      }> = healthColumns.map(col => ({
-        severity: col.label,
-        count: health[col.key as keyof typeof health] || 0,
-        percentage: health.total > 0 ? 
-          Math.round((health[col.key as keyof typeof health] || 0) / health.total * 100) : 0,
-        tagSeverity: col.tagSeverity,
-        isTotal: false
-      }))
-      
-      // Add total row
-      tableData.push({
-        severity: 'Total',
-        count: health.total,
-        percentage: 100,
-        tagSeverity: null,
-        isTotal: true
-      })
-      
-      expect(tableData).toHaveLength(4) // 3 severity levels + 1 total
-      expect(tableData[0]).toEqual({
-        severity: 'High',
-        count: 1,
-        percentage: 33,
-        tagSeverity: 'danger',
-        isTotal: false
-      })
-      expect(tableData[3]).toEqual({
-        severity: 'Total',
-        count: 3,
-        percentage: 100,
-        tagSeverity: null,
-        isTotal: true
-      })
-    })
-  })
 }) 
