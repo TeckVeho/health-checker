@@ -1,47 +1,27 @@
-import { ref, computed, watch } from 'vue'
-import { apiService, type Repo, type AlertSummary } from '~/utils/api'
-import { useApi } from './useApi'
-import { useApiConfig } from './useApiConfig'
-
-const columns = [
-  { label: 'High', key: 'high', tagSeverity: 'danger' },
-  { label: 'Middle', key: 'middle', tagSeverity: 'warning' },
-  { label: 'Low', key: 'low', tagSeverity: 'info' },
-]
+import { computed, watch } from 'vue'
+import { useSortState } from './useSortState'
+import { useFilterState } from './useFilterState'
+import { useSharedState } from './useSharedState'
+import { SEVERITY_COLUMNS } from '../constants/table'
 
 export function useRepoHealth() {
-  const { loading, error, callApi } = useApi()
-  const { apiBaseUrl } = useApiConfig()
+  const { sortState, updateSortState } = useSortState()
+  const { filterState, updateShowOnlyActive, toggleShowOnlyActive } = useFilterState()
+  const sharedState = useSharedState()
 
-  // Initialize API service with correct base URL
-  apiService.init(apiBaseUrl)
-
-  const repos = ref<Repo[]>([])
-  const health = ref<AlertSummary>({})
-  const showOnlyActive = ref(true)
-  
-  // Cache the threshold date to avoid redundant computations
-  const thresholdDate = ref<Date | null>(null)
-  
   // Update threshold when showOnlyActive changes
   const updateThreshold = () => {
-    if (showOnlyActive.value) {
-      const threshold = new Date()
-      threshold.setDate(threshold.getDate() - 14)
-      thresholdDate.value = threshold
-    } else {
-      thresholdDate.value = null
-    }
+    sharedState.updateThreshold(filterState.value.showOnlyActive)
   }
 
   const tableData = computed(() =>
-    repos.value.map((repo) => {
+    sharedState.repos.value.map((repo) => {
       const fullName = `${repo.owner}/${repo.name}`
-      const healthData = health.value[fullName] || {}
+      const healthData = sharedState.alertSummary.value[fullName] || {}
 
       const row = { ...repo }
       let total = 0
-      for (const col of columns) {
+      for (const col of SEVERITY_COLUMNS) {
         const val = (healthData as any)[col.key] ?? 0
         row[col.key] = val
         total += val
@@ -52,55 +32,79 @@ export function useRepoHealth() {
   )
 
   // Watch for changes in showOnlyActive to update threshold
-  watch(showOnlyActive, updateThreshold, { immediate: true })
+  watch(() => filterState.value.showOnlyActive, updateThreshold, { immediate: true })
 
   const filteredTableData = computed(() => {
-    if (!showOnlyActive.value) return tableData.value
+    if (!filterState.value.showOnlyActive) return tableData.value
 
     // Use cached threshold date
-    if (!thresholdDate.value) {
+    if (!sharedState.thresholdDate.value) {
       updateThreshold()
     }
 
     return tableData.value.filter((repo) => {
       const lastActivity = new Date(repo.lastActivityAt)
-      return !isNaN(lastActivity.getTime()) && lastActivity >= thresholdDate.value!
+      return !isNaN(lastActivity.getTime()) && lastActivity >= sharedState.thresholdDate.value!
+    })
+  })
+
+  // Sort the filtered data based on the current sort state
+  const sortedTableData = computed(() => {
+    const data = filteredTableData.value
+    const { field, order } = sortState.value
+
+    return [...data].sort((a, b) => {
+      let aValue = a[field]
+      let bValue = b[field]
+
+      // Handle special cases
+      if (field === 'lastActivityAt') {
+        aValue = new Date(aValue || 0).getTime()
+        bValue = new Date(bValue || 0).getTime()
+      } else if (field === 'name') {
+        aValue = aValue?.toLowerCase() || ''
+        bValue = bValue?.toLowerCase() || ''
+      } else if (field === 'owner') {
+        aValue = aValue?.toLowerCase() || ''
+        bValue = bValue?.toLowerCase() || ''
+      } else if (field === 'totalViolations' || field === 'high' || field === 'middle' || field === 'low') {
+        aValue = Number(aValue) || 0
+        bValue = Number(bValue) || 0
+      } else {
+        aValue = String(aValue || '').toLowerCase()
+        bValue = String(bValue || '').toLowerCase()
+      }
+
+      if (order === 'asc') {
+        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0
+      } else {
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0
+      }
     })
   })
 
   async function fetchData() {
-    // Fetch repos
-    const repoData = await callApi(
-      () => apiService.getRepos(200, 'last_activity_at'),
-      { errorMessage: 'Failed to fetch repositories' }
-    )
+    const currentField = sortState.value.field
+    const backendField = sharedState.mapFieldToBackend(currentField)
     
-    if (repoData) {
-      repos.value = repoData
-
-      // Fetch alert summary
-      const summaryData = await callApi(
-        () => apiService.getAlertSummary(
-          repos.value.map((r) => ({ owner: r.owner, repo: r.name }))
-        ),
-        { errorMessage: 'Failed to fetch alert summary' }
-      )
-      
-      if (summaryData) {
-        health.value = summaryData
-      }
-    }
+    await sharedState.fetchRepos(backendField)
+    await sharedState.fetchAlertSummary()
   }
 
   return {
-    columns,
-    repos,
-    health,
-    showOnlyActive,
+    columns: SEVERITY_COLUMNS,
+    repos: sharedState.repos,
+    health: sharedState.alertSummary,
+    showOnlyActive: computed(() => filterState.value.showOnlyActive),
     tableData,
     filteredTableData,
-    loading,
-    error,
+    sortedTableData,
+    loading: sharedState.loading,
+    error: sharedState.error,
     fetchData,
+    sortState,
+    updateSortState,
+    updateShowOnlyActive,
+    toggleShowOnlyActive,
   }
 }

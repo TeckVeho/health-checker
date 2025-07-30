@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useAlerts } from '@/composables/useAlerts'
+import { useAlerts } from '~/composables/useAlerts'
 import { ref, type Ref } from 'vue'
 import type { Alert } from '@/types/alerts'
 
@@ -7,11 +7,12 @@ import type { Alert } from '@/types/alerts'
 vi.mock('@/utils/api', () => ({
   apiService: {
     init: vi.fn(),
-    fetchData: vi.fn()
+    fetchData: vi.fn(),
+    getAlertSummary: vi.fn()
   }
 }))
 
-vi.mock('@/composables/useApi', () => ({
+vi.mock('~/composables/useApi', () => ({
   useApi: vi.fn(() => ({ 
     callApi: vi.fn((fn) => fn()),
     loading: ref(false),
@@ -19,11 +20,11 @@ vi.mock('@/composables/useApi', () => ({
   }))
 }))
 
-vi.mock('@/composables/useApiConfig', () => ({
+vi.mock('~/composables/useApiConfig', () => ({
   useApiConfig: vi.fn(() => ({ apiBaseUrl: 'http://localhost:3000' }))
 }))
 
-vi.mock('@/composables/useCustomToast', () => ({
+vi.mock('~/composables/useCustomToast', () => ({
   useCustomToast: vi.fn(() => ({ error: vi.fn() }))
 }))
 
@@ -206,4 +207,6 @@ describe('useAlerts', () => {
       expect(result.checkTypeLabels).toBeDefined()
     })
   })
+
+
 }) 

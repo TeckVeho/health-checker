@@ -1,47 +1,35 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useRepoHealth } from '@/composables/useRepoHealth'
-import { ref } from 'vue'
-import type { Repo, AlertSummary } from '@/utils/api'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { useRepoHealth } from '~/composables/useRepoHealth'
 
-// Mock dependencies
-vi.mock('@/utils/api', () => ({
+// Mock the composables
+vi.mock('~/composables/useApi', () => ({
+  useApi: () => ({
+    loading: { value: false },
+    error: { value: null },
+    callApi: vi.fn(),
+  }),
+}))
+
+vi.mock('~/composables/useApiConfig', () => ({
+  useApiConfig: () => ({
+    apiBaseUrl: 'http://localhost:3000',
+  }),
+}))
+
+vi.mock('~/composables/useSortState', () => ({
+  useSortState: () => ({
+    sortState: { value: { field: 'lastActivityAt', order: 'desc' } },
+    updateSortState: vi.fn(),
+  }),
+}))
+
+vi.mock('~/utils/api', () => ({
   apiService: {
     init: vi.fn(),
     getRepos: vi.fn(),
-    getAlertSummary: vi.fn()
-  }
-}))
-
-vi.mock('@/composables/useApi', () => ({
-  useApi: vi.fn(() => ({ 
-    callApi: vi.fn((fn) => fn()),
-    loading: ref(false),
-    error: ref(null)
-  }))
-}))
-
-vi.mock('@/composables/useApiConfig', () => ({
-  useApiConfig: vi.fn(() => ({ apiBaseUrl: 'http://localhost:3000' }))
-}))
-
-// Helper function to create mock repos
-const createMockRepo = (overrides: Partial<Repo> = {}): Repo => ({
-  id: '1',
-  owner: 'test-owner',
-  name: 'test-repo',
-  lastActivityAt: '2023-01-01T00:00:00Z',
-  ...overrides
-})
-
-// Helper function to create mock alert summary
-const createMockAlertSummary = (overrides: Partial<AlertSummary> = {}): AlertSummary => ({
-  'test-owner/test-repo': {
-    high: 2,
-    middle: 1,
-    low: 0
+    getAlertSummary: vi.fn(),
   },
-  ...overrides
-})
+}))
 
 describe('useRepoHealth', () => {
   beforeEach(() => {
@@ -58,9 +46,12 @@ describe('useRepoHealth', () => {
       expect(result).toHaveProperty('showOnlyActive')
       expect(result).toHaveProperty('tableData')
       expect(result).toHaveProperty('filteredTableData')
+      expect(result).toHaveProperty('sortedTableData')
       expect(result).toHaveProperty('loading')
       expect(result).toHaveProperty('error')
       expect(result).toHaveProperty('fetchData')
+      expect(result).toHaveProperty('sortState')
+      expect(result).toHaveProperty('updateSortState')
     })
 
     it('should initialize API service with base URL', () => {
@@ -89,6 +80,7 @@ describe('useRepoHealth', () => {
       expect(result.health.value).toEqual({})
       expect(result.tableData.value).toEqual([])
       expect(result.filteredTableData.value).toEqual([])
+      expect(result.sortedTableData.value).toEqual([])
       expect(result.showOnlyActive.value).toBe(true)
     })
   })
@@ -102,27 +94,19 @@ describe('useRepoHealth', () => {
     })
   })
 
-  describe('threshold date calculation', () => {
-    it('should have showOnlyActive property', () => {
+  describe('sort functionality', () => {
+    it('should include sort state in return object', () => {
       const result = useRepoHealth()
       
-      expect(result.showOnlyActive.value).toBe(true)
+      expect(result.sortState).toBeDefined()
+      expect(result.updateSortState).toBeDefined()
     })
-  })
 
-  describe('data transformation', () => {
-    it('should have tableData computed property', () => {
+    it('should have sortedTableData computed property', () => {
       const result = useRepoHealth()
       
-      expect(Array.isArray(result.tableData.value)).toBe(true)
-    })
-  })
-
-  describe('reactive behavior', () => {
-    it('should have filteredTableData computed property', () => {
-      const result = useRepoHealth()
-      
-      expect(Array.isArray(result.filteredTableData.value)).toBe(true)
+      expect(result.sortedTableData).toBeDefined()
+      expect(typeof result.sortedTableData.value).toBe('object')
     })
   })
 }) 
