@@ -6,7 +6,7 @@ async function main() {
 
   if (!checksArg || !owner) {
     console.error('❌ Usage: yarn alert <checks> <owner> [repo]');
-    console.error('   <checks>: branch | clone | gitleaks | branch|gitleaks');
+    console.error('   <checks>: branch | clone | gitleaks | issue | branch|gitleaks|issue');
     process.exit(1);
   }
 

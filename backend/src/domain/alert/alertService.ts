@@ -5,6 +5,7 @@ import { alertAttributes, alertModelOptions } from './alertSchema';
 import { cloneRepo } from './util/cloneRepo';
 import { gitleaksScanner } from './util/gitleaksScanner';
 import { checkBranches, type AlertCandidate } from './util/checkBranches';
+import { checkIssues, type IssueAlertCandidate } from './util/checkIssues';
 import { QueryTypes, Op } from 'sequelize';
 import { subDays, format } from 'date-fns';
 
@@ -208,9 +209,100 @@ class AlertService {
     return { owner, repo };
   }
 
+  static async processIssueAlerts(owner: string, repo: string): Promise<{ owner: string; repo: string }> {
+    const timestamp = new Date();
+    const result = await checkIssues(owner, repo);
+    const detectedKeySet = new Set<string>();
+
+    // Process new alerts
+    for (const alert of result.alerts) {
+      const key = [alert.owner, alert.repo, alert.checkType, alert.title, alert.filePath, alert.lineNumber, alert.codeSnippet, alert.branch, alert.issueNumber].join('||');
+      detectedKeySet.add(key);
+
+      await Alert.findOrCreate({
+        where: { 
+          owner: alert.owner, 
+          repo: alert.repo, 
+          checkType: alert.checkType, 
+          title: alert.title, 
+          filePath: alert.filePath, 
+          lineNumber: alert.lineNumber, 
+          codeSnippet: alert.codeSnippet, 
+          branch: alert.branch 
+        },
+        defaults: {
+          owner: alert.owner,
+          repo: alert.repo,
+          checkType: alert.checkType,
+          title: alert.title,
+          description: alert.description,
+          severity: alert.severity,
+          filePath: alert.filePath,
+          lineNumber: alert.lineNumber,
+          codeSnippet: alert.codeSnippet,
+          branch: alert.branch,
+          issueUrl: alert.issueUrl,
+          detectCount: 1,
+          lastDetectedAt: timestamp,
+          isIgnored: false,
+          manualResolved: false,
+          systemResolved: false,
+          createdAt: timestamp,
+        },
+      }).then(async ([record, created]) => {
+        if (!created) {
+          await record.update({
+            detectCount: (record as any).detectCount + 1,
+            lastDetectedAt: timestamp,
+            systemResolved: false,
+            systemResolvedReason: undefined,
+          });
+        }
+      });
+    }
+
+    // Resolve old alerts that are no longer detected
+    const existing = await Alert.findAll({
+      where: {
+        owner,
+        repo,
+        checkType: ['issue_missing_sp', 'issue_large_sp', 'issue_missing_end_date', 'issue_expired_end_date', 'issue_not_in_project'],
+        systemResolved: false,
+      },
+    });
+
+    const resolveTimestamp = format(new Date(), 'yyyyMMddHHmmss');
+
+    for (const row of existing) {
+      const key = [
+        row.getDataValue('owner'), 
+        row.getDataValue('repo'), 
+        row.getDataValue('checkType'), 
+        row.getDataValue('title'), 
+        row.getDataValue('filePath') ?? '', 
+        row.getDataValue('lineNumber') ?? -1, 
+        row.getDataValue('codeSnippet') ?? '', 
+        row.getDataValue('branch') ?? '',
+        row.getDataValue('issueNumber') ?? -1
+      ].join('||');
+
+      if (!detectedKeySet.has(key)) {
+        console.log(`🛠 Resolving: ${key}`);
+        await row.update({
+          systemResolved: true,
+          systemResolvedReason: `${resolveTimestamp}:Automatically resolved: not detected`,
+        });
+      } else {
+        console.log(`✅ Still active: ${key}`);
+      }
+    }
+
+    return { owner, repo };
+  }
+
   static async runAlert(options: { owner: string; repo: string; checks?: string[] }): Promise<Record<string, unknown>> {
     const { owner, repo, checks } = options;
-    const effectiveChecks = checks ?? ['branch', 'clone', 'gitleaks'];
+    const effectiveChecks = checks ?? ['branch', 'clone', 'gitleaks', 'issue'];
     const results: Record<string, unknown> = {};
 
     if (effectiveChecks.includes('clone')) {
@@ -221,6 +313,11 @@ class AlertService {
     if (effectiveChecks.includes('branch')) {
       await this.processBranchAlerts(owner, repo);
       results.branch = 'checked';
+    }
+
+    if (effectiveChecks.includes('issue')) {
+      await this.processIssueAlerts(owner, repo);
+      results.issue = 'checked';
     }
 
     if (effectiveChecks.includes('gitleaks')) {
