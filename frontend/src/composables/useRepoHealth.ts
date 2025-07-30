@@ -1,50 +1,27 @@
-import { ref, computed, watch } from 'vue'
-import { apiService, type Repo, type AlertSummary } from '~/utils/api'
-import { useApi } from './useApi'
-import { useApiConfig } from './useApiConfig'
+import { computed, watch } from 'vue'
 import { useSortState } from './useSortState'
 import { useFilterState } from './useFilterState'
-
-const columns = [
-  { label: 'High', key: 'high', tagSeverity: 'danger' },
-  { label: 'Middle', key: 'middle', tagSeverity: 'warning' },
-  { label: 'Low', key: 'low', tagSeverity: 'info' },
-]
+import { useSharedState } from './useSharedState'
+import { SEVERITY_COLUMNS } from '../constants/table'
 
 export function useRepoHealth() {
-  const { loading, error, callApi } = useApi()
-  const { apiBaseUrl } = useApiConfig()
   const { sortState, updateSortState } = useSortState()
   const { filterState, updateShowOnlyActive, toggleShowOnlyActive } = useFilterState()
+  const sharedState = useSharedState()
 
-  // Initialize API service with correct base URL
-  apiService.init(apiBaseUrl)
-
-  const repos = ref<Repo[]>([])
-  const health = ref<AlertSummary>({})
-  
-  // Cache the threshold date to avoid redundant computations
-  const thresholdDate = ref<Date | null>(null)
-  
   // Update threshold when showOnlyActive changes
   const updateThreshold = () => {
-    if (filterState.value.showOnlyActive) {
-      const threshold = new Date()
-      threshold.setDate(threshold.getDate() - 14)
-      thresholdDate.value = threshold
-    } else {
-      thresholdDate.value = null
-    }
+    sharedState.updateThreshold(filterState.value.showOnlyActive)
   }
 
   const tableData = computed(() =>
-    repos.value.map((repo) => {
+    sharedState.repos.value.map((repo) => {
       const fullName = `${repo.owner}/${repo.name}`
-      const healthData = health.value[fullName] || {}
+      const healthData = sharedState.alertSummary.value[fullName] || {}
 
       const row = { ...repo }
       let total = 0
-      for (const col of columns) {
+      for (const col of SEVERITY_COLUMNS) {
         const val = (healthData as any)[col.key] ?? 0
         row[col.key] = val
         total += val
@@ -61,13 +38,13 @@ export function useRepoHealth() {
     if (!filterState.value.showOnlyActive) return tableData.value
 
     // Use cached threshold date
-    if (!thresholdDate.value) {
+    if (!sharedState.thresholdDate.value) {
       updateThreshold()
     }
 
     return tableData.value.filter((repo) => {
       const lastActivity = new Date(repo.lastActivityAt)
-      return !isNaN(lastActivity.getTime()) && lastActivity >= thresholdDate.value!
+      return !isNaN(lastActivity.getTime()) && lastActivity >= sharedState.thresholdDate.value!
     })
   })
 
@@ -106,57 +83,24 @@ export function useRepoHealth() {
     })
   })
 
-  // Map frontend field names to backend field names
-  const mapFieldToBackend = (field: string): string => {
-    const fieldMap: Record<string, string> = {
-      'lastActivityAt': 'last_activity_at',
-      'name': 'name',
-      'owner': 'owner',
-      'description': 'description',
-      'createdAt': 'created_at',
-      // For computed fields like totalViolations, high, middle, low, we don't send to backend
-      // These will be sorted on the frontend only
-    }
-    return fieldMap[field] || 'last_activity_at' // default fallback
-  }
-
   async function fetchData() {
-    // Only send backend-sortable fields to the API
     const currentField = sortState.value.field
-    const backendField = mapFieldToBackend(currentField)
+    const backendField = sharedState.mapFieldToBackend(currentField)
     
-    const repoData = await callApi(
-      () => apiService.getRepos(200, backendField),
-      { errorMessage: 'Failed to fetch repositories' }
-    )
-    
-    if (repoData) {
-      repos.value = repoData
-
-      // Fetch alert summary
-      const summaryData = await callApi(
-        () => apiService.getAlertSummary(
-          repos.value.map((r) => ({ owner: r.owner, repo: r.name }))
-        ),
-        { errorMessage: 'Failed to fetch alert summary' }
-      )
-      
-      if (summaryData) {
-        health.value = summaryData
-      }
-    }
+    await sharedState.fetchRepos(backendField)
+    await sharedState.fetchAlertSummary()
   }
 
   return {
-    columns,
-    repos,
-    health,
+    columns: SEVERITY_COLUMNS,
+    repos: sharedState.repos,
+    health: sharedState.alertSummary,
     showOnlyActive: computed(() => filterState.value.showOnlyActive),
     tableData,
     filteredTableData,
     sortedTableData,
-    loading,
-    error,
+    loading: sharedState.loading,
+    error: sharedState.error,
     fetchData,
     sortState,
     updateSortState,
