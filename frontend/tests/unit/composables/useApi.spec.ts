@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useApi } from '@/composables/useApi'
+import { useApi } from '~/composables/useApi'
 
 // Mock dependencies
 vi.mock('@/utils/api', () => ({

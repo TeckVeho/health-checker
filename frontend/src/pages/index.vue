@@ -5,34 +5,70 @@
         <!-- Filter Card -->
         <RepoFilterCard
             :showOnlyActive="showOnlyActive"
-            :loading="loading"
+            :loading="loading || checkTypeLoading"
             @toggle-active="handleToggleFilter"
         />
 
-        <!-- Loading -->
-        <div v-if="repos.length === 0">
-            <LoadingText 
-                text="Loading repositories..."
-                aria-label="Loading repository data"
-            />
-        </div>
+        <Tabs :value="activeTab" @update:value="handleTabChange">
+          <TabList>
+            <Tab value="severity">Severity-based view</Tab>
+            <Tab value="checkType">CheckType-based view</Tab>
+          </TabList>
+          <TabPanels>
+            <TabPanel value="severity">
+              <!-- Loading -->
+              <div v-if="repos.length === 0">
+                <LoadingText 
+                  text="Loading repositories..."
+                  aria-label="Loading repository data"
+                />
+              </div>
 
-        <!-- Repo Table -->
-        <div v-else>
-            <RepoTable 
-                :tableData="sortedTableData" 
-                :columns="columns"
-                :loading="loading"
-                :sortState="sortState"
-                @sort-change="handleSortChange"
-                empty-message="No repositories found. Try adjusting your filters."
-            />
-        </div>
+              <!-- Repo Table -->
+              <div v-else>
+                <RepoTable 
+                  :tableData="sortedTableData" 
+                  :columns="columns"
+                  :loading="loading"
+                  :sortState="sortState"
+                  @sort-change="handleSortChange"
+                  empty-message="No repositories found. Try adjusting your filters."
+                />
+              </div>
+            </TabPanel>
+            <TabPanel value="checkType">
+              <!-- Loading -->
+              <div v-if="repos.length === 0">
+                <LoadingText 
+                  text="Loading checkType data..."
+                  aria-label="Loading checkType data"
+                />
+              </div>
+
+              <!-- CheckType Repo Table -->
+              <div v-else>
+                <RepoTable 
+                  :tableData="checkTypeSortedTableData" 
+                  :columns="checkTypeColumns"
+                  :loading="checkTypeLoading"
+                  :sortState="checkTypeSortState"
+                  @sort-change="handleCheckTypeSortChange"
+                  empty-message="No repositories found. Try adjusting your filters."
+                />
+              </div>
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
+
     </div>
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
 import { useRepoHealth } from '@/composables/useRepoHealth'
+import { useCheckTypeAlerts } from '@/composables/useCheckTypeAlerts'
+import { useTabState } from '@/composables/useTabState'
+import { useSharedState } from '@/composables/useSharedState'
 import { useCustomToast } from '@/composables/useCustomToast'
 import HealthTitle from '@/components/Atoms/HealthTitle.vue'
 import HealthButton from '@/components/Atoms/HealthButton.vue'
@@ -42,6 +78,11 @@ import RepoFilterCard from '@/components/Molecules/RepoFilterCard.vue'
 import RepoTable from '@/components/Molecules/RepoTable.vue'
 
 const toast = useCustomToast()
+
+// Tab state management
+const { activeTab, setActiveTab } = useTabState()
+
+// Severity-based data
 const {
   columns,
   repos,
@@ -54,17 +95,40 @@ const {
   loading,
 } = useRepoHealth()
 
+// CheckType-based data
+const {
+  columns: checkTypeColumns,
+  repos: checkTypeRepos,
+  sortedTableData: checkTypeSortedTableData,
+  sortState: checkTypeSortState,
+  updateSortState: updateCheckTypeSortState,
+  toggleShowOnlyActive: toggleCheckTypeShowOnlyActive,
+  fetchData: fetchCheckTypeData,
+  loading: checkTypeLoading,
+} = useCheckTypeAlerts()
+
 const handleSortChange = (field, order) => {
   updateSortState(field, order)
 }
 
+const handleCheckTypeSortChange = (field, order) => {
+  updateCheckTypeSortState(field, order)
+}
+
+const handleTabChange = (tab) => {
+  setActiveTab(tab)
+}
+
 const handleToggleFilter = () => {
   toggleShowOnlyActive()
+  toggleCheckTypeShowOnlyActive()
 }
 
 async function fetchAndToast() {
   try {
-    await fetchData()
+    // Use shared state to avoid duplicate API calls
+    const sharedState = useSharedState()
+    await sharedState.initializeData()
   } catch (err) {
     toast.error('Error fetching data', err?.message || String(err))
   }
