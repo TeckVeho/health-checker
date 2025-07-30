@@ -184,14 +184,16 @@ describe('RepoTable Logic', () => {
 
   describe('severity mapping', () => {
     it('should map violation counts to severity levels', () => {
-      const getSeverity = (count: number, tagSeverity: string) => {
-        return count > 0 ? tagSeverity : 'success'
+      const getSeverity = (count: number) => {
+        return count > 0 ? 'danger' : 'success'
       }
 
-      expect(getSeverity(5, 'danger')).toBe('danger')
-      expect(getSeverity(0, 'danger')).toBe('success')
-      expect(getSeverity(1, 'warning')).toBe('warning')
-      expect(getSeverity(0, 'warning')).toBe('success')
+      expect(getSeverity(5)).toBe('danger')
+      expect(getSeverity(0)).toBe('success')
+      expect(getSeverity(1)).toBe('danger')
+      expect(getSeverity(0)).toBe('success')
+      expect(getSeverity(10)).toBe('danger')
+      expect(getSeverity(999)).toBe('danger')
     })
   })
 
