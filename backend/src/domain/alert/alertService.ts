@@ -358,7 +358,7 @@ class AlertService {
       where: {
         owner,
         repo,
-        checkType: ['pr_review_workflow_missing'],
+        checkType: ['pr_review_workflow_missing', 'release_labeling_workflow_missing'],
         systemResolved: false,
       },
     });
