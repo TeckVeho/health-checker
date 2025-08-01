@@ -229,6 +229,9 @@ describe('checkActions', () => {
       // Mock both workflow files don't exist
       mockFs.access.mockRejectedValue(new Error('File not found'));
 
+      // Mock PR workflow missing to trigger alert
+      mockOctokit.repos.getContent.mockRejectedValue({ status: 404 });
+
       const result = await checkActions(owner, repo);
 
       // Should have both PR and release-labeling alerts since both are missing
@@ -250,7 +253,7 @@ describe('checkActions', () => {
         filePath: '.github/workflows/release-labeling.yml',
         lineNumber: -1,
         codeSnippet: '',
-        branch: 'main'
+        branch: 'unknown'
       });
     });
 
@@ -270,6 +273,9 @@ describe('checkActions', () => {
         }
         return Promise.reject(new Error('File not found')); // .yaml doesn't exist
       });
+
+      // Mock PR workflow missing to trigger alert
+      mockOctokit.repos.getContent.mockRejectedValue({ status: 404 });
 
       const result = await checkActions(owner, repo);
 
@@ -298,6 +304,9 @@ describe('checkActions', () => {
         return Promise.reject(new Error('File not found')); // .yml doesn't exist
       });
 
+      // Mock PR workflow missing to trigger alert
+      mockOctokit.repos.getContent.mockRejectedValue({ status: 404 });
+
       const result = await checkActions(owner, repo);
 
       // Should only have PR alert, no release-labeling alert since workflow exists
@@ -319,6 +328,9 @@ describe('checkActions', () => {
 
       // Mock workflow files don't exist
       mockFs.access.mockRejectedValue(new Error('File not found'));
+
+      // Mock PR workflow missing to trigger alert
+      mockOctokit.repos.getContent.mockRejectedValue({ status: 404 });
 
       const result = await checkActions(owner, repo);
 
