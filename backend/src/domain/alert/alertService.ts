@@ -4,6 +4,7 @@ import { repoAttributes, repoModelOptions } from '../repo/repoSchema';
 import { alertAttributes, alertModelOptions } from './alertSchema';
 import { cloneRepo } from './util/cloneRepo';
 import { gitleaksScanner } from './util/gitleaksScanner';
+import { auditScanner } from './util/auditScanner';
 import { checkBranches, type AlertCandidate } from './util/checkBranches';
 import { checkIssues, type IssueAlertCandidate } from './util/checkIssues';
 import { checkActions } from './util/checkActions';
@@ -357,7 +358,7 @@ class AlertService {
       where: {
         owner,
         repo,
-        checkType: ['pr_review_workflow_missing'],
+        checkType: ['pr_review_workflow_missing', 'release_labeling_workflow_missing'],
         systemResolved: false,
       },
     });
@@ -421,6 +422,14 @@ class AlertService {
       }
       await gitleaksScanner(owner, repo);
       results.gitleaks = 'done';
+    }
+
+    if (effectiveChecks.includes('audit')) {
+      if (!effectiveChecks.includes('clone')) {
+        await cloneRepo(owner, repo); // ensure audit has source
+      }
+      await auditScanner(owner, repo);
+      results.audit = 'done';
     }
 
     return results;

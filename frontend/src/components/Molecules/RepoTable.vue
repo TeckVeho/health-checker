@@ -55,7 +55,7 @@
         <template #body="slotProps">
           <HealthTag 
             :value="slotProps.data[column.key]"
-            :severity="slotProps.data[column.key] > 0 ? column.tagSeverity : 'success'" 
+            :severity="slotProps.data[column.key] > 0 ? 'danger' : 'success'" 
           />
         </template>
       </Column>
