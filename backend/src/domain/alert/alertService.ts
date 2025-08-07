@@ -218,7 +218,7 @@ class AlertService {
 
     // Process new alerts
     for (const alert of result.alerts) {
-      const key = [alert.owner, alert.repo, alert.checkType, alert.title, alert.filePath, alert.lineNumber, alert.codeSnippet, alert.branch, alert.issueNumber].join('||');
+      const key = [alert.owner, alert.repo, alert.checkType, alert.title, alert.filePath || '', alert.lineNumber || -1, alert.codeSnippet || '', alert.branch || ''].join('||');
       detectedKeySet.add(key);
 
       await Alert.findOrCreate({
@@ -227,10 +227,10 @@ class AlertService {
           repo: alert.repo, 
           checkType: alert.checkType, 
           title: alert.title, 
-          filePath: alert.filePath, 
-          lineNumber: alert.lineNumber, 
-          codeSnippet: alert.codeSnippet, 
-          branch: alert.branch 
+          filePath: alert.filePath || '', 
+          lineNumber: alert.lineNumber || -1, 
+          codeSnippet: alert.codeSnippet || '', 
+          branch: alert.branch || ''
         },
         defaults: {
           owner: alert.owner,
@@ -268,7 +268,7 @@ class AlertService {
       where: {
         owner,
         repo,
-        checkType: ['issue_missing_sp', 'issue_large_sp', 'issue_missing_end_date', 'issue_expired_end_date', 'issue_not_in_project'],
+        checkType: ['issue_missing_sp', 'issue_large_sp', 'issue_missing_end_date', 'issue_expired_end_date', 'issue_not_in_project', 'issue_template_only', 'issue_unclear_instruction'],
         systemResolved: false,
       },
     });
@@ -281,11 +281,10 @@ class AlertService {
         row.getDataValue('repo'), 
         row.getDataValue('checkType'), 
         row.getDataValue('title'), 
-        row.getDataValue('filePath') ?? '', 
-        row.getDataValue('lineNumber') ?? -1, 
-        row.getDataValue('codeSnippet') ?? '', 
-        row.getDataValue('branch') ?? '',
-        row.getDataValue('issueNumber') ?? -1
+        row.getDataValue('filePath') || '', 
+        row.getDataValue('lineNumber') || -1, 
+        row.getDataValue('codeSnippet') || '', 
+        row.getDataValue('branch') || ''
       ].join('||');
 
       if (!detectedKeySet.has(key)) {

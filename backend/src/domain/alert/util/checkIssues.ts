@@ -1,9 +1,13 @@
 import { Octokit } from '@octokit/rest';
+import { openai } from '@ai-sdk/openai';
+import { generateText } from 'ai';
 
 const githubToken = process.env.GITHUB_API_KEY;
-if (!githubToken) throw new Error('GITHUB_API_KEY is required');
+if (!githubToken && process.env.NODE_ENV !== 'test') throw new Error('GITHUB_API_KEY is required');
 
-const octokit = new Octokit({ auth: githubToken });
+// OpenAI API key will be automatically read from OPENAI_API_KEY environment variable
+
+const octokit = new Octokit({ auth: githubToken || 'test-token' });
 
 export interface IssueAlertCandidate {
   owner: string;
@@ -16,7 +20,6 @@ export interface IssueAlertCandidate {
   lineNumber: number;
   codeSnippet: string;
   branch: string;
-  issueNumber: number;
   issueUrl: string;
 }
 
@@ -24,6 +27,12 @@ export interface CheckIssuesResult {
   owner: string;
   repo: string;
   alerts: IssueAlertCandidate[];
+}
+
+// Interface for project item field values
+interface ProjectItemFieldValue {
+  sp?: number;
+  endDate?: Date;
 }
 
 export async function checkIssues(owner: string, repo: string): Promise<CheckIssuesResult> {
@@ -45,20 +54,32 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
     console.log(`📋 Found ${issues.length} open issues for ${owner}/${repo}`);
 
     // Cache project data to avoid multiple API calls
-    const projectCache = new Map<number, boolean>();
+    // const projectCache = new Map<number, boolean>();
     
     // Pre-load all project data once for performance optimization
     console.log('📊 Pre-loading project data...');
     const allProjectIssues = await getAllProjectIssues(owner, repo);
     console.log(`📊 Found ${allProjectIssues.size} issues in projects`);
     
+    // Pre-load project field values for all issues
+    console.log('📊 Pre-loading project field values...');
+    const projectFieldValues = await getAllProjectFieldValues(owner, repo, issues.map(issue => issue.number));
+    console.log(`📊 Loaded field values for ${projectFieldValues.size} issues`);
+    
     for (let i = 0; i < issues.length; i++) {
       const issue = issues[i];
       console.log(`🔍 Processing issue #${issue.number} (${i + 1}/${issues.length})`);
       
-      // Check Story Point (SP)
-      const storyPoints = extractStoryPoints(issue.body || '');
+      // Get field values from projects (priority) and body (fallback)
+      const projectValues = projectFieldValues.get(issue.number) || {};
+      const bodyStoryPoints = extractStoryPoints(issue.body || '');
+      const bodyEndDate = extractEndDate(issue.body || '');
       
+      // Use project values if available, otherwise fallback to body
+      const storyPoints = projectValues.sp !== undefined ? projectValues.sp : bodyStoryPoints;
+      const endDate = projectValues.endDate !== undefined ? projectValues.endDate : bodyEndDate;
+      
+      // Check Story Point (SP)
       if (storyPoints === null) {
         // Issue missing Story Point
         alerts.push({
@@ -72,7 +93,6 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
           lineNumber,
           codeSnippet,
           branch,
-          issueNumber: issue.number,
           issueUrl: issue.html_url,
         });
       } else if (storyPoints > 8) {
@@ -88,14 +108,11 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
           lineNumber,
           codeSnippet,
           branch,
-          issueNumber: issue.number,
           issueUrl: issue.html_url,
         });
       }
 
       // Check End Date
-      const endDate = extractEndDate(issue.body || '');
-      
       if (endDate === null) {
         // Issue missing End Date
         alerts.push({
@@ -109,7 +126,6 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
           lineNumber,
           codeSnippet,
           branch,
-          issueNumber: issue.number,
           issueUrl: issue.html_url,
         });
       } else if (endDate < new Date(Date.now() - 24 * 60 * 60 * 1000)) {
@@ -125,7 +141,6 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
           lineNumber,
           codeSnippet,
           branch,
-          issueNumber: issue.number,
           issueUrl: issue.html_url,
         });
       }
@@ -146,7 +161,42 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
           lineNumber,
           codeSnippet,
           branch,
-          issueNumber: issue.number,
+          issueUrl: issue.html_url,
+        });
+      }
+
+      // Check for template-only issue body
+      const isTemplateOnly = await detectTemplateOnlyIssue(issue.title, issue.body || '');
+      if (isTemplateOnly) {
+        alerts.push({
+          owner,
+          repo,
+          checkType: 'issue_template_only',
+          title: `issue:${issue.number}`,
+          description: `Issue #${issue.number} appears to have template-only content in the body.`,
+          severity: 'high',
+          filePath,
+          lineNumber,
+          codeSnippet,
+          branch,
+          issueUrl: issue.html_url,
+        });
+      }
+
+      // Check for unclear instructions
+      const hasUnclearInstructions = await detectUnclearInstructions(issue.title, issue.body || '');
+      if (hasUnclearInstructions) {
+        alerts.push({
+          owner,
+          repo,
+          checkType: 'issue_unclear_instruction',
+          title: `issue:${issue.number}`,
+          description: `Issue #${issue.number} lacks clear instructions on what needs to be done.`,
+          severity: 'middle',
+          filePath,
+          lineNumber,
+          codeSnippet,
+          branch,
           issueUrl: issue.html_url,
         });
       }
@@ -159,6 +209,187 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
   }
 
   return { owner, repo, alerts };
+}
+
+// Function to get all project field values for issues
+async function getAllProjectFieldValues(owner: string, repo: string, issueNumbers: number[]): Promise<Map<number, ProjectItemFieldValue>> {
+  const fieldValues = new Map<number, ProjectItemFieldValue>();
+  
+  try {
+    console.log('📊 Loading project field values using GraphQL...');
+    
+    // Query to get projects V2 with pagination
+    const projectsQuery = `
+      query($owner: String!, $repo: String!, $after: String) {
+        repository(owner: $owner, name: $repo) {
+          projectsV2(first: 10, after: $after) {
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+            nodes {
+              id
+              number
+              title
+              fields(first: 100) {
+                nodes {
+                  ... on ProjectV2Field {
+                    id
+                    name
+                    dataType
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    // Query to get items of a project V2 with field values
+    const itemsQuery = `
+      query($projectId: ID!, $after: String) {
+        node(id: $projectId) {
+          ... on ProjectV2 {
+            items(first: 100, after: $after) {
+              pageInfo {
+                hasNextPage
+                endCursor
+              }
+              nodes {
+                content {
+                  ... on Issue {
+                    number
+                  }
+                }
+                fieldValues(first: 100) {
+                  nodes {
+                    ... on ProjectV2ItemFieldTextValue {
+                      field {
+                        ... on ProjectV2Field {
+                          name
+                        }
+                      }
+                      text
+                    }
+                    ... on ProjectV2ItemFieldNumberValue {
+                      field {
+                        ... on ProjectV2Field {
+                          name
+                        }
+                      }
+                      number
+                    }
+                    ... on ProjectV2ItemFieldDateValue {
+                      field {
+                        ... on ProjectV2Field {
+                          name
+                        }
+                      }
+                      date
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    // Step 1: Get all projects V2 with pagination
+    let projectsAfter = null;
+    let hasMoreProjects = true;
+    
+    while (hasMoreProjects) {
+      const projectsResponse: any = await octokit.graphql(projectsQuery, {
+        owner,
+        repo,
+        after: projectsAfter,
+      });
+
+      const repository: any = projectsResponse.repository;
+      if (!repository || !repository.projectsV2) {
+        break;
+      }
+
+      const projects = repository.projectsV2.nodes || [];
+      console.log(`📊 Processing ${projects.length} projects V2 for field values...`);
+
+      // Step 2: For each project V2, get all items with field values
+      for (const project of projects) {
+        console.log(`📊 Project V2 ${project.title}: loading items with field values...`);
+        
+        let itemsAfter = null;
+        let hasMoreItems = true;
+        
+        while (hasMoreItems) {
+          const itemsResponse: any = await octokit.graphql(itemsQuery, {
+            projectId: project.id,
+            after: itemsAfter,
+          });
+
+          const projectNode: any = itemsResponse.node;
+          if (!projectNode || !projectNode.items) {
+            break;
+          }
+
+          const items = projectNode.items.nodes || [];
+          console.log(`📊 Project V2 ${project.title}: ${items.length} items with field values`);
+
+          // Process field values for each item
+          for (const item of items) {
+            if (item.content && item.content.number) {
+              const issueNumber = item.content.number;
+              const itemFieldValues: ProjectItemFieldValue = {};
+              
+              // Process field values
+              if (item.fieldValues && item.fieldValues.nodes) {
+                for (const fieldValue of item.fieldValues.nodes) {
+                  if (fieldValue.field && fieldValue.field.name) {
+                    const fieldName = fieldValue.field.name.toLowerCase();
+                    
+                    if (fieldName === 'sp' && fieldValue.number !== undefined) {
+                      itemFieldValues.sp = fieldValue.number;
+                    } else if ((fieldName === 'end date' || fieldName === 'end_date' || fieldName === 'due date' || fieldName === 'deadline') && fieldValue.date) {
+                      itemFieldValues.endDate = new Date(fieldValue.date);
+                    } else if (fieldName === 'sp' && fieldValue.text) {
+                      // Try to parse SP from text field
+                      const spMatch = fieldValue.text.match(/(\d+)/);
+                      if (spMatch) {
+                        itemFieldValues.sp = parseInt(spMatch[1], 10);
+                      }
+                    }
+                  }
+                }
+              }
+              
+              // Only add if we found values
+              if (itemFieldValues.sp !== undefined || itemFieldValues.endDate !== undefined) {
+                fieldValues.set(issueNumber, itemFieldValues);
+              }
+            }
+          }
+
+          // Update pagination for items
+          hasMoreItems = projectNode.items.pageInfo.hasNextPage;
+          itemsAfter = projectNode.items.pageInfo.endCursor;
+        }
+      }
+
+      // Update pagination for projects
+      hasMoreProjects = repository.projectsV2.pageInfo.hasNextPage;
+      projectsAfter = repository.projectsV2.pageInfo.endCursor;
+    }
+
+    console.log(`📊 Found field values for ${fieldValues.size} issues from projects V2`);
+
+  } catch (error) {
+    console.error(`❌ Error loading project field values for ${owner}/${repo}:`, error);
+    console.log('⚠️ Project field value check will be skipped due to API limitations');
+  }
+
+  return fieldValues;
 }
 
 // Function to get all issues in projects with pagination
@@ -321,6 +552,170 @@ function extractEndDate(body: string): Date | null {
   }
 
   return null;
+}
+
+// Function to detect if issue body appears to be template-only using LLM
+async function detectTemplateOnlyIssue(title: string, body: string): Promise<boolean> {
+  if (!body || body.trim().length === 0) {
+    return true; // Empty body is considered template-only
+  }
+
+  try {
+    const prompt = `
+Please analyze this GitHub issue and determine if the body appears to be left as a template or contains only placeholder instructions.
+
+Issue Title: ${title}
+Issue Body: ${body}
+
+Consider the following criteria:
+1. The body is empty or contains only whitespace
+2. The body contains only placeholder text like "Please describe the issue here"
+3. The body contains template instructions that haven't been replaced
+4. The body is very short and lacks meaningful content
+5. The body contains generic template sections that haven't been filled out
+
+Respond with only "true" if the issue body appears to be template-only, or "false" if it contains meaningful, non-template content.
+`.trim();
+
+    const result = await generateText({
+      model: openai('gpt-4o-mini'),
+      prompt,
+    });
+
+    const response = result.text?.trim().toLowerCase();
+    return response === 'true';
+  } catch (error) {
+    console.error('Error in LLM template detection:', error);
+    // Fallback to heuristic-based detection
+    return fallbackTemplateDetection(body);
+  }
+}
+
+// Fallback heuristic-based template detection
+function fallbackTemplateDetection(body: string): boolean {
+  const normalized = body.trim().toLowerCase();
+  
+  // Check for empty or very short content
+  if (normalized.length < 50) {
+    return true;
+  }
+
+  // Check for description section (similar to PRCheck logic)
+  const descriptionSection = normalized.match(/##\s*description\s*([\s\S]*?)(##|$)/i);
+  const descriptionContent = descriptionSection?.[1]?.trim() ?? '';
+  if (descriptionContent.length >= 200) {
+    return false;
+  }
+  const isDescriptionUntouched = descriptionContent === '' || descriptionContent.toLowerCase().includes('rewrite the summary of the tasks');
+  
+  // Check for common template placeholders (expanded list)
+  const templatePhrases = [
+    'please describe the issue here',
+    'describe the problem',
+    'what did you expect to happen',
+    'what actually happened',
+    'please provide',
+    'fill in the details',
+    'add your description here',
+    'template content',
+    'placeholder text',
+    'rewrite the summary of the tasks performed for this issue and its goal',
+    'record the notes and requirements related to the order of merging',
+    'provide the logs of dodoai during the development process',
+    'include screenshots showing changes or fixes'
+  ];
+
+  const containsPlaceholder = templatePhrases.some(phrase => normalized.includes(phrase.toLowerCase()));
+  return isDescriptionUntouched || containsPlaceholder;
+}
+
+// Function to detect if issue has unclear instructions using LLM
+async function detectUnclearInstructions(title: string, body: string): Promise<boolean> {
+  if (!body || body.trim().length === 0) {
+    return true; // Empty body has unclear instructions
+  }
+
+  try {
+    const prompt = `
+Please analyze this GitHub issue and determine if it lacks clear instructions on what needs to be done.
+
+Issue Title: ${title}
+Issue Body: ${body}
+
+Consider the following criteria:
+1. The issue lacks specific, actionable instructions
+2. The description is vague or ambiguous
+3. It's unclear what the expected outcome should be
+4. The issue doesn't provide enough context for someone to understand what needs to be done
+5. The instructions are too general or lack specificity
+
+Respond with only "true" if the issue has unclear instructions, or "false" if it provides clear, actionable instructions.
+`.trim();
+
+    const result = await generateText({
+      model: openai('gpt-4o-mini'),
+      prompt,
+    });
+
+    const response = result.text?.trim().toLowerCase();
+    return response === 'true';
+  } catch (error) {
+    console.error('Error in LLM unclear instructions detection:', error);
+    // Fallback to heuristic-based detection
+    return fallbackUnclearInstructionsDetection(body);
+  }
+}
+
+// Fallback heuristic-based unclear instructions detection
+function fallbackUnclearInstructionsDetection(body: string): boolean {
+  const normalized = body.trim().toLowerCase();
+  
+  // Check for very short content
+  if (normalized.length < 100) {
+    return true;
+  }
+
+  // Check for vague phrases
+  const vaguePhrases = [
+    'fix this',
+    'something is wrong',
+    'it doesn\'t work',
+    'there\'s an issue',
+    'problem with',
+    'needs to be fixed',
+    'broken',
+    'not working',
+    'help needed',
+    'bug',
+    'issue',
+    'problem'
+  ];
+
+  // Check if the body lacks specific technical details
+  const technicalTerms = [
+    'error',
+    'exception',
+    'stack trace',
+    'log',
+    'console',
+    'api',
+    'endpoint',
+    'database',
+    'query',
+    'function',
+    'method',
+    'class',
+    'component',
+    'file',
+    'line',
+    'code'
+  ];
+
+  const vagueCount = vaguePhrases.filter(phrase => normalized.includes(phrase)).length;
+  const technicalCount = technicalTerms.filter(term => normalized.includes(term)).length;
+  
+  // If there are vague phrases but few technical details, it's likely unclear
+  return vagueCount > 0 && technicalCount < 2 && normalized.length < 200;
 }
 
 

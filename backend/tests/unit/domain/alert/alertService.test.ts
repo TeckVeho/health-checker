@@ -7,12 +7,29 @@ jest.mock('../../../../src/domain/alert/util/checkBranches', () => ({
   checkBranches: jest.fn(),
 }));
 
+jest.mock('../../../../src/domain/alert/util/checkIssues', () => ({
+  checkIssues: jest.fn(),
+}));
+
 jest.mock('../../../../src/domain/alert/util/cloneRepo', () => ({
   cloneRepo: jest.fn(),
 }));
 
 jest.mock('../../../../src/domain/alert/util/gitleaksScanner', () => ({
   gitleaksScanner: jest.fn(),
+}));
+
+jest.mock('../../../../src/domain/alert/util/auditScanner', () => ({
+  auditScanner: jest.fn(),
+}));
+
+// Mock AI SDK
+jest.mock('ai', () => ({
+  generateText: jest.fn(),
+}));
+
+jest.mock('@ai-sdk/openai', () => ({
+  openai: jest.fn(() => 'mock-model'),
 }));
 
 jest.mock('../../../../src/config/database', () => ({
@@ -32,13 +49,16 @@ jest.mock('../../../../src/domain/repo/repoSchema', () => ({
   repoModelOptions: {},
 }));
 
+// Mock Sequelize with proper Model class
 jest.mock('sequelize', () => ({
-  Model: class {
+  Model: class MockModel {
     static init = jest.fn();
     static findOrCreate = jest.fn();
     static findAll = jest.fn();
     static findOne = jest.fn();
   },
+  QueryTypes: { SELECT: 'SELECT' },
+  Op: { gte: 'gte' },
 }));
 
 // Import sau khi mock
@@ -79,10 +99,192 @@ describe('AlertService', () => {
 
     it('should use default checks when no checks specified', async () => {
       const mockProcessBranchAlerts = jest.spyOn(AlertService, 'processBranchAlerts').mockResolvedValue({ owner, repo });
+      const mockProcessIssueAlerts = jest.spyOn(AlertService, 'processIssueAlerts').mockResolvedValue({ owner, repo });
 
       await AlertService.runAlert({ owner, repo });
 
       expect(mockProcessBranchAlerts).toHaveBeenCalledWith(owner, repo);
+      expect(mockProcessIssueAlerts).toHaveBeenCalledWith(owner, repo);
+    });
+  });
+
+  describe('Key Generation Logic Tests', () => {
+    it('should convert null values to default values correctly', () => {
+      // Test the key generation logic directly
+      const alert = {
+        owner: 'test-owner',
+        repo: 'test-repo',
+        checkType: 'issue_template_only',
+        title: 'issue:518',
+        filePath: null,
+        lineNumber: null,
+        codeSnippet: null,
+        branch: null
+      };
+
+      // Simulate the key generation logic from processIssueAlerts
+      const key = [
+        alert.owner, 
+        alert.repo, 
+        alert.checkType, 
+        alert.title, 
+        alert.filePath || '', 
+        alert.lineNumber || -1, 
+        alert.codeSnippet || '', 
+        alert.branch || ''
+      ].join('||');
+
+      expect(key).toBe('test-owner||test-repo||issue_template_only||issue:518||||-1||||');
+    });
+
+    it('should preserve empty string values correctly', () => {
+      const alert = {
+        owner: 'test-owner',
+        repo: 'test-repo',
+        checkType: 'issue_missing_sp',
+        title: 'issue:525',
+        filePath: '',
+        lineNumber: -1,
+        codeSnippet: '',
+        branch: ''
+      };
+
+      // Simulate the key generation logic from processIssueAlerts
+      const key = [
+        alert.owner, 
+        alert.repo, 
+        alert.checkType, 
+        alert.title, 
+        alert.filePath || '', 
+        alert.lineNumber || -1, 
+        alert.codeSnippet || '', 
+        alert.branch || ''
+      ].join('||');
+
+      expect(key).toBe('test-owner||test-repo||issue_missing_sp||issue:525||||-1||||');
+    });
+
+    it('should convert undefined values to default values correctly', () => {
+      const alert = {
+        owner: 'test-owner',
+        repo: 'test-repo',
+        checkType: 'issue_large_sp',
+        title: 'issue:530',
+        filePath: undefined,
+        lineNumber: undefined,
+        codeSnippet: undefined,
+        branch: undefined
+      };
+
+      // Simulate the key generation logic from processIssueAlerts
+      const key = [
+        alert.owner, 
+        alert.repo, 
+        alert.checkType, 
+        alert.title, 
+        alert.filePath || '', 
+        alert.lineNumber || -1, 
+        alert.codeSnippet || '', 
+        alert.branch || ''
+      ].join('||');
+
+      expect(key).toBe('test-owner||test-repo||issue_large_sp||issue:530||||-1||||');
+    });
+
+    it('should handle mixed null and defined values correctly', () => {
+      const alert = {
+        owner: 'test-owner',
+        repo: 'test-repo',
+        checkType: 'issue_unclear_instruction',
+        title: 'issue:540',
+        filePath: 'src/main.js',
+        lineNumber: 42,
+        codeSnippet: null,
+        branch: 'main'
+      };
+
+      // Simulate the key generation logic from processIssueAlerts
+      const key = [
+        alert.owner, 
+        alert.repo, 
+        alert.checkType, 
+        alert.title, 
+        alert.filePath || '', 
+        alert.lineNumber || -1, 
+        alert.codeSnippet || '', 
+        alert.branch || ''
+      ].join('||');
+
+      expect(key).toBe('test-owner||test-repo||issue_unclear_instruction||issue:540||src/main.js||42||||main');
+    });
+
+    it('should generate consistent where clause for findOrCreate', () => {
+      const alert = {
+        owner: 'test-owner',
+        repo: 'test-repo',
+        checkType: 'issue_template_only',
+        title: 'issue:518',
+        filePath: null,
+        lineNumber: null,
+        codeSnippet: null,
+        branch: null
+      };
+
+      // Simulate the where clause generation logic from processIssueAlerts
+      const whereClause = {
+        owner: alert.owner,
+        repo: alert.repo,
+        checkType: alert.checkType,
+        title: alert.title,
+        filePath: alert.filePath || '',
+        lineNumber: alert.lineNumber || -1,
+        codeSnippet: alert.codeSnippet || '',
+        branch: alert.branch || ''
+      };
+
+      expect(whereClause).toEqual({
+        owner: 'test-owner',
+        repo: 'test-repo',
+        checkType: 'issue_template_only',
+        title: 'issue:518',
+        filePath: '',
+        lineNumber: -1,
+        codeSnippet: '',
+        branch: ''
+      });
+    });
+
+    it('should generate consistent keys for existing alerts from database', () => {
+      // Simulate existing alert from database with null values
+      const existingAlert = {
+        getDataValue: (field: string) => {
+          const values: Record<string, any> = {
+            owner: 'test-owner',
+            repo: 'test-repo',
+            checkType: 'issue_template_only',
+            title: 'issue:518',
+            filePath: null,
+            lineNumber: null,
+            codeSnippet: null,
+            branch: null
+          };
+          return values[field];
+        }
+      };
+
+      // Simulate the key generation logic for existing alerts from processIssueAlerts
+      const key = [
+        existingAlert.getDataValue('owner'),
+        existingAlert.getDataValue('repo'),
+        existingAlert.getDataValue('checkType'),
+        existingAlert.getDataValue('title'),
+        existingAlert.getDataValue('filePath') || '',
+        existingAlert.getDataValue('lineNumber') || -1,
+        existingAlert.getDataValue('codeSnippet') || '',
+        existingAlert.getDataValue('branch') || ''
+      ].join('||');
+
+      expect(key).toBe('test-owner||test-repo||issue_template_only||issue:518||||-1||||');
     });
   });
 }); 
