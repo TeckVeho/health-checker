@@ -44,9 +44,12 @@
       
       <Column field="description" header="Description" class="col-description">
         <template #body="slotProps">
-          <div class="text-sm text-gray-700 truncate" :title="slotProps.data.description" data-label="Description">
-            {{ slotProps.data.description || '-' }}
-          </div>
+          <div 
+            class="text-sm text-gray-700 truncate" 
+            :title="slotProps.data.description" 
+            data-label="Description"
+            v-html="processIssueNumbersLocal(slotProps.data.description || '-')"
+          />
         </template>
       </Column>
       
@@ -96,7 +99,7 @@ import { ref } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Tag from 'primevue/tag'
-import { getFileUrlLegacy } from '~/utils/github'
+import { getFileUrlLegacy, processIssueNumbers } from '~/utils/github'
 import { useAlerts } from '~/composables/useAlerts'
 
 const props = defineProps({
@@ -171,6 +174,10 @@ const getFileUrl = (filePath, lineNumber, branch) => {
 
 const formatNotes = (notes) => {
   return (notes || '-').replace(/\n/g, '<br>')
+}
+
+const processIssueNumbersLocal = (text) => {
+  return processIssueNumbers(text, props.owner, props.repo)
 }
 </script>
 

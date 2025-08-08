@@ -149,4 +149,25 @@ export function getIssueUrl(owner: string, repo: string, issueNumber: number): s
   }
   
   return `https://github.com/${owner}/${repo}/issues/${issueNumber}`
+}
+
+/**
+ * Processes text and converts issue numbers (e.g., "#123") to clickable links
+ * @param text - The text to process
+ * @param owner - Repository owner
+ * @param repo - Repository name
+ * @returns HTML string with issue numbers converted to links
+ */
+export function processIssueNumbers(text: string, owner: string, repo: string): string {
+  if (!text || !owner || !repo) {
+    return text || ''
+  }
+  
+  // Regular expression to match issue numbers like #123, #456, etc.
+  const issueNumberRegex = /#(\d+)/g
+  
+  return text.replace(issueNumberRegex, (match, issueNumber) => {
+    const issueUrl = getIssueUrl(owner, repo, parseInt(issueNumber))
+    return `<a href="${issueUrl}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 hover:underline transition-colors duration-200">${match}</a>`
+  })
 } 
