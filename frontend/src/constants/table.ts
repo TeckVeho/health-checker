@@ -7,16 +7,53 @@ export const SEVERITY_COLUMNS = [
 
 // Check Type Columns based on checkTypeLabels
 export const CHECK_TYPE_COLUMNS = [
-  { label: 'Default Branch Violation', key: 'default_branch_violation', tagSeverity: 'danger' },
-  { label: 'Branch Name Violation', key: 'branch_name_violation', tagSeverity: 'warning' },
-  { label: 'Branch Protect Rule Violation', key: 'branch_protect_rule_violation', tagSeverity: 'danger' },
-  { label: 'Exposed Secret Key', key: 'exposed_secret_key', tagSeverity: 'danger' },
-  { label: 'Issue Format Violation', key: 'issue_format_violation', tagSeverity: 'warning' },
-  { label: 'Pull Request Format Violation', key: 'pull_request_format_violation', tagSeverity: 'warning' },
-  { label: 'No Unit Test CI', key: 'no_unit_test_ci', tagSeverity: 'info' },
-  { label: 'Security Risk', key: 'security_risk', tagSeverity: 'danger' },
-  { label: 'Performance Issue', key: 'performance_issue', tagSeverity: 'warning' },
+  // Issue category - grouped issue-related alert types
+  { label: 'Issue', key: 'issue', tagSeverity: 'warning' },
+  
+  // Branch category - branch-related violations
+  { label: 'Branch', key: 'branch', tagSeverity: 'danger' },
+  
+  // Security category - security-related issues
+  { label: 'Security', key: 'security', tagSeverity: 'danger' },
+  
+  // Test/Performance category - testing and performance issues
+  { label: 'Test/Performance', key: 'test_performance', tagSeverity: 'info' },
 ] as const
+
+// Individual check types for detailed mapping
+export const CHECK_TYPE_MAPPING = {
+  // Issue category
+  issue: [
+    'issue_unclear_instruction',
+    'issue_template_only', 
+    'issue_missing_end_date',
+    'issue_expired_end_date',
+    'issue_missing_sp',
+    'issue_large_sp',
+    'issue_not_in_project',
+    'issue_format_violation'
+  ],
+  
+  // Branch category
+  branch: [
+    'default_branch_violation',
+    'branch_name_violation',
+    'branch_protect_rule_violation'
+  ],
+  
+  // Security category
+  security: [
+    'exposed_secret_key',
+    'security_risk'
+  ],
+  
+  // Test/Performance category
+  test_performance: [
+    'no_unit_test_ci',
+    'performance_issue',
+    'pull_request_format_violation'
+  ]
+} as const
 
 // Field mapping for backend sorting
 export const FIELD_MAPPING = {

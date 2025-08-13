@@ -17,16 +17,37 @@ vi.mock('@/composables/useFilterState', () => ({
 // Mock the constants
 vi.mock('@/constants/table', () => ({
   CHECK_TYPE_COLUMNS: [
-    { label: 'Default Branch Violation', key: 'default_branch_violation', tagSeverity: 'danger' },
-    { label: 'Branch Name Violation', key: 'branch_name_violation', tagSeverity: 'warning' },
-    { label: 'Branch Protect Rule Violation', key: 'branch_protect_rule_violation', tagSeverity: 'danger' },
-    { label: 'Exposed Secret Key', key: 'exposed_secret_key', tagSeverity: 'danger' },
-    { label: 'Issue Format Violation', key: 'issue_format_violation', tagSeverity: 'warning' },
-    { label: 'Pull Request Format Violation', key: 'pull_request_format_violation', tagSeverity: 'warning' },
-    { label: 'No Unit Test CI', key: 'no_unit_test_ci', tagSeverity: 'info' },
-    { label: 'Security Risk', key: 'security_risk', tagSeverity: 'danger' },
-    { label: 'Performance Issue', key: 'performance_issue', tagSeverity: 'warning' },
-  ]
+    { label: 'Issue', key: 'issue', tagSeverity: 'warning' },
+    { label: 'Branch', key: 'branch', tagSeverity: 'danger' },
+    { label: 'Security', key: 'security', tagSeverity: 'danger' },
+    { label: 'Test/Performance', key: 'test_performance', tagSeverity: 'info' },
+  ],
+  CHECK_TYPE_MAPPING: {
+    issue: [
+      'issue_unclear_instruction',
+      'issue_template_only', 
+      'issue_missing_end_date',
+      'issue_expired_end_date',
+      'issue_missing_sp',
+      'issue_large_sp',
+      'issue_not_in_project',
+      'issue_format_violation'
+    ],
+    branch: [
+      'default_branch_violation',
+      'branch_name_violation',
+      'branch_protect_rule_violation'
+    ],
+    security: [
+      'exposed_secret_key',
+      'security_risk'
+    ],
+    test_performance: [
+      'no_unit_test_ci',
+      'performance_issue',
+      'pull_request_format_violation'
+    ]
+  }
 }))
 
 describe('useCheckTypeAlerts', () => {
@@ -84,7 +105,9 @@ describe('useCheckTypeAlerts', () => {
       'testowner/testrepo': {
         'default_branch_violation': 3,
         'branch_protect_rule_violation': 5,
-        'exposed_secret_key': 1
+        'exposed_secret_key': 1,
+        'issue_missing_sp': 2,
+        'no_unit_test_ci': 1
       }
     }
 
@@ -95,10 +118,13 @@ describe('useCheckTypeAlerts', () => {
     
     expect(tableData.value).toHaveLength(1)
     const row = tableData.value[0]
-    expect(row.default_branch_violation).toBe(3)
-    expect(row.branch_protect_rule_violation).toBe(5)
-    expect(row.exposed_secret_key).toBe(1)
-    expect(row.totalViolations).toBe(9) // 3 + 5 + 1
+    
+    // Check grouped categories
+    expect(row.issue).toBe(2) // issue_missing_sp
+    expect(row.branch).toBe(8) // default_branch_violation + branch_protect_rule_violation
+    expect(row.security).toBe(1) // exposed_secret_key
+    expect(row.test_performance).toBe(1) // no_unit_test_ci
+    expect(row.totalViolations).toBe(12) // 2 + 8 + 1 + 1
   })
 
   it('should handle empty alert summary data', () => {
@@ -113,8 +139,44 @@ describe('useCheckTypeAlerts', () => {
     
     expect(tableData.value).toHaveLength(1)
     const row = tableData.value[0]
-    expect(row.default_branch_violation).toBe(0)
+    expect(row.issue).toBe(0)
+    expect(row.branch).toBe(0)
+    expect(row.security).toBe(0)
+    expect(row.test_performance).toBe(0)
     expect(row.totalViolations).toBe(0)
+  })
+
+  it('should handle all issue types in the Issue category', () => {
+    const mockRepos = [
+      { owner: 'testowner', name: 'testrepo', lastActivityAt: '2023-01-01' }
+    ]
+    const mockAlertSummary = {
+      'testowner/testrepo': {
+        'issue_unclear_instruction': 1,
+        'issue_template_only': 2,
+        'issue_missing_end_date': 1,
+        'issue_expired_end_date': 1,
+        'issue_missing_sp': 3,
+        'issue_large_sp': 1,
+        'issue_not_in_project': 2,
+        'issue_format_violation': 1
+      }
+    }
+
+    mockSharedState.repos.value = mockRepos
+    mockSharedState.alertSummaryByCheckType.value = mockAlertSummary
+
+    const { tableData } = useCheckTypeAlerts()
+    
+    expect(tableData.value).toHaveLength(1)
+    const row = tableData.value[0]
+    
+    // All issue types should be grouped into the 'issue' category
+    expect(row.issue).toBe(12) // 1+2+1+1+3+1+2+1 = 12
+    expect(row.branch).toBe(0)
+    expect(row.security).toBe(0)
+    expect(row.test_performance).toBe(0)
+    expect(row.totalViolations).toBe(12)
   })
 
   it('should call fetchAlertSummaryByCheckType when fetching data', async () => {
