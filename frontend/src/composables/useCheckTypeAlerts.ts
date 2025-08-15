@@ -2,7 +2,7 @@ import { computed, watch } from 'vue'
 import { useCheckTypeSortState } from './useCheckTypeSortState'
 import { useFilterState } from './useFilterState'
 import { useSharedState } from './useSharedState'
-import { CHECK_TYPE_COLUMNS } from '../constants/table'
+import { CHECK_TYPE_COLUMNS, CHECK_TYPE_MAPPING } from '../constants/table'
 
 export function useCheckTypeAlerts() {
   const { sortState, updateSortState } = useCheckTypeSortState()
@@ -17,6 +17,14 @@ export function useCheckTypeAlerts() {
   // Watch for changes in showOnlyActive to update threshold
   watch(() => filterState.value.showOnlyActive, updateThreshold, { immediate: true })
 
+  // Helper function to calculate category totals
+  const calculateCategoryTotal = (summaryData: Record<string, number>, categoryKey: string): number => {
+    const checkTypes = CHECK_TYPE_MAPPING[categoryKey as keyof typeof CHECK_TYPE_MAPPING] || []
+    return checkTypes.reduce((total, checkType) => {
+      return total + (summaryData[checkType] || 0)
+    }, 0)
+  }
+
   const tableData = computed(() => {
     // Show all repositories, not just those with alerts
     return sharedState.repos.value.map((repo) => {
@@ -26,10 +34,11 @@ export function useCheckTypeAlerts() {
       const row = { ...repo }
       let total = 0
       
-      // Map check type data to columns
+      // Map check type data to grouped columns
       CHECK_TYPE_COLUMNS.forEach((col) => {
-        (row as any)[col.key] = summaryData[col.key] || 0
-        total += (row as any)[col.key] || 0
+        const categoryTotal = calculateCategoryTotal(summaryData, col.key)
+        ;(row as any)[col.key] = categoryTotal
+        total += categoryTotal
       })
       
       // Calculate total
@@ -68,7 +77,7 @@ export function useCheckTypeAlerts() {
         bVal = bVal ? new Date(bVal).getTime() : 0
       }
 
-      // Handle numeric sorting for violation counts
+      // Handle numeric sorting for violation counts (including grouped categories)
       if (['totalViolations', ...CHECK_TYPE_COLUMNS.map(col => col.key)].includes(field)) {
         aVal = Number(aVal) || 0
         bVal = Number(bVal) || 0
