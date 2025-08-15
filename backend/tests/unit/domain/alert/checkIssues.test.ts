@@ -629,7 +629,7 @@ describe('checkIssues', () => {
 
       // Mock LLM response for template detection
       mockGenerateText.mockResolvedValueOnce({
-        text: 'true',
+        text: '{"result": true, "reason": "The issue body contains only template placeholders and lacks meaningful content."}',
       });
 
       const result = await checkIssues(owner, repo);
@@ -663,7 +663,7 @@ describe('checkIssues', () => {
 
       // Mock LLM response for unclear instructions detection
       mockGenerateText.mockResolvedValueOnce({
-        text: 'true',
+        text: '{"result": true, "reason": "The issue description lacks specific actionable steps and expected outcomes."}',
       });
 
       const result = await checkIssues(owner, repo);
@@ -729,7 +729,7 @@ describe('checkIssues', () => {
 
       // Mock LLM response for template detection
       mockGenerateText.mockResolvedValueOnce({
-        text: 'false',
+        text: '{"result": false, "reason": "The issue body contains detailed, meaningful content with specific implementation details."}',
       });
 
       const result = await checkIssues(owner, repo);
@@ -762,7 +762,7 @@ describe('checkIssues', () => {
 
       // Mock LLM response for unclear instructions detection
       mockGenerateText.mockResolvedValueOnce({
-        text: 'false',
+        text: '{"result": false, "reason": "The issue description provides clear, actionable requirements with specific implementation details."}',
       });
 
       const result = await checkIssues(owner, repo);

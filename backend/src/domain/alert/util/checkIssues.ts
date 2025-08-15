@@ -166,14 +166,14 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
       }
 
       // Check for template-only issue body
-      const isTemplateOnly = await detectTemplateOnlyIssue(issue.title, issue.body || '');
-      if (isTemplateOnly) {
+      const templateOnlyResult = await detectTemplateOnlyIssue(issue.title, issue.body || '');
+      if (templateOnlyResult.result) {
         alerts.push({
           owner,
           repo,
           checkType: 'issue_template_only',
           title: `issue:${issue.number}`,
-          description: `Issue #${issue.number} appears to have template-only content in the body.`,
+          description: `Issue #${issue.number} appears to have template-only content in the body. ${templateOnlyResult.reason}`,
           severity: 'high',
           filePath,
           lineNumber,
@@ -184,14 +184,14 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
       }
 
       // Check for unclear instructions
-      const hasUnclearInstructions = await detectUnclearInstructions(issue.title, issue.body || '');
-      if (hasUnclearInstructions) {
+      const unclearInstructionsResult = await detectUnclearInstructions(issue.title, issue.body || '');
+      if (unclearInstructionsResult.result) {
         alerts.push({
           owner,
           repo,
           checkType: 'issue_unclear_instruction',
           title: `issue:${issue.number}`,
-          description: `Issue #${issue.number} lacks clear instructions on what needs to be done.`,
+          description: `Issue #${issue.number} lacks clear instructions on what needs to be done. ${unclearInstructionsResult.reason}`,
           severity: 'middle',
           filePath,
           lineNumber,
@@ -555,9 +555,12 @@ function extractEndDate(body: string): Date | null {
 }
 
 // Function to detect if issue body appears to be template-only using LLM
-async function detectTemplateOnlyIssue(title: string, body: string): Promise<boolean> {
+async function detectTemplateOnlyIssue(title: string, body: string): Promise<{ result: boolean; reason: string }> {
   if (!body || body.trim().length === 0) {
-    return true; // Empty body is considered template-only
+    return { 
+      result: true, 
+      reason: 'The issue body is empty, containing no meaningful content.' 
+    };
   }
 
   try {
@@ -574,7 +577,14 @@ Consider the following criteria:
 4. The body is very short and lacks meaningful content
 5. The body contains generic template sections that haven't been filled out
 
-Respond with only "true" if the issue body appears to be template-only, or "false" if it contains meaningful, non-template content.
+Respond in the following JSON format:
+{
+  "result": false,
+  "reason": "The issue body contains meaningful, non-template content with specific details."
+}
+
+- "result": true if the issue body appears to be template-only, false if it contains meaningful content
+- "reason": A concise explanation of why the issue appears to be template-only or contains meaningful content
 `.trim();
 
     const result = await generateText({
@@ -582,12 +592,29 @@ Respond with only "true" if the issue body appears to be template-only, or "fals
       prompt,
     });
 
-    const response = result.text?.trim().toLowerCase();
-    return response === 'true';
+    const content = result.text?.trim();
+    if (!content) {
+      throw new Error('Empty LLM response');
+    }
+
+    const jsonMatch = content.match(/```(?:json)?([\s\S]*?)```/);
+    const raw = jsonMatch?.[1]?.trim() || content;
+
+    const parsed = JSON.parse(raw);
+
+    if (typeof parsed.result === 'boolean' && typeof parsed.reason === 'string') {
+      return parsed;
+    } else {
+      throw new Error('Missing or invalid fields in LLM response');
+    }
   } catch (error) {
     console.error('Error in LLM template detection:', error);
     // Fallback to heuristic-based detection
-    return fallbackTemplateDetection(body);
+    const fallbackResult = fallbackTemplateDetection(body);
+    return {
+      result: fallbackResult,
+      reason: fallbackResult ? 'Heuristic detection: The issue body appears to contain only template content or placeholders.' : 'Heuristic detection: The issue body appears to contain meaningful content.'
+    };
   }
 }
 
@@ -630,9 +657,12 @@ function fallbackTemplateDetection(body: string): boolean {
 }
 
 // Function to detect if issue has unclear instructions using LLM
-async function detectUnclearInstructions(title: string, body: string): Promise<boolean> {
+async function detectUnclearInstructions(title: string, body: string): Promise<{ result: boolean; reason: string }> {
   if (!body || body.trim().length === 0) {
-    return true; // Empty body has unclear instructions
+    return { 
+      result: true, 
+      reason: 'The issue description is empty, providing no context or instructions.' 
+    };
   }
 
   try {
@@ -649,7 +679,14 @@ Consider the following criteria:
 4. The issue doesn't provide enough context for someone to understand what needs to be done
 5. The instructions are too general or lack specificity
 
-Respond with only "true" if the issue has unclear instructions, or "false" if it provides clear, actionable instructions.
+Respond in the following JSON format:
+{
+  "result": false,
+  "reason": "The issue description does not specify actionable steps for resolution."
+}
+
+- "result": true if the issue has unclear instructions, false if it provides clear, actionable instructions
+- "reason": A concise explanation of why the issue lacks clarity and a brief suggestion for improvement
 `.trim();
 
     const result = await generateText({
@@ -657,12 +694,29 @@ Respond with only "true" if the issue has unclear instructions, or "false" if it
       prompt,
     });
 
-    const response = result.text?.trim().toLowerCase();
-    return response === 'true';
+    const content = result.text?.trim();
+    if (!content) {
+      throw new Error('Empty LLM response');
+    }
+
+    const jsonMatch = content.match(/```(?:json)?([\s\S]*?)```/);
+    const raw = jsonMatch?.[1]?.trim() || content;
+
+    const parsed = JSON.parse(raw);
+
+    if (typeof parsed.result === 'boolean' && typeof parsed.reason === 'string') {
+      return parsed;
+    } else {
+      throw new Error('Missing or invalid fields in LLM response');
+    }
   } catch (error) {
     console.error('Error in LLM unclear instructions detection:', error);
     // Fallback to heuristic-based detection
-    return fallbackUnclearInstructionsDetection(body);
+    const fallbackResult = fallbackUnclearInstructionsDetection(body);
+    return {
+      result: fallbackResult,
+      reason: fallbackResult ? 'Heuristic detection: The issue description lacks sufficient detail and actionable information.' : 'Heuristic detection: The issue description appears to have sufficient detail.'
+    };
   }
 }
 
