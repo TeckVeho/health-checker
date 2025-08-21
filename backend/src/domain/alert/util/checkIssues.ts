@@ -9,6 +9,13 @@ if (!githubToken && process.env.NODE_ENV !== 'test') throw new Error('GITHUB_API
 
 const octokit = new Octokit({ auth: githubToken || 'test-token' });
 
+/**
+ * Created-at lower bound (inclusive)
+ * Target: Issues created on or after 2025-08-17T00:00:00Z
+ */
+const CREATED_SINCE_ISO = '2025-08-17T00:00:00Z';
+const CREATED_SINCE = new Date(CREATED_SINCE_ISO);
+
 export interface IssueAlertCandidate {
   owner: string;
   repo: string;
@@ -56,44 +63,54 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
     });
 
     // Filter out pull requests - only keep actual issues
-    const issues = allItems.filter(item => !item.pull_request);
-    
-    console.log(`📋 Found ${allItems.length} open items (issues + PRs) for ${owner}/${repo}`);
-    console.log(`📋 Filtered to ${issues.length} actual issues (excluded ${allItems.length - issues.length} PRs)`);
+    const issuesOnly = allItems.filter((item: any) => !item.pull_request);
 
-    // Cache project data to avoid multiple API calls
-    // const projectCache = new Map<number, boolean>();
-    
+    // Filter by created_at >= 2025-08-17T00:00:00Z
+    const issues = issuesOnly.filter((item: any) => {
+      const createdAtStr: string | undefined = item.created_at;
+      if (!createdAtStr) return false;
+      const createdAt = new Date(createdAtStr);
+      return createdAt >= CREATED_SINCE;
+    });
+
+    console.log(`📋 Found ${allItems.length} open items (issues + PRs) for ${owner}/${repo}`);
+    console.log(`📋 Filtered to ${issuesOnly.length} actual issues (excluded ${allItems.length - issuesOnly.length} PRs)`);
+    console.log(`📅 After created_at filter (>= ${CREATED_SINCE_ISO}): ${issues.length} issues remain`);
+
     // Pre-load all project data once for performance optimization
-    console.log('📊 Pre-loading project data...');
+    console.log('📊 Pre-loading project data (createdAt-filtered)...');
     const allProjectIssues = await getAllProjectIssues(owner, repo);
-    console.log(`📊 Found ${allProjectIssues.size} issues in projects`);
-    
-    // Pre-load project field values for all issues
-    console.log('📊 Pre-loading project field values...');
-    const projectFieldValues = await getAllProjectFieldValues(owner, repo, issues.map(issue => issue.number));
+    console.log(`📊 Found ${allProjectIssues.size} issues in projects (createdAt-filtered)`);
+
+    // Pre-load project field values for filtered issues only
+    console.log('📊 Pre-loading project field values for filtered issues...');
+    const projectFieldValues = await getAllProjectFieldValues(
+      owner,
+      repo,
+      issues.map((issue: any) => issue.number)
+    );
     console.log(`📊 Loaded field values for ${projectFieldValues.size} issues`);
-    
+
     for (let i = 0; i < issues.length; i++) {
-      const issue = issues[i];
-      
+      const issue: any = issues[i];
+
       // Double-check: ensure this is actually an issue, not a PR
       if (issue.pull_request) {
         console.log(`⚠️ Skipping PR #${issue.number} - this should not happen after filtering`);
         continue;
       }
-      
+
       console.log(`🔍 Processing issue #${issue.number} (${i + 1}/${issues.length})`);
-      
+
       // Get field values from projects (priority) and body (fallback)
       const projectValues = projectFieldValues.get(issue.number) || {};
       const bodyStoryPoints = extractStoryPoints(issue.body || '');
       const bodyEndDate = extractEndDate(issue.body || '');
-      
+
       // Use project values if available, otherwise fallback to body
       const storyPoints = projectValues.sp !== undefined ? projectValues.sp : bodyStoryPoints;
       const endDate = projectValues.endDate !== undefined ? projectValues.endDate : bodyEndDate;
-      
+
       // Check Story Point (SP)
       if (storyPoints === null) {
         // Issue missing Story Point
@@ -162,7 +179,7 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
 
       // Check Project (using pre-loaded data)
       const isInProject = allProjectIssues.has(issue.number);
-      
+
       if (!isInProject) {
         // Issue not linked to GitHub Project
         alerts.push({
@@ -218,7 +235,6 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
     }
 
     console.log(`🚨 Found ${alerts.length} issue alerts for ${owner}/${repo}`);
-
   } catch (error) {
     console.error(`❌ Error checking issues for ${owner}/${repo}:`, error);
   }
@@ -227,12 +243,17 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
 }
 
 // Function to get all project field values for issues
-async function getAllProjectFieldValues(owner: string, repo: string, issueNumbers: number[]): Promise<Map<number, ProjectItemFieldValue>> {
+async function getAllProjectFieldValues(
+  owner: string,
+  repo: string,
+  issueNumbers: number[]
+): Promise<Map<number, ProjectItemFieldValue>> {
   const fieldValues = new Map<number, ProjectItemFieldValue>();
-  
+  const issueSet = new Set(issueNumbers);
+
   try {
-    console.log('📊 Loading project field values using GraphQL...');
-    
+    console.log('📊 Loading project field values using GraphQL (restricted to filtered issues)...');
+
     // Query to get projects V2 with pagination
     const projectsQuery = `
       query($owner: String!, $repo: String!, $after: String) {
@@ -275,32 +296,21 @@ async function getAllProjectFieldValues(owner: string, repo: string, issueNumber
                 content {
                   ... on Issue {
                     number
+                    createdAt
                   }
                 }
                 fieldValues(first: 100) {
                   nodes {
                     ... on ProjectV2ItemFieldTextValue {
-                      field {
-                        ... on ProjectV2Field {
-                          name
-                        }
-                      }
+                      field { ... on ProjectV2Field { name } }
                       text
                     }
                     ... on ProjectV2ItemFieldNumberValue {
-                      field {
-                        ... on ProjectV2Field {
-                          name
-                        }
-                      }
+                      field { ... on ProjectV2Field { name } }
                       number
                     }
                     ... on ProjectV2ItemFieldDateValue {
-                      field {
-                        ... on ProjectV2Field {
-                          name
-                        }
-                      }
+                      field { ... on ProjectV2Field { name } }
                       date
                     }
                   }
@@ -313,9 +323,9 @@ async function getAllProjectFieldValues(owner: string, repo: string, issueNumber
     `;
 
     // Step 1: Get all projects V2 with pagination
-    let projectsAfter = null;
+    let projectsAfter: string | null = null;
     let hasMoreProjects = true;
-    
+
     while (hasMoreProjects) {
       const projectsResponse: any = await octokit.graphql(projectsQuery, {
         owner,
@@ -334,10 +344,10 @@ async function getAllProjectFieldValues(owner: string, repo: string, issueNumber
       // Step 2: For each project V2, get all items with field values
       for (const project of projects) {
         console.log(`📊 Project V2 ${project.title}: loading items with field values...`);
-        
-        let itemsAfter = null;
+
+        let itemsAfter: string | null = null;
         let hasMoreItems = true;
-        
+
         while (hasMoreItems) {
           const itemsResponse: any = await octokit.graphql(itemsQuery, {
             projectId: project.id,
@@ -352,21 +362,34 @@ async function getAllProjectFieldValues(owner: string, repo: string, issueNumber
           const items = projectNode.items.nodes || [];
           console.log(`📊 Project V2 ${project.title}: ${items.length} items with field values`);
 
-          // Process field values for each item
+          // Process field values for each item (limit to target issue numbers and createdAt >= threshold)
           for (const item of items) {
             if (item.content && item.content.number) {
-              const issueNumber = item.content.number;
+              const issueNumber: number = item.content.number;
+              const createdAtStr: string | undefined = item.content.createdAt;
+              const createdAt = createdAtStr ? new Date(createdAtStr) : null;
+
+              // Only process if this issue is in the filtered set and meets date condition
+              if (!issueSet.has(issueNumber)) continue;
+              if (!createdAt || createdAt < CREATED_SINCE) continue;
+
               const itemFieldValues: ProjectItemFieldValue = {};
-              
+
               // Process field values
               if (item.fieldValues && item.fieldValues.nodes) {
                 for (const fieldValue of item.fieldValues.nodes) {
                   if (fieldValue.field && fieldValue.field.name) {
-                    const fieldName = fieldValue.field.name.toLowerCase();
-                    
+                    const fieldName = String(fieldValue.field.name).toLowerCase();
+
                     if (fieldName === 'sp' && fieldValue.number !== undefined) {
                       itemFieldValues.sp = fieldValue.number;
-                    } else if ((fieldName === 'end date' || fieldName === 'end_date' || fieldName === 'due date' || fieldName === 'deadline') && fieldValue.date) {
+                    } else if (
+                      (fieldName === 'end date' ||
+                        fieldName === 'end_date' ||
+                        fieldName === 'due date' ||
+                        fieldName === 'deadline') &&
+                      fieldValue.date
+                    ) {
                       itemFieldValues.endDate = new Date(fieldValue.date);
                     } else if (fieldName === 'sp' && fieldValue.text) {
                       // Try to parse SP from text field
@@ -378,7 +401,7 @@ async function getAllProjectFieldValues(owner: string, repo: string, issueNumber
                   }
                 }
               }
-              
+
               // Only add if we found values
               if (itemFieldValues.sp !== undefined || itemFieldValues.endDate !== undefined) {
                 fieldValues.set(issueNumber, itemFieldValues);
@@ -398,7 +421,6 @@ async function getAllProjectFieldValues(owner: string, repo: string, issueNumber
     }
 
     console.log(`📊 Found field values for ${fieldValues.size} issues from projects V2`);
-
   } catch (error) {
     console.error(`❌ Error loading project field values for ${owner}/${repo}:`, error);
     console.log('⚠️ Project field value check will be skipped due to API limitations');
@@ -407,13 +429,13 @@ async function getAllProjectFieldValues(owner: string, repo: string, issueNumber
   return fieldValues;
 }
 
-// Function to get all issues in projects with pagination
+// Function to get all issues in projects with pagination (createdAt filtered)
 async function getAllProjectIssues(owner: string, repo: string): Promise<Set<number>> {
   const allIssues = new Set<number>();
-  
+
   try {
     console.log('📊 Loading projects V2 using GraphQL with pagination...');
-    
+
     // Query to get projects V2 with pagination
     const projectsQuery = `
       query($owner: String!, $repo: String!, $after: String) {
@@ -433,7 +455,7 @@ async function getAllProjectIssues(owner: string, repo: string): Promise<Set<num
       }
     `;
 
-    // Query to get items of a project V2
+    // Query to get items of a project V2 (we also fetch issue.createdAt to filter client-side)
     const itemsQuery = `
       query($projectId: ID!, $after: String) {
         node(id: $projectId) {
@@ -447,6 +469,7 @@ async function getAllProjectIssues(owner: string, repo: string): Promise<Set<num
                 content {
                   ... on Issue {
                     number
+                    createdAt
                   }
                 }
               }
@@ -457,9 +480,9 @@ async function getAllProjectIssues(owner: string, repo: string): Promise<Set<num
     `;
 
     // Step 1: Get all projects V2 with pagination
-    let projectsAfter = null;
+    let projectsAfter: string | null = null;
     let hasMoreProjects = true;
-    
+
     while (hasMoreProjects) {
       const projectsResponse: any = await octokit.graphql(projectsQuery, {
         owner,
@@ -478,10 +501,10 @@ async function getAllProjectIssues(owner: string, repo: string): Promise<Set<num
       // Step 2: For each project V2, get all items
       for (const project of projects) {
         console.log(`📊 Project V2 ${project.title}: loading items...`);
-        
-        let itemsAfter = null;
+
+        let itemsAfter: string | null = null;
         let hasMoreItems = true;
-        
+
         while (hasMoreItems) {
           const itemsResponse: any = await octokit.graphql(itemsQuery, {
             projectId: project.id,
@@ -496,10 +519,14 @@ async function getAllProjectIssues(owner: string, repo: string): Promise<Set<num
           const items = projectNode.items.nodes || [];
           console.log(`📊 Project V2 ${project.title}: ${items.length} items`);
 
-          // Collect issue numbers from items
+          // Collect issue numbers from items (createdAt >= threshold)
           for (const item of items) {
             if (item.content && item.content.number) {
-              allIssues.add(item.content.number);
+              const createdAtStr: string | undefined = item.content.createdAt;
+              const createdAt = createdAtStr ? new Date(createdAtStr) : null;
+              if (createdAt && createdAt >= CREATED_SINCE) {
+                allIssues.add(item.content.number);
+              }
             }
           }
 
@@ -514,8 +541,9 @@ async function getAllProjectIssues(owner: string, repo: string): Promise<Set<num
       projectsAfter = repository.projectsV2.pageInfo.endCursor;
     }
 
-    console.log(`📊 Found ${allIssues.size} issues in projects V2 (with pagination)`);
-
+    console.log(
+      `📊 Found ${allIssues.size} issues in projects V2 (createdAt >= ${CREATED_SINCE_ISO}, with pagination)`
+    );
   } catch (error) {
     console.error(`❌ Error loading project V2 issues for ${owner}/${repo}:`, error);
     console.log('⚠️ Project check will be skipped due to API limitations');
@@ -572,9 +600,9 @@ function extractEndDate(body: string): Date | null {
 // Function to detect if issue body appears to be template-only using LLM
 async function detectTemplateOnlyIssue(title: string, body: string): Promise<{ result: boolean; reason: string }> {
   if (!body || body.trim().length === 0) {
-    return { 
-      result: true, 
-      reason: 'The issue body is empty, containing no meaningful content.' 
+    return {
+      result: true,
+      reason: 'The issue body is empty, containing no meaningful content.',
     };
   }
 
@@ -628,7 +656,9 @@ Respond in the following JSON format:
     const fallbackResult = fallbackTemplateDetection(body);
     return {
       result: fallbackResult,
-      reason: fallbackResult ? 'Heuristic detection: The issue body appears to contain only template content or placeholders.' : 'Heuristic detection: The issue body appears to contain meaningful content.'
+      reason: fallbackResult
+        ? 'Heuristic detection: The issue body appears to contain only template content or placeholders.'
+        : 'Heuristic detection: The issue body appears to contain meaningful content.',
     };
   }
 }
@@ -636,7 +666,7 @@ Respond in the following JSON format:
 // Fallback heuristic-based template detection
 function fallbackTemplateDetection(body: string): boolean {
   const normalized = body.trim().toLowerCase();
-  
+
   // Check for empty or very short content
   if (normalized.length < 50) {
     return true;
@@ -648,8 +678,9 @@ function fallbackTemplateDetection(body: string): boolean {
   if (descriptionContent.length >= 200) {
     return false;
   }
-  const isDescriptionUntouched = descriptionContent === '' || descriptionContent.toLowerCase().includes('rewrite the summary of the tasks');
-  
+  const isDescriptionUntouched =
+    descriptionContent === '' || descriptionContent.toLowerCase().includes('rewrite the summary of the tasks');
+
   // Check for common template placeholders (expanded list)
   const templatePhrases = [
     'please describe the issue here',
@@ -664,19 +695,19 @@ function fallbackTemplateDetection(body: string): boolean {
     'rewrite the summary of the tasks performed for this issue and its goal',
     'record the notes and requirements related to the order of merging',
     'provide the logs of dodoai during the development process',
-    'include screenshots showing changes or fixes'
+    'include screenshots showing changes or fixes',
   ];
 
-  const containsPlaceholder = templatePhrases.some(phrase => normalized.includes(phrase.toLowerCase()));
+  const containsPlaceholder = templatePhrases.some((phrase) => normalized.includes(phrase.toLowerCase()));
   return isDescriptionUntouched || containsPlaceholder;
 }
 
 // Function to detect if issue has unclear instructions using LLM
 async function detectUnclearInstructions(title: string, body: string): Promise<{ result: boolean; reason: string }> {
   if (!body || body.trim().length === 0) {
-    return { 
-      result: true, 
-      reason: 'The issue description is empty, providing no context or instructions.' 
+    return {
+      result: true,
+      reason: 'The issue description is empty, providing no context or instructions.',
     };
   }
 
@@ -730,7 +761,9 @@ Respond in the following JSON format:
     const fallbackResult = fallbackUnclearInstructionsDetection(body);
     return {
       result: fallbackResult,
-      reason: fallbackResult ? 'Heuristic detection: The issue description lacks sufficient detail and actionable information.' : 'Heuristic detection: The issue description appears to have sufficient detail.'
+      reason: fallbackResult
+        ? 'Heuristic detection: The issue description lacks sufficient detail and actionable information.'
+        : 'Heuristic detection: The issue description appears to have sufficient detail.',
     };
   }
 }
@@ -738,7 +771,7 @@ Respond in the following JSON format:
 // Fallback heuristic-based unclear instructions detection
 function fallbackUnclearInstructionsDetection(body: string): boolean {
   const normalized = body.trim().toLowerCase();
-  
+
   // Check for very short content
   if (normalized.length < 100) {
     return true;
@@ -748,8 +781,8 @@ function fallbackUnclearInstructionsDetection(body: string): boolean {
   const vaguePhrases = [
     'fix this',
     'something is wrong',
-    'it doesn\'t work',
-    'there\'s an issue',
+    "it doesn't work",
+    "there's an issue",
     'problem with',
     'needs to be fixed',
     'broken',
@@ -757,7 +790,7 @@ function fallbackUnclearInstructionsDetection(body: string): boolean {
     'help needed',
     'bug',
     'issue',
-    'problem'
+    'problem',
   ];
 
   // Check if the body lacks specific technical details
@@ -777,14 +810,12 @@ function fallbackUnclearInstructionsDetection(body: string): boolean {
     'component',
     'file',
     'line',
-    'code'
+    'code',
   ];
 
-  const vagueCount = vaguePhrases.filter(phrase => normalized.includes(phrase)).length;
-  const technicalCount = technicalTerms.filter(term => normalized.includes(term)).length;
-  
+  const vagueCount = vaguePhrases.filter((phrase) => normalized.includes(phrase)).length;
+  const technicalCount = technicalTerms.filter((term) => normalized.includes(term)).length;
+
   // If there are vague phrases but few technical details, it's likely unclear
   return vagueCount > 0 && technicalCount < 2 && normalized.length < 200;
 }
-
-
