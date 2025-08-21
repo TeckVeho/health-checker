@@ -221,6 +221,57 @@ describe('checkIssues', () => {
       expect(alert?.title).toBe('issue:5');
       expect(alert?.severity).toBe('middle');
     });
+
+    it('should filter out pull requests and only process actual issues', async () => {
+      const mockItems = [
+        {
+          number: 1,
+          title: 'Test Issue',
+          body: 'This is an actual issue',
+          html_url: 'https://github.com/test-owner/test-repo/issues/1',
+          pull_request: undefined, // No pull_request property = actual issue
+        },
+        {
+          number: 2,
+          title: 'Test Pull Request',
+          body: 'This is a pull request',
+          html_url: 'https://github.com/test-owner/test-repo/pull/2',
+          pull_request: {}, // Has pull_request property = PR
+        },
+        {
+          number: 3,
+          title: 'Another Issue',
+          body: 'This is another issue',
+          html_url: 'https://github.com/test-owner/test-repo/issues/3',
+          pull_request: undefined, // No pull_request property = actual issue
+        },
+      ];
+
+      mockOctokit.paginate.mockResolvedValue(mockItems);
+      mockOctokit.graphql.mockResolvedValue({
+        repository: {
+          projectsV2: {
+            pageInfo: { hasNextPage: false, endCursor: null },
+            nodes: [],
+          },
+        },
+      });
+
+      const result = await checkIssues(owner, repo);
+
+      // Should only process 2 actual issues (filtered out 1 PR)
+      // Each issue should generate 5 alerts (basic + template_only + unclear_instruction)
+      expect(result.alerts).toHaveLength(10);
+      
+      // Verify that we have alerts for both issues but not for the PR
+      const issue1Alerts = result.alerts.filter(a => a.title === 'issue:1');
+      const issue3Alerts = result.alerts.filter(a => a.title === 'issue:3');
+      const pr2Alerts = result.alerts.filter(a => a.title === 'issue:2');
+      
+      expect(issue1Alerts.length).toBeGreaterThan(0);
+      expect(issue3Alerts.length).toBeGreaterThan(0);
+      expect(pr2Alerts.length).toBe(0); // PR should not have any alerts
+    });
   });
 
   describe('GitHub Projects V2 field values', () => {
@@ -629,7 +680,7 @@ describe('checkIssues', () => {
 
       // Mock LLM response for template detection
       mockGenerateText.mockResolvedValueOnce({
-        text: 'true',
+        text: '{"result": true, "reason": "The issue body contains only template placeholders and lacks meaningful content."}',
       });
 
       const result = await checkIssues(owner, repo);
@@ -663,7 +714,7 @@ describe('checkIssues', () => {
 
       // Mock LLM response for unclear instructions detection
       mockGenerateText.mockResolvedValueOnce({
-        text: 'true',
+        text: '{"result": true, "reason": "The issue description lacks specific actionable steps and expected outcomes."}',
       });
 
       const result = await checkIssues(owner, repo);
@@ -729,7 +780,7 @@ describe('checkIssues', () => {
 
       // Mock LLM response for template detection
       mockGenerateText.mockResolvedValueOnce({
-        text: 'false',
+        text: '{"result": false, "reason": "The issue body contains detailed, meaningful content with specific implementation details."}',
       });
 
       const result = await checkIssues(owner, repo);
@@ -762,7 +813,7 @@ describe('checkIssues', () => {
 
       // Mock LLM response for unclear instructions detection
       mockGenerateText.mockResolvedValueOnce({
-        text: 'false',
+        text: '{"result": false, "reason": "The issue description provides clear, actionable requirements with specific implementation details."}',
       });
 
       const result = await checkIssues(owner, repo);
