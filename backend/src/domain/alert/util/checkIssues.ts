@@ -42,16 +42,24 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
   const codeSnippet = '';
   const branch = '';
 
+  // Note: This function only processes actual GitHub Issues, not Pull Requests.
+  // GitHub's issues.listForRepo API returns both issues and PRs, so we filter out PRs
+  // to ensure we only generate alerts for genuine issues.
+
   try {
     // Get all open issues with pagination
-    const issues = await octokit.paginate(octokit.issues.listForRepo, {
+    const allItems = await octokit.paginate(octokit.issues.listForRepo, {
       owner,
       repo,
       state: 'open',
       per_page: 100,
     });
 
-    console.log(`📋 Found ${issues.length} open issues for ${owner}/${repo}`);
+    // Filter out pull requests - only keep actual issues
+    const issues = allItems.filter(item => !item.pull_request);
+    
+    console.log(`📋 Found ${allItems.length} open items (issues + PRs) for ${owner}/${repo}`);
+    console.log(`📋 Filtered to ${issues.length} actual issues (excluded ${allItems.length - issues.length} PRs)`);
 
     // Cache project data to avoid multiple API calls
     // const projectCache = new Map<number, boolean>();
@@ -68,6 +76,13 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
     
     for (let i = 0; i < issues.length; i++) {
       const issue = issues[i];
+      
+      // Double-check: ensure this is actually an issue, not a PR
+      if (issue.pull_request) {
+        console.log(`⚠️ Skipping PR #${issue.number} - this should not happen after filtering`);
+        continue;
+      }
+      
       console.log(`🔍 Processing issue #${issue.number} (${i + 1}/${issues.length})`);
       
       // Get field values from projects (priority) and body (fallback)
