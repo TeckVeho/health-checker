@@ -608,17 +608,26 @@ async function detectTemplateOnlyIssue(title: string, body: string): Promise<{ r
 
   try {
     const prompt = `
-Please analyze this GitHub issue and determine if the body appears to be left as a template or contains only placeholder instructions.
+You are analyzing a GitHub Issue body to determine if it is only a template or contains meaningful content.
 
 Issue Title: ${title}
 Issue Body: ${body}
 
-Consider the following criteria:
-1. The body is empty or contains only whitespace
-2. The body contains only placeholder text like "Please describe the issue here"
-3. The body contains template instructions that haven't been replaced
-4. The body is very short and lacks meaningful content
-5. The body contains generic template sections that haven't been filled out
+Use the following rules:
+
+Template-only (result=true) if:
+- The body is empty or contains only whitespace
+- It contains only placeholder text (e.g., "Please describe here", "[Task 1]")
+- It consists entirely of untouched template instructions with no real content
+
+Valid (result=false) if:
+- The Purpose or Spec section includes at least one meaningful instruction or goal (e.g., "relax validation", "fix strict check", "add missing field")
+- The body references a specific file, code section, or resource link
+- Even if some sections (Checklist, Related Links) are empty, that is acceptable
+- The content may be short, but as long as it contains a concrete directive or indicates the minimum actionable step, it is considered valid
+
+Decision rule:
+The key criterion is whether, overall, the issue body makes it clear what minimum action should be taken.
 
 Respond in the following JSON format:
 {
@@ -629,6 +638,7 @@ Respond in the following JSON format:
 - "result": true if the issue body appears to be template-only, false if it contains meaningful content
 - "reason": A concise explanation of why the issue appears to be template-only or contains meaningful content
 `.trim();
+
 
     const result = await generateText({
       model: openai('gpt-4o-mini'),
