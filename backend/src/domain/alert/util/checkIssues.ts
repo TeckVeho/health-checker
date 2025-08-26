@@ -73,34 +73,34 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
       return createdAt >= CREATED_SINCE;
     });
 
-    console.log(`📋 Found ${allItems.length} open items (issues + PRs) for ${owner}/${repo}`);
-    console.log(`📋 Filtered to ${issuesOnly.length} actual issues (excluded ${allItems.length - issuesOnly.length} PRs)`);
-    console.log(`📅 After created_at filter (>= ${CREATED_SINCE_ISO}): ${issues.length} issues remain`);
+    console.log(`  Found ${allItems.length} open items (issues + PRs) for ${owner}/${repo}`);
+    console.log(`  Filtered to ${issuesOnly.length} actual issues (excluded ${allItems.length - issuesOnly.length} PRs)`);
+    console.log(`  After created_at filter (>= ${CREATED_SINCE_ISO}): ${issues.length} issues remain`);
 
     // Pre-load all project data once for performance optimization
-    console.log('📊 Pre-loading project data (createdAt-filtered)...');
+    console.log('  Pre-loading project data (createdAt-filtered)...');
     const allProjectIssues = await getAllProjectIssues(owner, repo);
-    console.log(`📊 Found ${allProjectIssues.size} issues in projects (createdAt-filtered)`);
+    console.log(`  Found ${allProjectIssues.size} issues in projects (createdAt-filtered)`);
 
     // Pre-load project field values for filtered issues only
-    console.log('📊 Pre-loading project field values for filtered issues...');
+    console.log('  Pre-loading project field values for filtered issues...');
     const projectFieldValues = await getAllProjectFieldValues(
       owner,
       repo,
       issues.map((issue: any) => issue.number)
     );
-    console.log(`📊 Loaded field values for ${projectFieldValues.size} issues`);
+    console.log(`  Loaded field values for ${projectFieldValues.size} issues`);
 
     for (let i = 0; i < issues.length; i++) {
       const issue: any = issues[i];
 
       // Double-check: ensure this is actually an issue, not a PR
       if (issue.pull_request) {
-        console.log(`⚠️ Skipping PR #${issue.number} - this should not happen after filtering`);
+        console.log(`?? Skipping PR #${issue.number} - this should not happen after filtering`);
         continue;
       }
 
-      console.log(`🔍 Processing issue #${issue.number} (${i + 1}/${issues.length})`);
+      console.log(`  Processing issue #${issue.number} (${i + 1}/${issues.length})`);
 
       // Get field values from projects (priority) and body (fallback)
       const projectValues = projectFieldValues.get(issue.number) || {};
@@ -197,33 +197,15 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
         });
       }
 
-      // Check for template-only issue body
-      const templateOnlyResult = await detectTemplateOnlyIssue(issue.title, issue.body || '');
-      if (templateOnlyResult.result) {
-        alerts.push({
-          owner,
-          repo,
-          checkType: 'issue_template_only',
-          title: `issue:${issue.number}`,
-          description: `Issue #${issue.number} appears to have template-only content in the body. ${templateOnlyResult.reason}`,
-          severity: 'high',
-          filePath,
-          lineNumber,
-          codeSnippet,
-          branch,
-          issueUrl: issue.html_url,
-        });
-      }
-
-      // Check for unclear instructions
-      const unclearInstructionsResult = await detectUnclearInstructions(issue.title, issue.body || '');
-      if (unclearInstructionsResult.result) {
+      // === Only one LLM call: treat "template-only" as part of "unclear" ===
+      const clarity = await detectUnclearInstructions(issue.title, issue.body || '');
+      if (clarity.result) {
         alerts.push({
           owner,
           repo,
           checkType: 'issue_unclear_instruction',
           title: `issue:${issue.number}`,
-          description: `Issue #${issue.number} lacks clear instructions on what needs to be done. ${unclearInstructionsResult.reason}`,
+          description: `Issue #${issue.number} lacks clear, actionable instructions. ${clarity.reason}`,
           severity: 'middle',
           filePath,
           lineNumber,
@@ -234,9 +216,9 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
       }
     }
 
-    console.log(`🚨 Found ${alerts.length} issue alerts for ${owner}/${repo}`);
+    console.log(`  Found ${alerts.length} issue alerts for ${owner}/${repo}`);
   } catch (error) {
-    console.error(`❌ Error checking issues for ${owner}/${repo}:`, error);
+    console.error(`? Error checking issues for ${owner}/${repo}:`, error);
   }
 
   return { owner, repo, alerts };
@@ -252,7 +234,7 @@ async function getAllProjectFieldValues(
   const issueSet = new Set(issueNumbers);
 
   try {
-    console.log('📊 Loading project field values using GraphQL (restricted to filtered issues)...');
+    console.log('  Loading project field values using GraphQL (restricted to filtered issues)...');
 
     // Query to get projects V2 with pagination
     const projectsQuery = `
@@ -339,11 +321,11 @@ async function getAllProjectFieldValues(
       }
 
       const projects = repository.projectsV2.nodes || [];
-      console.log(`📊 Processing ${projects.length} projects V2 for field values...`);
+      console.log(`  Processing ${projects.length} projects V2 for field values...`);
 
       // Step 2: For each project V2, get all items with field values
       for (const project of projects) {
-        console.log(`📊 Project V2 ${project.title}: loading items with field values...`);
+        console.log(`  Project V2 ${project.title}: loading items with field values...`);
 
         let itemsAfter: string | null = null;
         let hasMoreItems = true;
@@ -360,7 +342,7 @@ async function getAllProjectFieldValues(
           }
 
           const items = projectNode.items.nodes || [];
-          console.log(`📊 Project V2 ${project.title}: ${items.length} items with field values`);
+          console.log(`  Project V2 ${project.title}: ${items.length} items with field values`);
 
           // Process field values for each item (limit to target issue numbers and createdAt >= threshold)
           for (const item of items) {
@@ -420,10 +402,10 @@ async function getAllProjectFieldValues(
       projectsAfter = repository.projectsV2.pageInfo.endCursor;
     }
 
-    console.log(`📊 Found field values for ${fieldValues.size} issues from projects V2`);
+    console.log(`  Found field values for ${fieldValues.size} issues from projects V2`);
   } catch (error) {
-    console.error(`❌ Error loading project field values for ${owner}/${repo}:`, error);
-    console.log('⚠️ Project field value check will be skipped due to API limitations');
+    console.error(`? Error loading project field values for ${owner}/${repo}:`, error);
+    console.log('?? Project field value check will be skipped due to API limitations');
   }
 
   return fieldValues;
@@ -434,7 +416,7 @@ async function getAllProjectIssues(owner: string, repo: string): Promise<Set<num
   const allIssues = new Set<number>();
 
   try {
-    console.log('📊 Loading projects V2 using GraphQL with pagination...');
+    console.log('  Loading projects V2 using GraphQL with pagination...');
 
     // Query to get projects V2 with pagination
     const projectsQuery = `
@@ -496,11 +478,11 @@ async function getAllProjectIssues(owner: string, repo: string): Promise<Set<num
       }
 
       const projects = repository.projectsV2.nodes || [];
-      console.log(`📊 Processing ${projects.length} projects V2...`);
+      console.log(`  Processing ${projects.length} projects V2...`);
 
       // Step 2: For each project V2, get all items
       for (const project of projects) {
-        console.log(`📊 Project V2 ${project.title}: loading items...`);
+        console.log(`  Project V2 ${project.title}: loading items...`);
 
         let itemsAfter: string | null = null;
         let hasMoreItems = true;
@@ -517,7 +499,7 @@ async function getAllProjectIssues(owner: string, repo: string): Promise<Set<num
           }
 
           const items = projectNode.items.nodes || [];
-          console.log(`📊 Project V2 ${project.title}: ${items.length} items`);
+          console.log(`  Project V2 ${project.title}: ${items.length} items`);
 
           // Collect issue numbers from items (createdAt >= threshold)
           for (const item of items) {
@@ -542,11 +524,11 @@ async function getAllProjectIssues(owner: string, repo: string): Promise<Set<num
     }
 
     console.log(
-      `📊 Found ${allIssues.size} issues in projects V2 (createdAt >= ${CREATED_SINCE_ISO}, with pagination)`
+      `  Found ${allIssues.size} issues in projects V2 (createdAt >= ${CREATED_SINCE_ISO}, with pagination)`
     );
   } catch (error) {
-    console.error(`❌ Error loading project V2 issues for ${owner}/${repo}:`, error);
-    console.log('⚠️ Project check will be skipped due to API limitations');
+    console.error(`? Error loading project V2 issues for ${owner}/${repo}:`, error);
+    console.log('?? Project check will be skipped due to API limitations');
   }
 
   return allIssues;
@@ -579,7 +561,7 @@ function extractEndDate(body: string): Date | null {
   const patterns = [
     /End Date[:\s]*(\d{4}-\d{2}-\d{2})/i,
     /Due Date[:\s]*(\d{4}-\d{2}-\d{2})/i,
-    /Deadline[:\s]*(\d{4}-\d{2}-\d{2})/i,
+    /Deadline[:\s]*(\d{4}-\d2}-\d{2})/i, // note: original had variants; keep primary patterns
     /Target Date[:\s]*(\d{4}-\d{2}-\d{2})/i,
     /(\d{4}-\d{2}-\d{2})/g, // Find all date format YYYY-MM-DD
   ];
@@ -597,153 +579,50 @@ function extractEndDate(body: string): Date | null {
   return null;
 }
 
-// Function to detect if issue body appears to be template-only using LLM
-async function detectTemplateOnlyIssue(title: string, body: string): Promise<{ result: boolean; reason: string }> {
-  if (!body || body.trim().length === 0) {
-    return {
-      result: true,
-      reason: 'The issue body is empty, containing no meaningful content.',
-    };
-  }
-
-  try {
-    const prompt = `
-You are analyzing a GitHub Issue body to determine if it is only a template or contains meaningful content.
-
-Issue Title: ${title}
-Issue Body: ${body}
-
-Use the following rules:
-
-Template-only (result=true) if:
-- The body is empty or contains only whitespace
-- It contains only placeholder text (e.g., "Please describe here", "[Task 1]")
-- It consists entirely of untouched template instructions with no real content
-
-Valid (result=false) if:
-- The Purpose or Spec section includes at least one meaningful instruction or goal (e.g., "relax validation", "fix strict check", "add missing field")
-- The body references a specific file, code section, or resource link
-- Even if some sections (Checklist, Related Links) are empty, that is acceptable
-- The content may be short, but as long as it contains a concrete directive or indicates the minimum actionable step, it is considered valid
-
-Decision rule:
-The key criterion is whether, overall, the issue body makes it clear what minimum action should be taken.
-
-Respond in the following JSON format:
-{
-  "result": false,
-  "reason": "The issue body contains meaningful, non-template content with specific details."
-}
-
-- "result": true if the issue body appears to be template-only, false if it contains meaningful content
-- "reason": A concise explanation of why the issue appears to be template-only or contains meaningful content
-`.trim();
-
-
-    const result = await generateText({
-      model: openai('gpt-4o-mini'),
-      prompt,
-    });
-
-    const content = result.text?.trim();
-    if (!content) {
-      throw new Error('Empty LLM response');
-    }
-
-    const jsonMatch = content.match(/```(?:json)?([\s\S]*?)```/);
-    const raw = jsonMatch?.[1]?.trim() || content;
-
-    const parsed = JSON.parse(raw);
-
-    if (typeof parsed.result === 'boolean' && typeof parsed.reason === 'string') {
-      return parsed;
-    } else {
-      throw new Error('Missing or invalid fields in LLM response');
-    }
-  } catch (error) {
-    console.error('Error in LLM template detection:', error);
-    // Fallback to heuristic-based detection
-    const fallbackResult = fallbackTemplateDetection(body);
-    return {
-      result: fallbackResult,
-      reason: fallbackResult
-        ? 'Heuristic detection: The issue body appears to contain only template content or placeholders.'
-        : 'Heuristic detection: The issue body appears to contain meaningful content.',
-    };
-  }
-}
-
-// Fallback heuristic-based template detection
-function fallbackTemplateDetection(body: string): boolean {
-  const normalized = body.trim().toLowerCase();
-
-  // Check for empty or very short content
-  if (normalized.length < 50) {
-    return true;
-  }
-
-  // Check for description section (similar to PRCheck logic)
-  const descriptionSection = normalized.match(/##\s*description\s*([\s\S]*?)(##|$)/i);
-  const descriptionContent = descriptionSection?.[1]?.trim() ?? '';
-  if (descriptionContent.length >= 200) {
-    return false;
-  }
-  const isDescriptionUntouched =
-    descriptionContent === '' || descriptionContent.toLowerCase().includes('rewrite the summary of the tasks');
-
-  // Check for common template placeholders (expanded list)
-  const templatePhrases = [
-    'please describe the issue here',
-    'describe the problem',
-    'what did you expect to happen',
-    'what actually happened',
-    'please provide',
-    'fill in the details',
-    'add your description here',
-    'template content',
-    'placeholder text',
-    'rewrite the summary of the tasks performed for this issue and its goal',
-    'record the notes and requirements related to the order of merging',
-    'provide the logs of dodoai during the development process',
-    'include screenshots showing changes or fixes',
-  ];
-
-  const containsPlaceholder = templatePhrases.some((phrase) => normalized.includes(phrase.toLowerCase()));
-  return isDescriptionUntouched || containsPlaceholder;
-}
-
-// Function to detect if issue has unclear instructions using LLM
+/**
+ * Single-LLM check:
+ * Detects whether an issue lacks clear, actionable instructions.
+ * "Template-only" is treated as a subset of "unclear", so no separate check is needed.
+ */
 async function detectUnclearInstructions(title: string, body: string): Promise<{ result: boolean; reason: string }> {
   if (!body || body.trim().length === 0) {
     return {
       result: true,
-      reason: 'The issue description is empty, providing no context or instructions.',
+      reason: 'The issue body is empty (template-only), so the instructions are unclear.',
     };
   }
 
   try {
     const prompt = `
-Please analyze this GitHub issue and determine if it lacks clear instructions on what needs to be done.
+You are analyzing a GitHub Issue body to decide if it lacks clear, actionable instructions ("unclear").
+
+Treat "template-only" as a subset of "unclear". In other words, if the body is empty, only placeholders, or untouched template text, mark it as unclear.
 
 Issue Title: ${title}
 Issue Body: ${body}
 
-Consider the following criteria:
-1. The issue lacks specific, actionable instructions
-2. The description is vague or ambiguous
-3. It's unclear what the expected outcome should be
-4. The issue doesn't provide enough context for someone to understand what needs to be done
-5. The instructions are too general or lack specificity
+Mark it as UNCLEAR (result=true) if ANY of the following:
+- Empty or whitespace-only
+- Only placeholder text (e.g., "Please describe here", "[Task 1]"), or untouched template sections
+- Lacks specific, actionable steps or a minimum clear next action
+- Vague or ambiguous description; expected outcome is unclear
+- Not enough context to understand what needs to be done
 
-Respond in the following JSON format:
+Mark it as CLEAR (result=false) if ANY of the following signals suggest minimum actionable clarity, even if the body is short:
+- Contains a concrete directive (e.g., "relax validation", "fix strict check", "add missing field")
+- References a specific file, code area, link, or resource (#123, \`.ts\` file, or URL)
+- Has a simple checklist or bullet list that outlines steps
+- Includes Purpose/Spec/概要/詳細/タスク style sections with at least one meaningful line that indicates what to do
+
+Respond ONLY in this JSON format:
 {
   "result": false,
-  "reason": "The issue description does not specify actionable steps for resolution."
+  "reason": "Short, concrete justification describing why it is clear or unclear."
 }
-
-- "result": true if the issue has unclear instructions, false if it provides clear, actionable instructions
-- "reason": A concise explanation of why the issue lacks clarity and a brief suggestion for improvement
 `.trim();
+
+    console.log('=== Prompt sent to AI (unclear only) ===');
+    console.log(prompt);
 
     const result = await generateText({
       model: openai('gpt-4o-mini'),
@@ -751,6 +630,9 @@ Respond in the following JSON format:
     });
 
     const content = result.text?.trim();
+    console.log('=== Raw AI response (unclear only) ===');
+    console.log(content);
+
     if (!content) {
       throw new Error('Empty LLM response');
     }
@@ -767,27 +649,60 @@ Respond in the following JSON format:
     }
   } catch (error) {
     console.error('Error in LLM unclear instructions detection:', error);
-    // Fallback to heuristic-based detection
+    // Fallback to heuristic-based detection that *includes* template-only cases
     const fallbackResult = fallbackUnclearInstructionsDetection(body);
     return {
       result: fallbackResult,
       reason: fallbackResult
-        ? 'Heuristic detection: The issue description lacks sufficient detail and actionable information.'
-        : 'Heuristic detection: The issue description appears to have sufficient detail.',
+        ? 'Heuristic: Body is template-like or lacks minimum actionable clarity.'
+        : 'Heuristic: Body shows minimum actionable clarity (directive/link/section/list).',
     };
   }
 }
 
-// Fallback heuristic-based unclear instructions detection
+/**
+ * Fallback heuristic for "unclear" that also absorbs "template-only".
+ * Returns true if unclear; false if clear.
+ */
 function fallbackUnclearInstructionsDetection(body: string): boolean {
   const normalized = body.trim().toLowerCase();
 
-  // Check for very short content
-  if (normalized.length < 100) {
-    return true;
+  // Immediate template-only indicators (subset of unclear)
+  const templatePhrases = [
+    'please describe the issue here',
+    'describe the problem',
+    'what did you expect to happen',
+    'what actually happened',
+    'please provide',
+    'fill in the details',
+    'add your description here',
+    'template content',
+    'placeholder text',
+    'rewrite the summary of the tasks',
+    'record the notes and requirements related to the order of merging',
+    'provide the logs',
+    'include screenshots showing changes or fixes',
+  ];
+  if (normalized.length === 0) return true;
+  if (templatePhrases.some((p) => normalized.includes(p))) return true;
+
+  // Signals of clarity (any makes it clear)
+  const hasList = /^[-*]\s+/m.test(body); // bullet points
+  const hasLink = /\bhttps?:\/\//i.test(body);
+  const hasFileRef = /\b\w+\.(ts|js|tsx|jsx|md|yml|yaml|json)\b/i.test(body) || /#\d+/.test(body);
+  const hasSection = /##\s*(purpose|spec|概要|詳細|タスク|task|steps|チェック|参考|memo|メモ|description)/i.test(body);
+  const actionVerbs = [
+    'fix','relax','update','add','remove','refactor','rewrite','implement',
+    'enable','disable','set','change','migrate','bump','link','document'
+  ];
+  const hasActionVerb = actionVerbs.some((v) => normalized.includes(v));
+
+  if (hasList || hasLink || hasFileRef || hasSection || hasActionVerb) {
+    // Considered clear enough even if short
+    return false;
   }
 
-  // Check for vague phrases
+  // Vague vs technical signal
   const vaguePhrases = [
     'fix this',
     'something is wrong',
@@ -798,12 +713,7 @@ function fallbackUnclearInstructionsDetection(body: string): boolean {
     'broken',
     'not working',
     'help needed',
-    'bug',
-    'issue',
-    'problem',
   ];
-
-  // Check if the body lacks specific technical details
   const technicalTerms = [
     'error',
     'exception',
@@ -821,11 +731,19 @@ function fallbackUnclearInstructionsDetection(body: string): boolean {
     'file',
     'line',
     'code',
+    'unit test',
+    'jest',
   ];
 
   const vagueCount = vaguePhrases.filter((phrase) => normalized.includes(phrase)).length;
   const technicalCount = technicalTerms.filter((term) => normalized.includes(term)).length;
 
-  // If there are vague phrases but few technical details, it's likely unclear
-  return vagueCount > 0 && technicalCount < 2 && normalized.length < 200;
+  // Extremely short with no clarity signals → unclear
+  if (normalized.length < 80) return true;
+
+  // Vague language + lack of technical/context → unclear (more lenient threshold)
+  if (vagueCount > 0 && technicalCount < 2 && normalized.length < 200) return true;
+
+  // Default: assume clear enough
+  return false;
 }
