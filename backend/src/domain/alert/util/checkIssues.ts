@@ -1,6 +1,7 @@
 import { Octokit } from '@octokit/rest';
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
+import { OPENAI_CONFIG } from '../../../config/openai';
 
 const githubToken = process.env.GITHUB_API_KEY;
 if (!githubToken && process.env.NODE_ENV !== 'test') throw new Error('GITHUB_API_KEY is required');
@@ -625,7 +626,7 @@ Respond ONLY in this JSON format:
     console.log(prompt);
 
     const result = await generateText({
-      model: openai('gpt-4o-mini'),
+      model: openai(OPENAI_CONFIG.MODEL),
       prompt,
     });
 
