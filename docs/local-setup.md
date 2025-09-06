@@ -37,6 +37,9 @@ JWT_SECRET=a1b2c3d4e5f6g7h6q7r8s9t0u1v2w8i9j0k1l2m3n4o5p3x4y5z6
 OPENAI_API_KEY=sk-proj-...
 GITHUB_API_KEY=ghp_...
 GITHUB_LOCAL_WORKSPACE="C:/Users/yourname/Documents/github-workspace"
+
+# ChatGPT Model Configuration
+OPENAI_MODEL=gpt-4o-mini
 ```
 > ⚠️ **Important**: `GITHUB_LOCAL_WORKSPACE` should point to an **empty directory on your local machine**.
 > This is where cloned GitHub repositories will be copied to.
