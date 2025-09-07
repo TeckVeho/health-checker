@@ -103,6 +103,23 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
 
       console.log(`  Processing issue #${issue.number} (${i + 1}/${issues.length})`);
 
+      // Check if issue is unassigned
+      if (!issue.assignee) {
+        alerts.push({
+          owner,
+          repo,
+          checkType: 'issue_unassigned',
+          title: `issue:${issue.number}`,
+          description: `Issue #${issue.number} is not assigned to anyone.`,
+          severity: 'low',
+          filePath,
+          lineNumber,
+          codeSnippet,
+          branch,
+          issueUrl: issue.html_url,
+        });
+      }
+
       // Get field values from projects (priority) and body (fallback)
       const projectValues = projectFieldValues.get(issue.number) || {};
       const bodyStoryPoints = extractStoryPoints(issue.body || '');
@@ -207,15 +224,32 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
         });
       }
 
-      // === Only one LLM call: treat "template-only" as part of "unclear" ===
-      const clarity = await detectUnclearInstructions(issue.title, issue.body || '');
-      if (clarity.result) {
+      // LLM-based detection for template-only and unclear instructions
+      const templateDetection = await detectTemplateOnlyIssue(issue.title, issue.body || '');
+      if (templateDetection.result) {
+        alerts.push({
+          owner,
+          repo,
+          checkType: 'issue_template_only',
+          title: `issue:${issue.number}`,
+          description: `Issue #${issue.number} appears to contain only template content. ${templateDetection.reason}`,
+          severity: 'high',
+          filePath,
+          lineNumber,
+          codeSnippet,
+          branch,
+          issueUrl: issue.html_url,
+        });
+      }
+
+      const clarityDetection = await detectUnclearInstructions(issue.title, issue.body || '');
+      if (clarityDetection.result) {
         alerts.push({
           owner,
           repo,
           checkType: 'issue_unclear_instruction',
           title: `issue:${issue.number}`,
-          description: `Issue #${issue.number} lacks clear, actionable instructions. ${clarity.reason}`,
+          description: `Issue #${issue.number} lacks clear, actionable instructions. ${clarityDetection.reason}`,
           severity: 'middle',
           filePath,
           lineNumber,
@@ -474,49 +508,40 @@ function extractEndDate(body: string): Date | null {
 }
 
 /**
- * Single-LLM check:
- * Detects whether an issue lacks clear, actionable instructions.
- * "Template-only" is treated as a subset of "unclear", so no separate check is needed.
+ * Detects template-only issues using LLM
  */
-async function detectUnclearInstructions(title: string, body: string): Promise<{ result: boolean; reason: string }> {
+async function detectTemplateOnlyIssue(title: string, body: string): Promise<{ result: boolean; reason: string }> {
   if (!body || body.trim().length === 0) {
     return {
       result: true,
-      reason: 'The issue body is empty (template-only), so the instructions are unclear.',
+      reason: 'The issue body is empty, which indicates template-only content.',
     };
   }
 
   try {
     const prompt = `
-You are analyzing a GitHub Issue body to decide if it lacks clear, actionable instructions ("unclear").
-
-Treat "template-only" as a subset of "unclear". In other words, if the body is empty, only placeholders, or untouched template text, mark it as unclear.
+You are analyzing a GitHub Issue body to determine if it contains only template content or placeholders.
 
 Issue Title: ${title}
 Issue Body: ${body}
 
-Mark it as UNCLEAR (result=true) if ANY of the following:
-- Empty or whitespace-only
-- Only placeholder text (e.g., "Please describe here", "[Task 1]"), or untouched template sections
-- Lacks specific, actionable steps or a minimum clear next action
-- Vague or ambiguous description; expected outcome is unclear
-- Not enough context to understand what needs to be done
+Mark it as TEMPLATE-ONLY (result=true) if:
+- Only contains placeholder text or template instructions
+- Has phrases like "Please describe here", "Describe the issue", "What did you expect to happen"
+- Contains only template sections without actual content filled in
+- Only has boilerplate text that hasn't been customized for the specific issue
 
-Mark it as CLEAR (result=false) if ANY of the following signals suggest minimum actionable clarity, even if the body is short:
-- Contains a concrete directive (e.g., "relax validation", "fix strict check", "add missing field")
-- References a specific file, code area, link, or resource (#123, \`.ts\` file, or URL)
-- Has a simple checklist or bullet list that outlines steps
-- Includes Purpose/Spec/概要/詳細/タスク style sections with at least one meaningful line that indicates what to do
+Mark it as HAS CONTENT (result=false) if:
+- Contains actual issue description, even if brief
+- Has specific technical details, error messages, or implementation notes
+- Shows evidence that the template has been filled out with real information
 
 Respond ONLY in this JSON format:
 {
   "result": false,
-  "reason": "Short, concrete justification describing why it is clear or unclear."
+  "reason": "Short explanation of why this is template-only or has content."
 }
 `.trim();
-
-    console.log('=== Prompt sent to AI (unclear only) ===');
-    console.log(prompt);
 
     const result = await generateText({
       model: openai(OPENAI_CONFIG.MODEL),
@@ -524,8 +549,77 @@ Respond ONLY in this JSON format:
     });
 
     const content = result.text?.trim();
-    console.log('=== Raw AI response (unclear only) ===');
-    console.log(content);
+
+    if (!content) {
+      throw new Error('Empty LLM response');
+    }
+
+    const jsonMatch = content.match(/```(?:json)?([\s\S]*?)```/);
+    const raw = jsonMatch?.[1]?.trim() || content;
+
+    const parsed = JSON.parse(raw);
+
+    if (typeof parsed.result === 'boolean' && typeof parsed.reason === 'string') {
+      return parsed;
+    } else {
+      throw new Error('Missing or invalid fields in LLM response');
+    }
+  } catch (error) {
+    console.error('Error in LLM template detection:', error);
+    // Fallback to heuristic-based detection
+    const fallbackResult = fallbackTemplateDetection(body);
+    return {
+      result: fallbackResult,
+      reason: fallbackResult
+        ? 'Heuristic: Body appears to contain only template placeholders.'
+        : 'Heuristic: Body contains meaningful content beyond templates.',
+    };
+  }
+}
+
+/**
+ * Detects unclear instructions using LLM
+ */
+async function detectUnclearInstructions(title: string, body: string): Promise<{ result: boolean; reason: string }> {
+  if (!body || body.trim().length === 0) {
+    return {
+      result: false, // Empty body is handled by template detection
+      reason: 'Empty body is handled by template detection.',
+    };
+  }
+
+  try {
+    const prompt = `
+You are analyzing a GitHub Issue body to determine if it lacks clear, actionable instructions.
+
+Issue Title: ${title}
+Issue Body: ${body}
+
+Mark it as UNCLEAR (result=true) if:
+- Lacks specific, actionable steps or clear next actions
+- Vague or ambiguous description where expected outcome is unclear
+- Not enough context to understand what needs to be done
+- Very generic requests without specifics
+
+Mark it as CLEAR (result=false) if:
+- Contains concrete directives or specific tasks
+- References specific files, code areas, links, or resources
+- Has clear steps or requirements outlined
+- Provides sufficient context for someone to take action
+
+Respond ONLY in this JSON format:
+{
+  "result": false,
+  "reason": "Short explanation of why the instructions are clear or unclear."
+}
+`.trim();
+
+    const result = await generateText({
+      model: openai(OPENAI_CONFIG.MODEL),
+      prompt,
+    });
+
+    const content = result.text?.trim();
 
     if (!content) {
       throw new Error('Empty LLM response');
@@ -543,25 +637,26 @@ Respond ONLY in this JSON format:
     }
   } catch (error) {
     console.error('Error in LLM unclear instructions detection:', error);
-    // Fallback to heuristic-based detection that *includes* template-only cases
+    // Fallback to heuristic-based detection
     const fallbackResult = fallbackUnclearInstructionsDetection(body);
     return {
       result: fallbackResult,
       reason: fallbackResult
-        ? 'Heuristic: Body is template-like or lacks minimum actionable clarity.'
-        : 'Heuristic: Body shows minimum actionable clarity (directive/link/section/list).',
+        ? 'Heuristic: Body lacks minimum actionable clarity.'
+        : 'Heuristic: Body shows minimum actionable clarity.',
     };
   }
 }
 
 /**
- * Fallback heuristic for "unclear" that also absorbs "template-only".
- * Returns true if unclear; false if clear.
+ * Fallback heuristic for template-only detection.
+ * Returns true if template-only; false if has content.
  */
-function fallbackUnclearInstructionsDetection(body: string): boolean {
+function fallbackTemplateDetection(body: string): boolean {
   const normalized = body.trim().toLowerCase();
 
-  // Immediate template-only indicators (subset of unclear)
+  if (normalized.length === 0) return true;
+
   const templatePhrases = [
     'please describe the issue here',
     'describe the problem',
@@ -574,11 +669,19 @@ function fallbackUnclearInstructionsDetection(body: string): boolean {
     'placeholder text',
     'rewrite the summary of the tasks',
     'record the notes and requirements related to the order of merging',
-    'provide the logs',
-    'include screenshots showing changes or fixes',
   ];
-  if (normalized.length === 0) return true;
-  if (templatePhrases.some((p) => normalized.includes(p))) return true;
+
+  return templatePhrases.some((p) => normalized.includes(p));
+}
+
+/**
+ * Fallback heuristic for unclear instructions detection.
+ * Returns true if unclear; false if clear.
+ */
+function fallbackUnclearInstructionsDetection(body: string): boolean {
+  const normalized = body.trim().toLowerCase();
+
+  if (normalized.length === 0) return false; // Empty body handled by template detection
 
   // Signals of clarity (any makes it clear)
   const hasList = /^[-*]\s+/m.test(body); // bullet points
