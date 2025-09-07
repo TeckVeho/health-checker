@@ -1,6 +1,6 @@
 const messages = {
   SUCCESS: {
-    CREATE_SUCCESS: '{0} has been successfully created',
+    CREATE_SUCCESS: '{0} has been successfully created.',
     READ_SUCCESS: '{0} has been successfully retrieved.',
     UPDATE_SUCCESS: '{0} has been successfully updated.',
     DELETE_SUCCESS: '{0} has been successfully deleted.',

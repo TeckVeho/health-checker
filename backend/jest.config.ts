@@ -12,6 +12,14 @@ const config: Config = {
     '<rootDir>/src/**/*.test.ts',
   ],
   moduleNameMapper: {
+    '@services/(.*)': '<rootDir>/src/services/$1',
+    '@models/(.*)': '<rootDir>/src/models/$1',
+    '@controllers/(.*)': '<rootDir>/src/controllers/$1',
+    '@middlewares/(.*)': '<rootDir>/src/middlewares/$1',
+    '@validators/(.*)': '<rootDir>/src/middlewares/validators/$1',
+    '@utils/(.*)': '<rootDir>/src/utils/$1',
+    '@config/(.*)': '<rootDir>/src/config/$1',
+    '@routes/(.*)': '<rootDir>/src/routes/$1',
   },
   transform: {
     '^.+\\.ts$': [

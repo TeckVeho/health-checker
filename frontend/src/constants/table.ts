@@ -31,7 +31,8 @@ export const CHECK_TYPE_MAPPING = {
     'issue_missing_sp',
     'issue_large_sp',
     'issue_not_in_project',
-    'issue_format_violation'
+    'issue_format_violation',
+    'issue_unassigned'
   ],
   
   // Branch category
