@@ -1,5 +1,6 @@
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
+import { OPENAI_CONFIG } from '../../../config/openai';
 import { GitHubPullRequest } from './github';
 
 export class PRCheck {
@@ -81,7 +82,7 @@ export class PRCheck {
 
     try {
       const result = await generateText({
-        model: openai('gpt-4o-mini'),
+        model: openai(OPENAI_CONFIG.MODEL),
         prompt,
       });
 
