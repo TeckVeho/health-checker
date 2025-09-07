@@ -111,6 +111,15 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
       // Use project values if available, otherwise fallback to body
       const storyPoints = projectValues.sp !== undefined ? projectValues.sp : bodyStoryPoints;
       const endDate = projectValues.endDate !== undefined ? projectValues.endDate : bodyEndDate;
+      
+      // Debug logging for SP values
+      if (projectValues.sp !== undefined) {
+        console.log(`    SP from project: ${projectValues.sp}`);
+      } else if (bodyStoryPoints !== null) {
+        console.log(`    SP from body: ${bodyStoryPoints}`);
+      } else {
+        console.log(`    SP not found`);
+      }
 
       // Check Story Point (SP)
       if (storyPoints === null) {
@@ -232,57 +241,24 @@ async function getAllProjectFieldValues(
   issueNumbers: number[]
 ): Promise<Map<number, ProjectItemFieldValue>> {
   const fieldValues = new Map<number, ProjectItemFieldValue>();
-  const issueSet = new Set(issueNumbers);
 
   try {
-    console.log('  Loading project field values using GraphQL (restricted to filtered issues)...');
+    console.log('  Loading project field values using GraphQL for each issue...');
 
-    // Query to get projects V2 with pagination
-    const projectsQuery = `
-      query($owner: String!, $repo: String!, $after: String) {
+    // Query to get project items and field values for each issue
+    const issueProjectQuery = `
+      query($owner: String!, $repo: String!, $issueNumber: Int!) {
         repository(owner: $owner, name: $repo) {
-          projectsV2(first: 10, after: $after) {
-            pageInfo {
-              hasNextPage
-              endCursor
-            }
-            nodes {
-              id
-              number
-              title
-              fields(first: 100) {
-                nodes {
-                  ... on ProjectV2Field {
-                    id
-                    name
-                    dataType
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    `;
-
-    // Query to get items of a project V2 with field values
-    const itemsQuery = `
-      query($projectId: ID!, $after: String) {
-        node(id: $projectId) {
-          ... on ProjectV2 {
-            items(first: 100, after: $after) {
-              pageInfo {
-                hasNextPage
-                endCursor
-              }
+          issue(number: $issueNumber) {
+            projectItems(first: 10) {
               nodes {
-                content {
-                  ... on Issue {
-                    number
-                    createdAt
+                project {
+                  ... on ProjectV2 {
+                    id
+                    title
                   }
                 }
-                fieldValues(first: 100) {
+                fieldValues(first: 50) {
                   nodes {
                     ... on ProjectV2ItemFieldTextValue {
                       field { ... on ProjectV2Field { name } }
@@ -291,6 +267,11 @@ async function getAllProjectFieldValues(
                     ... on ProjectV2ItemFieldNumberValue {
                       field { ... on ProjectV2Field { name } }
                       number
+                    }
+                    ... on ProjectV2ItemFieldSingleSelectValue {
+                      field { ... on ProjectV2SingleSelectField { name } }
+                      name
+                      optionId
                     }
                     ... on ProjectV2ItemFieldDateValue {
                       field { ... on ProjectV2Field { name } }
@@ -305,102 +286,69 @@ async function getAllProjectFieldValues(
       }
     `;
 
-    // Step 1: Get all projects V2 with pagination
-    let projectsAfter: string | null = null;
-    let hasMoreProjects = true;
+    // Process each issue individually to get its project field values
+    for (const issueNumber of issueNumbers) {
+      try {
+        const response: any = await octokit.graphql(issueProjectQuery, {
+          owner,
+          repo,
+          issueNumber,
+        });
 
-    while (hasMoreProjects) {
-      const projectsResponse: any = await octokit.graphql(projectsQuery, {
-        owner,
-        repo,
-        after: projectsAfter,
-      });
+        const projectItems = response?.repository?.issue?.projectItems?.nodes || [];
+        
+        if (projectItems.length > 0) {
+          const itemFieldValues: ProjectItemFieldValue = {};
+          
+          // Process field values from the first project item (usually there's only one)
+          for (const item of projectItems) {
+            if (item.fieldValues && item.fieldValues.nodes) {
+              for (const fieldValue of item.fieldValues.nodes) {
+                if (fieldValue.field && fieldValue.field.name) {
+                  const fieldName = String(fieldValue.field.name).toLowerCase();
 
-      const repository: any = projectsResponse.repository;
-      if (!repository || !repository.projectsV2) {
-        break;
-      }
-
-      const projects = repository.projectsV2.nodes || [];
-      console.log(`  Processing ${projects.length} projects V2 for field values...`);
-
-      // Step 2: For each project V2, get all items with field values
-      for (const project of projects) {
-        console.log(`  Project V2 ${project.title}: loading items with field values...`);
-
-        let itemsAfter: string | null = null;
-        let hasMoreItems = true;
-
-        while (hasMoreItems) {
-          const itemsResponse: any = await octokit.graphql(itemsQuery, {
-            projectId: project.id,
-            after: itemsAfter,
-          });
-
-          const projectNode: any = itemsResponse.node;
-          if (!projectNode || !projectNode.items) {
-            break;
-          }
-
-          const items = projectNode.items.nodes || [];
-          console.log(`  Project V2 ${project.title}: ${items.length} items with field values`);
-
-          // Process field values for each item (limit to target issue numbers and createdAt >= threshold)
-          for (const item of items) {
-            if (item.content && item.content.number) {
-              const issueNumber: number = item.content.number;
-              const createdAtStr: string | undefined = item.content.createdAt;
-              const createdAt = createdAtStr ? new Date(createdAtStr) : null;
-
-              // Only process if this issue is in the filtered set and meets date condition
-              if (!issueSet.has(issueNumber)) continue;
-              if (!createdAt || createdAt < CREATED_SINCE) continue;
-
-              const itemFieldValues: ProjectItemFieldValue = {};
-
-              // Process field values
-              if (item.fieldValues && item.fieldValues.nodes) {
-                for (const fieldValue of item.fieldValues.nodes) {
-                  if (fieldValue.field && fieldValue.field.name) {
-                    const fieldName = String(fieldValue.field.name).toLowerCase();
-
-                    if (fieldName === 'sp' && fieldValue.number !== undefined) {
+                  // Handle SP field (can be Number, Text, or Single Select)
+                  if (fieldName === 'sp' && itemFieldValues.sp === undefined) {
+                    if (fieldValue.number !== undefined) {
+                      // Number field
                       itemFieldValues.sp = fieldValue.number;
-                    } else if (
-                      (fieldName === 'end date' ||
-                        fieldName === 'end_date' ||
-                        fieldName === 'due date' ||
-                        fieldName === 'deadline') &&
-                      fieldValue.date
-                    ) {
-                      itemFieldValues.endDate = new Date(fieldValue.date);
-                    } else if (fieldName === 'sp' && fieldValue.text) {
-                      // Try to parse SP from text field
+                    } else if (fieldValue.name !== undefined) {
+                      // Single Select field - try to parse number from the option name
+                      const spMatch = fieldValue.name.match(/(\d+)/);
+                      if (spMatch) {
+                        itemFieldValues.sp = parseInt(spMatch[1], 10);
+                      }
+                    } else if (fieldValue.text) {
+                      // Text field - try to parse number from text
                       const spMatch = fieldValue.text.match(/(\d+)/);
                       if (spMatch) {
                         itemFieldValues.sp = parseInt(spMatch[1], 10);
                       }
                     }
+                  } else if (
+                    (fieldName === 'end date' ||
+                      fieldName === 'end_date' ||
+                      fieldName === 'due date' ||
+                      fieldName === 'deadline') &&
+                    fieldValue.date &&
+                    itemFieldValues.endDate === undefined
+                  ) {
+                    itemFieldValues.endDate = new Date(fieldValue.date);
                   }
                 }
               }
-
-              // Only add if we found values
-              if (itemFieldValues.sp !== undefined || itemFieldValues.endDate !== undefined) {
-                fieldValues.set(issueNumber, itemFieldValues);
-              }
             }
           }
-
-          // Update pagination for items
-          hasMoreItems = projectNode.items.pageInfo.hasNextPage;
-          itemsAfter = projectNode.items.pageInfo.endCursor;
+          
+          // Only add if we found values
+          if (itemFieldValues.sp !== undefined || itemFieldValues.endDate !== undefined) {
+            fieldValues.set(issueNumber, itemFieldValues);
+            console.log(`    Issue #${issueNumber}: SP=${itemFieldValues.sp}, EndDate=${itemFieldValues.endDate ? itemFieldValues.endDate.toISOString().split('T')[0] : 'none'}`);
+          }
         }
+      } catch (error) {
+        console.log(`    Error fetching project data for issue #${issueNumber}`);
       }
-
-      // Update pagination for projects
-      hasMoreProjects = repository.projectsV2.pageInfo.hasNextPage;
-      projectsAfter = repository.projectsV2.pageInfo.endCursor;
     }
 
     console.log(`  Found field values for ${fieldValues.size} issues from projects V2`);
@@ -412,49 +360,38 @@ async function getAllProjectFieldValues(
   return fieldValues;
 }
 
-// Function to get all issues in projects with pagination (createdAt filtered)
+// Function to get all issues in projects (by checking each issue for project association)
 async function getAllProjectIssues(owner: string, repo: string): Promise<Set<number>> {
   const allIssues = new Set<number>();
 
   try {
-    console.log('  Loading projects V2 using GraphQL with pagination...');
+    console.log('  Checking project association for filtered issues...');
+    
+    // Get all open issues to check for project association
+    const allItems = await octokit.paginate(octokit.issues.listForRepo, {
+      owner,
+      repo,
+      state: 'open',
+      per_page: 100,
+    });
 
-    // Query to get projects V2 with pagination
-    const projectsQuery = `
-      query($owner: String!, $repo: String!, $after: String) {
+    // Filter to actual issues (not PRs) and createdAt >= threshold
+    const issuesOnly = allItems.filter((item: any) => !item.pull_request);
+    const filteredIssues = issuesOnly.filter((item: any) => {
+      const createdAtStr: string | undefined = item.created_at;
+      if (!createdAtStr) return false;
+      const createdAt = new Date(createdAtStr);
+      return createdAt >= CREATED_SINCE;
+    });
+
+    // Query to check if an issue is in a project
+    const issueProjectCheckQuery = `
+      query($owner: String!, $repo: String!, $issueNumber: Int!) {
         repository(owner: $owner, name: $repo) {
-          projectsV2(first: 10, after: $after) {
-            pageInfo {
-              hasNextPage
-              endCursor
-            }
-            nodes {
-              id
-              number
-              title
-            }
-          }
-        }
-      }
-    `;
-
-    // Query to get items of a project V2 (we also fetch issue.createdAt to filter client-side)
-    const itemsQuery = `
-      query($projectId: ID!, $after: String) {
-        node(id: $projectId) {
-          ... on ProjectV2 {
-            items(first: 100, after: $after) {
-              pageInfo {
-                hasNextPage
-                endCursor
-              }
+          issue(number: $issueNumber) {
+            projectItems(first: 1) {
               nodes {
-                content {
-                  ... on Issue {
-                    number
-                    createdAt
-                  }
-                }
+                id
               }
             }
           }
@@ -462,73 +399,29 @@ async function getAllProjectIssues(owner: string, repo: string): Promise<Set<num
       }
     `;
 
-    // Step 1: Get all projects V2 with pagination
-    let projectsAfter: string | null = null;
-    let hasMoreProjects = true;
+    // Check each issue for project association
+    for (const issue of filteredIssues) {
+      try {
+        const response: any = await octokit.graphql(issueProjectCheckQuery, {
+          owner,
+          repo,
+          issueNumber: issue.number,
+        });
 
-    while (hasMoreProjects) {
-      const projectsResponse: any = await octokit.graphql(projectsQuery, {
-        owner,
-        repo,
-        after: projectsAfter,
-      });
-
-      const repository: any = projectsResponse.repository;
-      if (!repository || !repository.projectsV2) {
-        break;
-      }
-
-      const projects = repository.projectsV2.nodes || [];
-      console.log(`  Processing ${projects.length} projects V2...`);
-
-      // Step 2: For each project V2, get all items
-      for (const project of projects) {
-        console.log(`  Project V2 ${project.title}: loading items...`);
-
-        let itemsAfter: string | null = null;
-        let hasMoreItems = true;
-
-        while (hasMoreItems) {
-          const itemsResponse: any = await octokit.graphql(itemsQuery, {
-            projectId: project.id,
-            after: itemsAfter,
-          });
-
-          const projectNode: any = itemsResponse.node;
-          if (!projectNode || !projectNode.items) {
-            break;
-          }
-
-          const items = projectNode.items.nodes || [];
-          console.log(`  Project V2 ${project.title}: ${items.length} items`);
-
-          // Collect issue numbers from items (createdAt >= threshold)
-          for (const item of items) {
-            if (item.content && item.content.number) {
-              const createdAtStr: string | undefined = item.content.createdAt;
-              const createdAt = createdAtStr ? new Date(createdAtStr) : null;
-              if (createdAt && createdAt >= CREATED_SINCE) {
-                allIssues.add(item.content.number);
-              }
-            }
-          }
-
-          // Update pagination for items
-          hasMoreItems = projectNode.items.pageInfo.hasNextPage;
-          itemsAfter = projectNode.items.pageInfo.endCursor;
+        const projectItems = response?.repository?.issue?.projectItems?.nodes || [];
+        if (projectItems.length > 0) {
+          allIssues.add(issue.number);
         }
+      } catch (error) {
+        // Silently skip if we can't check this issue
       }
-
-      // Update pagination for projects
-      hasMoreProjects = repository.projectsV2.pageInfo.hasNextPage;
-      projectsAfter = repository.projectsV2.pageInfo.endCursor;
     }
 
     console.log(
-      `  Found ${allIssues.size} issues in projects V2 (createdAt >= ${CREATED_SINCE_ISO}, with pagination)`
+      `  Found ${allIssues.size} issues in projects (createdAt >= ${CREATED_SINCE_ISO})`
     );
   } catch (error) {
-    console.error(`? Error loading project V2 issues for ${owner}/${repo}:`, error);
+    console.error(`? Error loading project issues for ${owner}/${repo}:`, error);
     console.log('?? Project check will be skipped due to API limitations');
   }
 
