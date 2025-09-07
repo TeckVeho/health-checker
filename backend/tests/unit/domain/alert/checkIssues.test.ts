@@ -28,13 +28,8 @@ beforeEach(() => {
   process.env = { ...originalEnv, GITHUB_API_KEY: 'test-token', NODE_ENV: 'test' };
   jest.clearAllMocks();
   
-  // Reset LLM mock to return proper response
-  mockGenerateText.mockImplementation(() => Promise.resolve({ text: 'false' }));
-  
-  // Mock specific LLM responses for template and unclear detection
-  mockGenerateText
-    .mockResolvedValueOnce({ text: 'true' }) // For template detection
-    .mockResolvedValueOnce({ text: 'true' }); // For unclear detection
+  // Default LLM mock to return false (clear content)
+  mockGenerateText.mockImplementation(() => Promise.resolve({ text: '{"result": false, "reason": "Clear content"}' }));
 });
 
 afterEach(() => {
@@ -80,22 +75,28 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: 'This is a test issue without story points',
           html_url: 'https://github.com/test-owner/test-repo/issues/1',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
       mockOctokit.paginate.mockResolvedValue(mockIssues);
-      mockOctokit.graphql.mockResolvedValue({
+      // Mock GraphQL query for getting project field values (returns empty)
+      mockOctokit.graphql.mockResolvedValueOnce({
         repository: {
-          projectsV2: {
-            pageInfo: { hasNextPage: false, endCursor: null },
-            nodes: [],
-          },
-        },
+          issue: {
+            projectItems: {
+              nodes: []
+            }
+          }
+        }
       });
+
+      // Mock LLM response
+      mockGenerateText.mockResolvedValueOnce({ text: '{"result": true, "reason": "Unclear instructions detected"}' });
 
       const result = await checkIssues(owner, repo);
 
-      expect(result.alerts).toHaveLength(5); // Basic alerts + template_only + unclear_instruction
+      expect(result.alerts).toHaveLength(5); // unassigned + missing_sp + missing_end_date + not_in_project + unclear_instruction
       const alert = result.alerts.find(a => a.checkType === 'issue_missing_sp');
       expect(alert).toBeDefined();
       expect(alert?.title).toBe('issue:1');
@@ -109,22 +110,28 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: 'This issue has SP: 10',
           html_url: 'https://github.com/test-owner/test-repo/issues/2',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
       mockOctokit.paginate.mockResolvedValue(mockIssues);
-      mockOctokit.graphql.mockResolvedValue({
+      // Mock GraphQL query for getting project field values (returns empty)
+      mockOctokit.graphql.mockResolvedValueOnce({
         repository: {
-          projectsV2: {
-            pageInfo: { hasNextPage: false, endCursor: null },
-            nodes: [],
-          },
-        },
+          issue: {
+            projectItems: {
+              nodes: []
+            }
+          }
+        }
       });
+
+      // Mock LLM response
+      mockGenerateText.mockResolvedValueOnce({ text: '{"result": true, "reason": "Unclear instructions detected"}' });
 
       const result = await checkIssues(owner, repo);
 
-      expect(result.alerts).toHaveLength(5); // Basic alerts + template_only + unclear_instruction
+      expect(result.alerts).toHaveLength(5); // various alerts + unclear_instruction
       const alert = result.alerts.find(a => a.checkType === 'issue_large_sp');
       expect(alert).toBeDefined();
       expect(alert?.title).toBe('issue:2');
@@ -138,22 +145,28 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: 'This issue has no end date',
           html_url: 'https://github.com/test-owner/test-repo/issues/3',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
       mockOctokit.paginate.mockResolvedValue(mockIssues);
-      mockOctokit.graphql.mockResolvedValue({
+      // Mock GraphQL query for getting project field values (returns empty)
+      mockOctokit.graphql.mockResolvedValueOnce({
         repository: {
-          projectsV2: {
-            pageInfo: { hasNextPage: false, endCursor: null },
-            nodes: [],
-          },
-        },
+          issue: {
+            projectItems: {
+              nodes: []
+            }
+          }
+        }
       });
+
+      // Mock LLM response
+      mockGenerateText.mockResolvedValueOnce({ text: '{"result": true, "reason": "Unclear instructions detected"}' });
 
       const result = await checkIssues(owner, repo);
 
-      expect(result.alerts).toHaveLength(5); // Basic alerts + template_only + unclear_instruction
+      expect(result.alerts).toHaveLength(5); // various alerts + unclear_instruction
       const alert = result.alerts.find(a => a.checkType === 'issue_missing_end_date');
       expect(alert).toBeDefined();
       expect(alert?.title).toBe('issue:3');
@@ -171,54 +184,137 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: `This issue has expired end date: ${expiredDate}`,
           html_url: 'https://github.com/test-owner/test-repo/issues/4',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
       mockOctokit.paginate.mockResolvedValue(mockIssues);
-      mockOctokit.graphql.mockResolvedValue({
+      // Mock GraphQL query for getting project field values (returns empty)
+      mockOctokit.graphql.mockResolvedValueOnce({
         repository: {
-          projectsV2: {
-            pageInfo: { hasNextPage: false, endCursor: null },
-            nodes: [],
-          },
-        },
+          issue: {
+            projectItems: {
+              nodes: []
+            }
+          }
+        }
       });
+
+      // Mock LLM response
+      mockGenerateText.mockResolvedValueOnce({ text: '{"result": true, "reason": "Unclear instructions detected"}' });
 
       const result = await checkIssues(owner, repo);
 
-      expect(result.alerts).toHaveLength(5); // Basic alerts + template_only + unclear_instruction
+      expect(result.alerts).toHaveLength(5); // various alerts + unclear_instruction
       const alert = result.alerts.find(a => a.checkType === 'issue_expired_end_date');
       expect(alert).toBeDefined();
       expect(alert?.title).toBe('issue:4');
       expect(alert?.severity).toBe('middle');
     });
 
-    it('should detect issue not in project', async () => {
+    it('should detect unassigned issue', async () => {
       const mockIssues = [
         {
           number: 5,
           title: 'Test Issue',
-          body: 'This issue is not in any project',
+          body: 'This issue is not assigned to anyone',
           html_url: 'https://github.com/test-owner/test-repo/issues/5',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
+          assignee: null, // Unassigned issue
         },
       ];
 
       mockOctokit.paginate.mockResolvedValue(mockIssues);
-      mockOctokit.graphql.mockResolvedValue({
+      // Mock GraphQL query for getting project field values (returns empty)
+      mockOctokit.graphql.mockResolvedValueOnce({
         repository: {
-          projectsV2: {
-            pageInfo: { hasNextPage: false, endCursor: null },
-            nodes: [],
-          },
-        },
+          issue: {
+            projectItems: {
+              nodes: []
+            }
+          }
+        }
       });
+
+      // Mock LLM to detect unclear instructions (treats template as unclear)
+      mockGenerateText.mockResolvedValueOnce({ text: '{"result": true, "reason": "Template or unclear content detected"}' });
 
       const result = await checkIssues(owner, repo);
 
-      expect(result.alerts).toHaveLength(5); // Basic alerts + template_only + unclear_instruction
-      const alert = result.alerts.find(a => a.checkType === 'issue_not_in_project');
+      expect(result.alerts).toHaveLength(5); // unassigned + missing_sp + missing_end_date + not_in_project + unclear_instruction
+      const alert = result.alerts.find(a => a.checkType === 'issue_unassigned');
       expect(alert).toBeDefined();
       expect(alert?.title).toBe('issue:5');
+      expect(alert?.description).toBe('Issue #5 is not assigned to anyone.');
+      expect(alert?.severity).toBe('low');
+    });
+
+    it('should not detect assigned issue', async () => {
+      const mockIssues = [
+        {
+          number: 6,
+          title: 'Test Issue',
+          body: 'This issue is assigned to someone',
+          html_url: 'https://github.com/test-owner/test-repo/issues/6',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
+          assignee: { login: 'test-user' }, // Assigned issue
+        },
+      ];
+
+      mockOctokit.paginate.mockResolvedValue(mockIssues);
+      // Mock GraphQL query for getting project field values (returns empty)
+      mockOctokit.graphql.mockResolvedValueOnce({
+        repository: {
+          issue: {
+            projectItems: {
+              nodes: []
+            }
+          }
+        }
+      });
+
+      // Mock LLM to detect unclear instructions
+      mockGenerateText.mockResolvedValueOnce({ text: '{"result": true, "reason": "Template or unclear content detected"}' });
+
+      const result = await checkIssues(owner, repo);
+
+      expect(result.alerts).toHaveLength(4); // missing_sp + missing_end_date + not_in_project + unclear_instruction (no unassigned alert)
+      const alert = result.alerts.find(a => a.checkType === 'issue_unassigned');
+      expect(alert).toBeUndefined();
+    });
+
+    it('should detect issue not in project', async () => {
+      const mockIssues = [
+        {
+          number: 7,
+          title: 'Test Issue',
+          body: 'This issue is not in any project',
+          html_url: 'https://github.com/test-owner/test-repo/issues/7',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
+        },
+      ];
+
+      mockOctokit.paginate.mockResolvedValue(mockIssues);
+      // Mock GraphQL query for getting project field values (returns empty)
+      mockOctokit.graphql.mockResolvedValueOnce({
+        repository: {
+          issue: {
+            projectItems: {
+              nodes: []
+            }
+          }
+        }
+      });
+
+      // Mock LLM response
+      mockGenerateText.mockResolvedValueOnce({ text: '{"result": true, "reason": "Unclear instructions detected"}' });
+
+      const result = await checkIssues(owner, repo);
+
+      expect(result.alerts).toHaveLength(5); // various alerts + unclear_instruction
+      const alert = result.alerts.find(a => a.checkType === 'issue_not_in_project');
+      expect(alert).toBeDefined();
+      expect(alert?.title).toBe('issue:7');
       expect(alert?.severity).toBe('middle');
     });
 
@@ -230,6 +326,7 @@ describe('checkIssues', () => {
           body: 'This is an actual issue',
           html_url: 'https://github.com/test-owner/test-repo/issues/1',
           pull_request: undefined, // No pull_request property = actual issue
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
         {
           number: 2,
@@ -237,6 +334,7 @@ describe('checkIssues', () => {
           body: 'This is a pull request',
           html_url: 'https://github.com/test-owner/test-repo/pull/2',
           pull_request: {}, // Has pull_request property = PR
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
         {
           number: 3,
@@ -244,18 +342,35 @@ describe('checkIssues', () => {
           body: 'This is another issue',
           html_url: 'https://github.com/test-owner/test-repo/issues/3',
           pull_request: undefined, // No pull_request property = actual issue
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
       mockOctokit.paginate.mockResolvedValue(mockItems);
-      mockOctokit.graphql.mockResolvedValue({
+      // Mock GraphQL query for getting project field values for issue #1 (returns empty)
+      mockOctokit.graphql.mockResolvedValueOnce({
         repository: {
-          projectsV2: {
-            pageInfo: { hasNextPage: false, endCursor: null },
-            nodes: [],
-          },
-        },
+          issue: {
+            projectItems: {
+              nodes: []
+            }
+          }
+        }
       });
+      // Mock GraphQL query for getting project field values for issue #3 (returns empty)
+      mockOctokit.graphql.mockResolvedValueOnce({
+        repository: {
+          issue: {
+            projectItems: {
+              nodes: []
+            }
+          }
+        }
+      });
+
+      // Mock LLM responses for both issues
+      mockGenerateText.mockResolvedValueOnce({ text: '{"result": true, "reason": "Unclear instructions detected"}' }); // For issue #1
+      mockGenerateText.mockResolvedValueOnce({ text: '{"result": true, "reason": "Unclear instructions detected"}' }); // For issue #3
 
       const result = await checkIssues(owner, repo);
 
@@ -282,60 +397,36 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: 'This issue has no SP in body',
           html_url: 'https://github.com/test-owner/test-repo/issues/1',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
       mockOctokit.paginate.mockResolvedValue(mockIssues);
       
-      // Mock project data with SP field value - simplified test
-      mockOctokit.graphql
-        .mockResolvedValueOnce({
-          repository: {
-            projectsV2: {
-              pageInfo: { hasNextPage: false, endCursor: null },
+      // Mock the GraphQL query for project association check (getAllProjectIssues)
+      mockOctokit.graphql.mockResolvedValueOnce({
+        repository: {
+          issue: {
+            projectItems: {
               nodes: [
-                {
-                  id: 'project-1',
-                  number: 1,
-                  title: 'Test Project'
-                }
-              ],
-            },
-          },
-        })
-        .mockResolvedValueOnce({
-          node: {
-            items: {
-              pageInfo: { hasNextPage: false, endCursor: null },
-              nodes: [
-                {
-                  content: { number: 1 }
-                }
+                { id: 'project-item-1' }
               ]
             }
           }
-        })
-        .mockResolvedValueOnce({
-          repository: {
-            projectsV2: {
-              pageInfo: { hasNextPage: false, endCursor: null },
+        }
+      });
+
+      // Mock the GraphQL query for getting project field values for issue #1
+      mockOctokit.graphql.mockResolvedValueOnce({
+        repository: {
+          issue: {
+            projectItems: {
               nodes: [
                 {
-                  id: 'project-1',
-                  number: 1,
-                  title: 'Test Project'
-                }
-              ],
-            },
-          },
-        })
-        .mockResolvedValueOnce({
-          node: {
-            items: {
-              pageInfo: { hasNextPage: false, endCursor: null },
-              nodes: [
-                {
-                  content: { number: 1 },
+                  project: {
+                    id: 'project-1',
+                    title: 'Test Project'
+                  },
                   fieldValues: {
                     nodes: [
                       {
@@ -348,7 +439,12 @@ describe('checkIssues', () => {
               ]
             }
           }
-        });
+        }
+      });
+
+      // Mock LLM responses for template and unclear detection
+      mockGenerateText.mockResolvedValueOnce({ text: '{"result": false, "reason": "Has meaningful content"}' }); // template
+      mockGenerateText.mockResolvedValueOnce({ text: '{"result": false, "reason": "Clear instructions"}' }); // unclear
 
       const result = await checkIssues(owner, repo);
 
@@ -371,60 +467,36 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: 'This issue has no end date in body',
           html_url: 'https://github.com/test-owner/test-repo/issues/2',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
       mockOctokit.paginate.mockResolvedValue(mockIssues);
       
-      // Mock project data with end date field value
-      mockOctokit.graphql
-        .mockResolvedValueOnce({
-          repository: {
-            projectsV2: {
-              pageInfo: { hasNextPage: false, endCursor: null },
+      // Mock the GraphQL query for project association check (getAllProjectIssues)
+      mockOctokit.graphql.mockResolvedValueOnce({
+        repository: {
+          issue: {
+            projectItems: {
               nodes: [
-                {
-                  id: 'project-1',
-                  number: 1,
-                  title: 'Test Project'
-                }
-              ],
-            },
-          },
-        })
-        .mockResolvedValueOnce({
-          node: {
-            items: {
-              pageInfo: { hasNextPage: false, endCursor: null },
-              nodes: [
-                {
-                  content: { number: 2 }
-                }
+                { id: 'project-item-1' }
               ]
             }
           }
-        })
-        .mockResolvedValueOnce({
-          repository: {
-            projectsV2: {
-              pageInfo: { hasNextPage: false, endCursor: null },
+        }
+      });
+
+      // Mock the GraphQL query for getting project field values for issue #2
+      mockOctokit.graphql.mockResolvedValueOnce({
+        repository: {
+          issue: {
+            projectItems: {
               nodes: [
                 {
-                  id: 'project-1',
-                  number: 1,
-                  title: 'Test Project'
-                }
-              ],
-            },
-          },
-        })
-        .mockResolvedValueOnce({
-          node: {
-            items: {
-              pageInfo: { hasNextPage: false, endCursor: null },
-              nodes: [
-                {
-                  content: { number: 2 },
+                  project: {
+                    id: 'project-1',
+                    title: 'Test Project'
+                  },
                   fieldValues: {
                     nodes: [
                       {
@@ -437,7 +509,12 @@ describe('checkIssues', () => {
               ]
             }
           }
-        });
+        }
+      });
+
+      // Mock LLM responses for template and unclear detection
+      mockGenerateText.mockResolvedValueOnce({ text: '{"result": false, "reason": "Has meaningful content"}' }); // template
+      mockGenerateText.mockResolvedValueOnce({ text: '{"result": false, "reason": "Clear instructions"}' }); // unclear
 
       const result = await checkIssues(owner, repo);
 
@@ -462,63 +539,41 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: 'This issue has no end date in body',
           html_url: 'https://github.com/test-owner/test-repo/issues/4',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
-      mockOctokit.paginate.mockResolvedValue(mockIssues);
-      
-      // Mock project data with different end date field names
+      // Test different field names for end date
       const endDateFieldNames = ['End Date', 'end_date', 'Due Date', 'Deadline'];
       
       for (const fieldName of endDateFieldNames) {
-        mockOctokit.graphql
-          .mockResolvedValueOnce({
-            repository: {
-              projectsV2: {
-                pageInfo: { hasNextPage: false, endCursor: null },
+        jest.clearAllMocks();
+        mockOctokit.paginate.mockResolvedValue(mockIssues);
+        
+        // Mock the GraphQL query for project association check (getAllProjectIssues)
+        mockOctokit.graphql.mockResolvedValueOnce({
+          repository: {
+            issue: {
+              projectItems: {
                 nodes: [
-                  {
-                    id: 'project-1',
-                    number: 1,
-                    title: 'Test Project'
-                  }
-                ],
-              },
-            },
-          })
-          .mockResolvedValueOnce({
-            node: {
-              items: {
-                pageInfo: { hasNextPage: false, endCursor: null },
-                nodes: [
-                  {
-                    content: { number: 4 }
-                  }
+                  { id: 'project-item-1' }
                 ]
               }
             }
-          })
-          .mockResolvedValueOnce({
-            repository: {
-              projectsV2: {
-                pageInfo: { hasNextPage: false, endCursor: null },
+          }
+        });
+
+        // Mock the GraphQL query for getting project field values with the specific field name
+        mockOctokit.graphql.mockResolvedValueOnce({
+          repository: {
+            issue: {
+              projectItems: {
                 nodes: [
                   {
-                    id: 'project-1',
-                    number: 1,
-                    title: 'Test Project'
-                  }
-                ],
-              },
-            },
-          })
-          .mockResolvedValueOnce({
-            node: {
-              items: {
-                pageInfo: { hasNextPage: false, endCursor: null },
-                nodes: [
-                  {
-                    content: { number: 4 },
+                    project: {
+                      id: 'project-1',
+                      title: 'Test Project'
+                    },
                     fieldValues: {
                       nodes: [
                         {
@@ -531,7 +586,12 @@ describe('checkIssues', () => {
                 ]
               }
             }
-          });
+          }
+        });
+
+        // Mock LLM responses for template and unclear detection
+        mockGenerateText.mockResolvedValueOnce({ text: '{"result": false, "reason": "Has meaningful content"}' }); // template
+        mockGenerateText.mockResolvedValueOnce({ text: '{"result": false, "reason": "Clear instructions"}' }); // unclear
 
         const result = await checkIssues(owner, repo);
 
@@ -548,39 +608,36 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: 'This issue has SP: 3',
           html_url: 'https://github.com/test-owner/test-repo/issues/5',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
       mockOctokit.paginate.mockResolvedValue(mockIssues);
       
-      // Mock project data with pagination
-      mockOctokit.graphql
-        .mockResolvedValueOnce({
-          repository: {
-            projectsV2: {
-              pageInfo: { hasNextPage: true, endCursor: 'cursor1' },
+      // Mock the GraphQL query for project association check (issue is in project)
+      mockOctokit.graphql.mockResolvedValueOnce({
+        repository: {
+          issue: {
+            projectItems: {
+              nodes: [
+                { id: 'project-item-1' }
+              ]
+            }
+          }
+        }
+      });
+
+      // Mock the GraphQL query for getting project field values with SP=3
+      mockOctokit.graphql.mockResolvedValueOnce({
+        repository: {
+          issue: {
+            projectItems: {
               nodes: [
                 {
-                  id: 'project-1',
-                  number: 1,
-                  title: 'Test Project 1',
-                  fields: {
-                    nodes: [
-                      { id: 'field-1', name: 'SP', dataType: 'NUMBER' }
-                    ]
-                  }
-                }
-              ],
-            },
-          },
-        })
-        .mockResolvedValueOnce({
-          node: {
-            items: {
-              pageInfo: { hasNextPage: false, endCursor: null },
-              nodes: [
-                {
-                  content: { number: 5 },
+                  project: {
+                    id: 'project-1',
+                    title: 'Test Project 1'
+                  },
                   fieldValues: {
                     nodes: [
                       {
@@ -593,55 +650,12 @@ describe('checkIssues', () => {
               ]
             }
           }
-        })
-        .mockResolvedValueOnce({
-          repository: {
-            projectsV2: {
-              pageInfo: { hasNextPage: false, endCursor: null },
-              nodes: [
-                {
-                  id: 'project-2',
-                  number: 2,
-                  title: 'Test Project 2'
-                }
-              ],
-            },
-          },
-        })
-        .mockResolvedValueOnce({
-          node: {
-            items: {
-              pageInfo: { hasNextPage: false, endCursor: null },
-              nodes: []
-            }
-          }
-        })
-        .mockResolvedValueOnce({
-          repository: {
-            projectsV2: {
-              pageInfo: { hasNextPage: false, endCursor: null },
-              nodes: [
-                {
-                  id: 'project-1',
-                  number: 1,
-                  title: 'Test Project 1'
-                }
-              ],
-            },
-          },
-        })
-        .mockResolvedValueOnce({
-          node: {
-            items: {
-              pageInfo: { hasNextPage: false, endCursor: null },
-              nodes: [
-                {
-                  content: { number: 5 }
-                }
-              ]
-            }
-          }
-        });
+        }
+      });
+
+      // Mock LLM responses for template and unclear detection
+      mockGenerateText.mockResolvedValueOnce({ text: '{"result": false, "reason": "Has meaningful content"}' }); // template
+      mockGenerateText.mockResolvedValueOnce({ text: '{"result": false, "reason": "Clear instructions"}' }); // unclear
 
       const result = await checkIssues(owner, repo);
 
@@ -665,6 +679,7 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: 'Please describe the issue here',
           html_url: 'https://github.com/test-owner/test-repo/issues/6',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
@@ -699,27 +714,34 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: 'Fix this bug',
           html_url: 'https://github.com/test-owner/test-repo/issues/7',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
       mockOctokit.paginate.mockResolvedValue(mockIssues);
       mockOctokit.graphql.mockResolvedValue({
         repository: {
-          projectsV2: {
-            pageInfo: { hasNextPage: false, endCursor: null },
-            nodes: [],
-          },
-        },
+          issue: {
+            projectItems: {
+              nodes: []
+            }
+          }
+        }
       });
 
-      // Mock LLM response for unclear instructions detection
+      // Mock LLM response for template detection (not template-only)
+      mockGenerateText.mockResolvedValueOnce({
+        text: '{"result": false, "reason": "Has meaningful content beyond templates."}',
+      });
+
+      // Mock LLM response for unclear instructions detection  
       mockGenerateText.mockResolvedValueOnce({
         text: '{"result": true, "reason": "The issue description lacks specific actionable steps and expected outcomes."}',
       });
 
       const result = await checkIssues(owner, repo);
 
-      expect(result.alerts).toHaveLength(5); // Basic alerts + template_only + unclear_instruction
+      expect(result.alerts).toHaveLength(5); // Basic alerts (unassigned, missing_sp, missing_end_date, not_in_project) + unclear_instruction
       const alert = result.alerts.find(a => a.checkType === 'issue_unclear_instruction');
       expect(alert).toBeDefined();
       expect(alert?.title).toBe('issue:7');
@@ -733,25 +755,34 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: 'Please describe the issue here',
           html_url: 'https://github.com/test-owner/test-repo/issues/8',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
       mockOctokit.paginate.mockResolvedValue(mockIssues);
-      mockOctokit.graphql.mockResolvedValue({
+      
+      // Mock the GraphQL query for project association check (issue not in project)
+      mockOctokit.graphql.mockResolvedValueOnce({
         repository: {
-          projectsV2: {
-            pageInfo: { hasNextPage: false, endCursor: null },
-            nodes: [],
-          },
-        },
+          issue: {
+            projectItems: {
+              nodes: [] // No project items = not in project
+            }
+          }
+        }
       });
 
-      // Mock LLM to throw error
+      // Mock the GraphQL query for getting project field values (empty since not in project)
+      // This won't be called since the issue is not in any project
+
+      // Mock LLM to throw error for template detection, should fallback to heuristic
       mockGenerateText.mockRejectedValueOnce(new Error('LLM API error'));
+      // Mock LLM to succeed for unclear detection (return false = clear)
+      mockGenerateText.mockResolvedValueOnce({ text: '{"result": false, "reason": "Clear enough instructions"}' });
 
       const result = await checkIssues(owner, repo);
 
-      expect(result.alerts).toHaveLength(5); // Basic alerts + template_only + unclear_instruction
+      expect(result.alerts).toHaveLength(5); // unassigned + missing_sp + missing_end_date + not_in_project + template_only
       const alert = result.alerts.find(a => a.checkType === 'issue_template_only');
       expect(alert).toBeDefined();
       expect(alert?.title).toBe('issue:8');
@@ -765,6 +796,7 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: 'This is a detailed description of the issue with specific steps to reproduce and expected behavior.',
           html_url: 'https://github.com/test-owner/test-repo/issues/9',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
@@ -798,6 +830,7 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: 'Please implement user authentication with the following requirements: 1. Use JWT tokens 2. Add login/logout endpoints 3. Include password validation',
           html_url: 'https://github.com/test-owner/test-repo/issues/10',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
@@ -831,6 +864,7 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: 'Please describe the issue here\n\n## Description\n\nRewrite the summary of the tasks performed for this issue and its goal',
           html_url: 'https://github.com/test-owner/test-repo/issues/10',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
@@ -885,6 +919,7 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: null,
           html_url: 'https://github.com/test-owner/test-repo/issues/11',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
@@ -915,6 +950,7 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: 'This issue has SP: 5',
           html_url: 'https://github.com/test-owner/test-repo/issues/13',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
@@ -938,6 +974,7 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: 'This issue has SP: 5',
           html_url: 'https://github.com/test-owner/test-repo/issues/14',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
@@ -969,6 +1006,7 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: `This issue has SP: 3 and End Date: ${futureDate}`,
           html_url: 'https://github.com/test-owner/test-repo/issues/15',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
@@ -1001,6 +1039,7 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: 'This issue has SP: 15',
           html_url: 'https://github.com/test-owner/test-repo/issues/16',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
@@ -1033,6 +1072,7 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: `This issue has expired end date: ${expiredDate}`,
           html_url: 'https://github.com/test-owner/test-repo/issues/17',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
@@ -1061,71 +1101,49 @@ describe('checkIssues', () => {
           title: 'Test Issue',
           body: 'This issue has no SP or end date',
           html_url: 'https://github.com/test-owner/test-repo/issues/18',
+          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
         },
       ];
 
       mockOctokit.paginate.mockResolvedValue(mockIssues);
       
-      // Mock project data without field values
-      mockOctokit.graphql
-        .mockResolvedValueOnce({
-          repository: {
-            projectsV2: {
-              pageInfo: { hasNextPage: false, endCursor: null },
+      // Mock the GraphQL query for project association check (issue is in project)
+      mockOctokit.graphql.mockResolvedValueOnce({
+        repository: {
+          issue: {
+            projectItems: {
+              nodes: [
+                { id: 'project-item-1' }
+              ]
+            }
+          }
+        }
+      });
+
+      // Mock the GraphQL query for getting project field values (no field values)
+      mockOctokit.graphql.mockResolvedValueOnce({
+        repository: {
+          issue: {
+            projectItems: {
               nodes: [
                 {
-                  id: 'project-1',
-                  number: 1,
-                  title: 'Test Project',
-                  fields: {
-                    nodes: []
-                  }
-                }
-              ],
-            },
-          },
-        })
-        .mockResolvedValueOnce({
-          node: {
-            items: {
-              pageInfo: { hasNextPage: false, endCursor: null },
-              nodes: [
-                {
-                  content: { number: 18 },
+                  project: {
+                    id: 'project-1',
+                    title: 'Test Project'
+                  },
                   fieldValues: {
-                    nodes: []
+                    nodes: [] // No field values
                   }
                 }
               ]
             }
           }
-        })
-        .mockResolvedValueOnce({
-          repository: {
-            projectsV2: {
-              pageInfo: { hasNextPage: false, endCursor: null },
-              nodes: [
-                {
-                  id: 'project-1',
-                  number: 1,
-                  title: 'Test Project'
-                }
-              ],
-            },
-          },
-        })
-        .mockResolvedValueOnce({
-          node: {
-            items: {
-              pageInfo: { hasNextPage: false, endCursor: null },
-              nodes: [
-                {
-                  content: { number: 18 }
-                }
-              ]
-            }
-          }
-        });
+        }
+      });
+
+      // Mock LLM responses for template and unclear detection
+      mockGenerateText.mockResolvedValueOnce({ text: '{"result": false, "reason": "Has meaningful content"}' }); // template
+      mockGenerateText.mockResolvedValueOnce({ text: '{"result": false, "reason": "Clear instructions"}' }); // unclear
 
       const result = await checkIssues(owner, repo);
 
