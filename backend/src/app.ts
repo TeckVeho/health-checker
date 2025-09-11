@@ -14,7 +14,7 @@ app.use(cookieParser());
 // CORS configuration from environment variables
 const corsOrigins = process.env.CORS_ORIGINS 
   ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
-  : ['http://localhost:23001', 'http://localhost:3000']; // Default fallback
+  : ['http://localhost:23001', 'http://localhost:3000', 'https://repocheck.vw-dev.com']; // Default fallback
 
 console.log('🔧 CORS Origins:', corsOrigins);
 
@@ -57,5 +57,6 @@ app.use(cors({
 app.use(express.json());
 app.use('/api', routes);
 app.use(errorHandler);
+
 
 export default app;
