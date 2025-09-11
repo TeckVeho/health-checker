@@ -10,6 +10,8 @@ export interface IssueAlertCandidate {
   title: string;
   description: string;
   severity: string;
+  author?: string | null;
+  authorDisplayName?: string | null;
   filePath: string;
   lineNumber: number;
   codeSnippet: string;
@@ -43,6 +45,11 @@ export interface GitHubIssue {
   assignee?: { login: string } | null;
   // eslint-disable-next-line @typescript-eslint/naming-convention
   pull_request?: any;
+  user?: {
+    login: string;
+    name?: string | null;
+    type: string;
+  } | null;
 }
 
 export interface ProjectItemFieldValue {

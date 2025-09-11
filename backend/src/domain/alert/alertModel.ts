@@ -18,6 +18,8 @@ class Alert extends Model<AlertAttributes, AlertCreationAttributes> implements A
   public title!: string;
   public description?: string;
   public severity?: string;
+  public author?: string;
+  public authorDisplayName?: string;
   public filePath?: string;
   public lineNumber?: number;
   public codeSnippet?: string;

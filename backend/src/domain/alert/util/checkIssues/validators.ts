@@ -3,6 +3,7 @@
  */
 import { IssueAlertCandidate, GitHubIssue, ProjectItemFieldValue, LLMAnalysisResult } from './types';
 import { extractStoryPoints, extractEndDate } from './parsers';
+import { extractAuthorInfo } from './authorExtractor';
 
 /**
  * Create an alert candidate with common fields
@@ -15,6 +16,8 @@ function createAlert(
   description: string,
   severity: 'low' | 'middle' | 'high'
 ): IssueAlertCandidate {
+  const authorInfo = extractAuthorInfo(issue);
+  
   return {
     owner,
     repo,
@@ -22,6 +25,8 @@ function createAlert(
     title: `issue:${issue.number}`,
     description,
     severity,
+    author: authorInfo.author,
+    authorDisplayName: authorInfo.authorDisplayName,
     filePath: '',
     lineNumber: -1,
     codeSnippet: '',
