@@ -13,6 +13,7 @@
           <TabList>
             <Tab value="severity">Severity-based view</Tab>
             <Tab value="checkType">CheckType-based view</Tab>
+            <Tab value="author">Author-based view</Tab>
           </TabList>
           <TabPanels>
             <TabPanel value="severity">
@@ -57,6 +58,12 @@
                 />
               </div>
             </TabPanel>
+            <TabPanel value="author">
+              <AuthorGroupedTable 
+                :loading="loading || checkTypeLoading"
+                :showOnlyActive="showOnlyActive"
+              />
+            </TabPanel>
           </TabPanels>
         </Tabs>
 
@@ -76,6 +83,7 @@ import LoadingText from '@/components/Atoms/LoadingText.vue'
 import HealthTag from '@/components/Atoms/HealthTag.vue'
 import RepoFilterCard from '@/components/Molecules/RepoFilterCard.vue'
 import RepoTable from '@/components/Molecules/RepoTable.vue'
+import AuthorGroupedTable from '@/components/Molecules/AuthorGroupedTable.vue'
 
 const toast = useCustomToast()
 

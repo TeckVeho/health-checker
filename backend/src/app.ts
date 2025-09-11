@@ -20,11 +20,23 @@ console.log('🔧 CORS Origins:', corsOrigins);
 
 app.use(cors({
   origin: (origin, callback) => {
+    console.log(`🔍 CORS Debug: Request from origin: "${origin}"`);
+    console.log(`🔍 CORS Debug: NODE_ENV: "${process.env.NODE_ENV}"`);
+    console.log(`🔍 CORS Debug: Allowed origins list:`, corsOrigins);
+    console.log(`🔍 CORS Debug: Origin type: ${typeof origin}`);
+    
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log(`✅ CORS: Allowing request with no origin`);
+      return callback(null, true);
+    }
     
     // Check if origin is in our allowed list
-    if (corsOrigins.includes(origin)) {
+    const isAllowed = corsOrigins.includes(origin);
+    console.log(`🔍 CORS Debug: Is "${origin}" in allowed list? ${isAllowed}`);
+    
+    if (isAllowed) {
+      console.log(`✅ CORS: Allowing origin: ${origin}`);
       return callback(null, true);
     }
     
@@ -35,7 +47,7 @@ app.use(cors({
     }
     
     console.log(`❌ CORS: Rejected origin: ${origin}`);
-    callback(new Error('Not allowed by CORS'));
+    callback(new Error('Not allowed by CORS: ' + origin));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
