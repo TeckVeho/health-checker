@@ -239,6 +239,8 @@ class AlertService {
           title: alert.title,
           description: alert.description,
           severity: alert.severity,
+          author: alert.author || null,
+          authorDisplayName: alert.authorDisplayName || null,
           filePath: alert.filePath,
           lineNumber: alert.lineNumber,
           codeSnippet: alert.codeSnippet,
@@ -288,13 +290,21 @@ class AlertService {
       ].join('||');
 
       if (!detectedKeySet.has(key)) {
-        console.log(`🛠 Resolving: ${key}`);
+        const author = row.getDataValue('author');
+        const authorInfo = author ? ` (by @${author})` : '';
+        const checkType = row.getDataValue('checkType');
+        const title = row.getDataValue('title');
+        console.log(`🛠 Resolving: ${checkType} - ${title}${authorInfo}`);
         await row.update({
           systemResolved: true,
           systemResolvedReason: `${resolveTimestamp}:Automatically resolved: not detected`,
         });
       } else {
-        console.log(`✅ Still active: ${key}`);
+        const author = row.getDataValue('author');
+        const authorInfo = author ? ` (by @${author})` : '';
+        const checkType = row.getDataValue('checkType');
+        const title = row.getDataValue('title');
+        console.log(`✅ Still active: ${checkType} - ${title}${authorInfo}`);
       }
     }
 
