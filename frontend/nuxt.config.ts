@@ -2,17 +2,9 @@ import Aura from "@primevue/themes/aura";
 
 export default defineNuxtConfig({
   srcDir: "src/",
-
   modules: ["@primevue/nuxt-module"],
-
   css: ["primeicons/primeicons.css"],
-
   ssr: false,
-
-  app: {
-    buildAssetsDir: "/assets/",
-  },
-
   primevue: {
     options: {
       theme: {
@@ -24,5 +16,10 @@ export default defineNuxtConfig({
     public: {
       apiBaseUrl: process.env.API_BASE_URL || "http://localhost:23000",
     },
+  },
+  vite: {
+    build: {
+      modulePreload: false
+    }
   }
 });
