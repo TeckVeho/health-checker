@@ -19,7 +19,7 @@ export function extractAuthorInfo(issue: GitHubIssue): AuthorInfo {
 
   return {
     author: issue.user.login,
-    authorDisplayName: issue.user.name || null
+    authorDisplayName: issue.user.login // Use login as display name since name is not available in basic API response
   };
 }
 
