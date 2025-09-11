@@ -10,6 +10,11 @@ import { checkIssues, type IssueAlertCandidate } from './util/checkIssues';
 import { checkActions } from './util/checkActions';
 import { QueryTypes, Op } from 'sequelize';
 import { subDays, format } from 'date-fns';
+import { Octokit } from '@octokit/rest';
+
+// GitHub API client
+const githubToken = process.env.GITHUB_API_KEY;
+const octokit = new Octokit({ auth: githubToken });
 
 // Define Repo model directly from schema
 class Repo extends Model {}
@@ -26,6 +31,21 @@ Alert.init(alertAttributes, {
 });
 
 class AlertService {
+  /**
+   * Check if a repository has the 'no-repocheck' topic
+   */
+  private static async hasNoRepocheckTopic(owner: string, repo: string): Promise<boolean> {
+    try {
+      const response = await octokit.rest.repos.getAllTopics({
+        owner,
+        repo,
+      });
+      return response.data.names.includes('no-repocheck');
+    } catch (error) {
+      console.warn(`⚠️ Failed to fetch topics for ${owner}/${repo}:`, (error as Error).message);
+      return false; // If we can't fetch topics, proceed with checks
+    }
+  }
   static async getAlertsByRepo(owner: string, repo: string) {
     const alerts = await Alert.findAll({
       where: {
@@ -454,13 +474,29 @@ class AlertService {
     const results: Record<string, unknown>[] = [];
 
     for (const repo of repos) {
+      const repoName = (repo as any).name;
+      const repoOwner = (repo as any).owner;
+      
       try {
-        const result = await this.runAlert({ owner: (repo as any).owner, repo: (repo as any).name, checks });
-        results.push({ repo: (repo as any).name, ...result });
+        // Check if repository has 'no-repocheck' topic
+        const hasSkipTopic = await this.hasNoRepocheckTopic(repoOwner, repoName);
+        
+        if (hasSkipTopic) {
+          console.log(`⏭️ Skipping ${repoOwner}/${repoName}: 'no-repocheck' topic found`);
+          results.push({ 
+            repo: repoName, 
+            status: 'skipped',
+            reason: 'no-repocheck topic present'
+          });
+          continue;
+        }
+
+        const result = await this.runAlert({ owner: repoOwner, repo: repoName, checks });
+        results.push({ repo: repoName, ...result });
       } catch (err) {
-        console.error(`❌ Failed to process ${(repo as any).name}`, err);
+        console.error(`❌ Failed to process ${repoName}`, err);
         results.push({
-          repo: (repo as any).name,
+          repo: repoName,
           status: 'error',
           error: (err as Error).message,
         });
