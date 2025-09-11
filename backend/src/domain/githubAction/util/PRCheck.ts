@@ -5,7 +5,7 @@ import { GitHubPullRequest } from './github';
 
 export class PRCheck {
   static hasMeaningfulBody(body: string): boolean {
-    return !this.isBodyEmpty(body) && !this.isTemplateOnly(body);
+    return !this.isBodyEmpty(body) && !this.isTemplateOnly(body) && this.hasSubstantialContent(body);
   }
   static isBodyEmpty(body: string): boolean {
     return !body || body.trim().length === 0;
@@ -19,15 +19,25 @@ export class PRCheck {
   }
   static isTemplateOnly(body: string): boolean {
     const normalized = body.trim().toLowerCase();
-    const descriptionSection = normalized.match(/##\s*description\s*([\s\S]*?)(##|$)/i);
-    const descriptionContent = descriptionSection?.[1]?.trim() ?? '';
-    if (descriptionContent.length >= 200) {
-      return false;
-    }
-    const isDescriptionUntouched = descriptionContent === '' || descriptionContent.toLowerCase().includes('rewrite the summary of the tasks');
-    const knownPlaceholderPhrases = ['rewrite the summary of the tasks performed for this issue and its goal', 'record the notes and requirements related to the order of merging', 'provide the logs of dodoai during the development process', 'include screenshots showing changes or fixes'];
-    const containsPlaceholder = knownPlaceholderPhrases.some((phrase) => normalized.includes(phrase.toLowerCase()));
-    return isDescriptionUntouched || containsPlaceholder;
+    
+    // Check for known template placeholder phrases - keep this check
+    const knownPlaceholderPhrases = [
+      'rewrite the summary of the tasks performed for this issue and its goal', 
+      'record the notes and requirements related to the order of merging', 
+      'provide the logs of dodoai during the development process', 
+      'include screenshots showing changes or fixes'
+    ];
+    
+    // If contains template placeholder phrases, it's template-only
+    return knownPlaceholderPhrases.some((phrase) => normalized.includes(phrase.toLowerCase()));
+  }
+  
+  static hasSubstantialContent(body: string): boolean {
+    const trimmed = body.trim();
+    
+    // Simple character count based check - let LLM handle the detailed analysis
+    // This threshold should be reasonable for meaningful PR descriptions
+    return trimmed.length >= 30;
   }
   static hasTestEvidence(body: string): boolean {
     const testLogRegex = /\b(yarn|npm|php\s+artisan)\b.*test/i;
