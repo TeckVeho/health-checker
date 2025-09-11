@@ -7,7 +7,7 @@ export default defineNuxtConfig({
 
   css: ["primeicons/primeicons.css"],
 
-  ssr: true,
+  ssr: false,
 
   app: {
     buildAssetsDir: "/assets/",
@@ -24,27 +24,5 @@ export default defineNuxtConfig({
     public: {
       apiBaseUrl: process.env.API_BASE_URL || "http://localhost:23000",
     },
-  },
-  
-  // Development server configuration
-  devServer: {
-    port: parseInt(process.env.NITRO_PORT || '23001'),
-    host: process.env.NITRO_HOST || 'localhost'
-  },
-  
-  // Disable problematic parser for WSL
-  nitro: {
-    esbuild: {
-      options: {
-        target: 'node18'
-      }
-    }
-  },
-  
-  // Use alternative bundler options
-  vite: {
-    esbuild: {
-      target: 'node18'
-    }
   }
 });
