@@ -108,6 +108,159 @@ class AlertController {
       next(error);
     }
   }
+
+  /**
+   * GET /by-author
+   * Get alerts grouped by issue author
+   */
+  static async getAlertsByAuthor(req: Request, res: Response, next: NextFunction) {
+    try {
+      const {
+        owner,
+        repo,
+        sortBy = 'totalAlerts',
+        sortOrder = 'desc',
+        page = '1',
+        limit = '50'
+      } = req.query;
+
+      // Validate parameters
+      const validSortBy = ['totalAlerts', 'author', 'lastActivity'];
+      if (sortBy && !validSortBy.includes(sortBy as string)) {
+        return res.status(400).json({
+          error: 'INVALID_PARAMETER',
+          message: `Invalid sortBy field. Must be one of: ${validSortBy.join(', ')}`
+        });
+      }
+
+      const validSortOrder = ['asc', 'desc'];
+      if (sortOrder && !validSortOrder.includes(sortOrder as string)) {
+        return res.status(400).json({
+          error: 'INVALID_PARAMETER',
+          message: 'Invalid sortOrder. Must be asc or desc'
+        });
+      }
+
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+
+      if (isNaN(pageNum) || pageNum < 1) {
+        return res.status(400).json({
+          error: 'INVALID_PARAMETER',
+          message: 'Page must be a positive integer'
+        });
+      }
+
+      if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+        return res.status(400).json({
+          error: 'INVALID_PARAMETER',
+          message: 'Limit must be between 1 and 100'
+        });
+      }
+
+      const result = await AlertService.getAlertsByAuthor({
+        owner: owner as string,
+        repo: repo as string,
+        sortBy: sortBy as 'totalAlerts' | 'author' | 'lastActivity',
+        sortOrder: sortOrder as 'asc' | 'desc',
+        page: pageNum,
+        limit: limitNum
+      });
+
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error fetching alerts by author:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * GET /authors/:author
+   * Get alerts for a specific author
+   */
+  static async getAlertsBySpecificAuthor(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { author } = req.params;
+      const { severity, checkType } = req.query;
+
+      if (!author) {
+        return res.status(400).json({
+          error: 'MISSING_PARAMETER',
+          message: 'Author parameter is required'
+        });
+      }
+
+      // Validate severity if provided
+      const validSeverities = ['high', 'middle', 'low'];
+      if (severity && !validSeverities.includes(severity as string)) {
+        return res.status(400).json({
+          error: 'INVALID_PARAMETER',
+          message: `Invalid severity. Must be one of: ${validSeverities.join(', ')}`
+        });
+      }
+
+      // Validate checkType if provided
+      const validCheckTypes = ['Issue', 'Branch', 'Security', 'Test', 'Performance', 'Action'];
+      if (checkType && !validCheckTypes.includes(checkType as string)) {
+        return res.status(400).json({
+          error: 'INVALID_PARAMETER',
+          message: `Invalid checkType. Must be one of: ${validCheckTypes.join(', ')}`
+        });
+      }
+
+      const result = await AlertService.getAlertsBySpecificAuthor(author, {
+        severity: severity as string,
+        checkType: checkType as string
+      });
+
+      if (result.issues.length === 0 && author !== 'Unknown Author') {
+        return res.status(404).json({
+          error: 'AUTHOR_NOT_FOUND',
+          message: `Author '${author}' not found or has no alerts`
+        });
+      }
+
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error fetching alerts for specific author:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * POST /backfill-authors
+   * Backfill author data for existing alerts
+   */
+  static async backfillAuthors(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { owner, repo, batchSize } = req.body;
+
+      // Validate batchSize if provided
+      if (batchSize !== undefined) {
+        const batchNum = parseInt(batchSize, 10);
+        if (isNaN(batchNum) || batchNum < 1 || batchNum > 100) {
+          return res.status(400).json({
+            error: 'INVALID_PARAMETER',
+            message: 'Batch size must be between 1 and 100'
+          });
+        }
+      }
+
+      const result = await AlertService.backfillAuthors({
+        owner,
+        repo,
+        batchSize: batchSize ? parseInt(batchSize, 10) : undefined
+      });
+
+      res.status(202).json(result);
+    } catch (error) {
+      console.error('Error starting author backfill:', error);
+      res.status(500).json({
+        error: 'BACKFILL_ERROR',
+        message: 'Failed to start author backfill job'
+      });
+    }
+  }
 }
 
 export default AlertController;

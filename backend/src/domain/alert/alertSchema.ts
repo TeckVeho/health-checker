@@ -9,6 +9,8 @@ export interface AlertAttributes {
   title: string;
   description?: string;
   severity?: string;
+  author?: string;
+  authorDisplayName?: string;
   filePath?: string;
   lineNumber?: number;
   codeSnippet?: string;
@@ -60,6 +62,15 @@ export const alertAttributes = {
   severity: {
     type: DataTypes.STRING(20),
     allowNull: true,
+  },
+  author: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+  },
+  authorDisplayName: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    field: 'author_display_name',
   },
   filePath: {
     type: DataTypes.TEXT,
