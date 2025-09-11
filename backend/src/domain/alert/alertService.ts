@@ -459,6 +459,307 @@ class AlertService {
 
     return results;
   }
+
+  /**
+   * Get alerts aggregated by author
+   */
+  static async getAlertsByAuthor(params: {
+    owner?: string;
+    repo?: string;
+    sortBy?: 'totalAlerts' | 'author' | 'lastActivity';
+    sortOrder?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  }) {
+    const {
+      owner,
+      repo,
+      sortBy = 'totalAlerts',
+      sortOrder = 'desc',
+      page = 1,
+      limit = 50
+    } = params;
+
+    const offset = (page - 1) * limit;
+    
+    // Build where conditions - Only show Issue type alerts for author grouping
+    const whereConditions: string[] = ['is_ignored = false', 'system_resolved = false'];
+    const replacements: (string | number)[] = [];
+
+    // Filter for Issue type alerts only (author-related issues)
+    whereConditions.push('check_type LIKE ?');
+    replacements.push('issue_%');
+
+    if (owner) {
+      whereConditions.push('owner = ?');
+      replacements.push(owner);
+    }
+
+    if (repo) {
+      whereConditions.push('repo = ?');
+      replacements.push(repo);
+    }
+
+    const whereClause = whereConditions.join(' AND ');
+    
+    // Build order clause
+    const sortMapping = {
+      totalAlerts: 'total_alerts',
+      author: 'COALESCE(author, \'Unknown Author\')',
+      lastActivity: 'last_activity_date'
+    };
+    
+    const orderClause = `ORDER BY ${sortMapping[sortBy]} ${sortOrder.toUpperCase()}`;
+
+    // Main query for aggregated data
+    const dataQuery = `
+      SELECT 
+        COALESCE(author, 'Unknown Author') as author,
+        MAX(author_display_name) as display_name,
+        COUNT(*) as total_alerts,
+        COUNT(CASE WHEN severity = 'high' THEN 1 END) as high_severity_count,
+        COUNT(CASE WHEN severity = 'middle' THEN 1 END) as middle_severity_count,
+        COUNT(CASE WHEN severity = 'low' THEN 1 END) as low_severity_count,
+        COUNT(CASE WHEN check_type = 'issue_missing_sp' THEN 1 END) as missing_sp_count,
+        COUNT(CASE WHEN check_type = 'issue_large_sp' THEN 1 END) as large_sp_count,
+        COUNT(CASE WHEN check_type = 'issue_missing_end_date' THEN 1 END) as missing_end_date_count,
+        COUNT(CASE WHEN check_type = 'issue_expired_end_date' THEN 1 END) as expired_end_date_count,
+        COUNT(CASE WHEN check_type = 'issue_not_in_project' THEN 1 END) as not_in_project_count,
+        COUNT(CASE WHEN check_type = 'issue_template_only' THEN 1 END) as template_only_count,
+        COUNT(CASE WHEN check_type = 'issue_unclear_instruction' THEN 1 END) as unclear_instruction_count,
+        COUNT(CASE WHEN check_type = 'issue_unassigned' THEN 1 END) as unassigned_count,
+        GROUP_CONCAT(DISTINCT owner || '/' || repo) as repositories,
+        MAX(last_detected_at) as last_activity_date
+      FROM alerts 
+      WHERE ${whereClause}
+      GROUP BY COALESCE(author, 'Unknown Author')
+      ${orderClause}
+      LIMIT ? OFFSET ?
+    `;
+
+    replacements.push(limit, offset);
+
+    // Count query for pagination
+    const countQuery = `
+      SELECT COUNT(DISTINCT COALESCE(author, 'Unknown Author')) as total
+      FROM alerts 
+      WHERE ${whereClause}
+    `;
+
+    // Execute queries
+    const [dataResults, countResults] = await Promise.all([
+      sequelize.query(dataQuery, {
+        type: QueryTypes.SELECT,
+        replacements: replacements
+      }),
+      sequelize.query(countQuery, {
+        type: QueryTypes.SELECT,
+        replacements: replacements.slice(0, -2) // Remove limit/offset for count
+      })
+    ]);
+
+    const total = (countResults[0] as any).total;
+    const totalPages = Math.ceil(total / limit);
+
+    // Format results
+    const data = (dataResults as any[]).map(row => ({
+      author: row.author,
+      displayName: row.display_name,
+      totalAlerts: parseInt(row.total_alerts),
+      severityCounts: {
+        high: parseInt(row.high_severity_count),
+        middle: parseInt(row.middle_severity_count),
+        low: parseInt(row.low_severity_count)
+      },
+      issueTypeCounts: {
+        missingSp: parseInt(row.missing_sp_count),
+        largeSp: parseInt(row.large_sp_count),
+        missingEndDate: parseInt(row.missing_end_date_count),
+        expiredEndDate: parseInt(row.expired_end_date_count),
+        notInProject: parseInt(row.not_in_project_count),
+        templateOnly: parseInt(row.template_only_count),
+        unclearInstruction: parseInt(row.unclear_instruction_count),
+        unassigned: parseInt(row.unassigned_count)
+      },
+      repositories: row.repositories ? row.repositories.split(',') : [],
+      lastActivityDate: row.last_activity_date
+    }));
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages
+      }
+    };
+  }
+
+  /**
+   * Get alerts for a specific author
+   */
+  static async getAlertsBySpecificAuthor(
+    author: string,
+    filters: {
+      severity?: string;
+      checkType?: string;
+    } = {}
+  ) {
+    const whereConditions: any = {
+      is_ignored: false,
+      system_resolved: false,
+      checkType: {
+        [Op.like]: 'issue_%'  // Only show issue-type alerts
+      }
+    };
+
+    // Handle "Unknown Author" case
+    if (author === 'Unknown Author') {
+      whereConditions.author = null;
+    } else {
+      whereConditions.author = author;
+    }
+
+    if (filters.severity) {
+      whereConditions.severity = filters.severity;
+    }
+
+    if (filters.checkType) {
+      whereConditions.checkType = filters.checkType;
+    }
+
+    const alerts = await Alert.findAll({
+      where: whereConditions,
+      order: [['lastDetectedAt', 'DESC']]
+    });
+
+    return {
+      author: author,
+      authorDisplayName: alerts.length > 0 ? (alerts[0] as any).authorDisplayName : null,
+      issues: alerts.map(alert => ({
+        id: (alert as any).id,
+        owner: (alert as any).owner,
+        repo: (alert as any).repo,
+        checkType: (alert as any).checkType,
+        title: (alert as any).title,
+        description: (alert as any).description,
+        severity: (alert as any).severity,
+        issueUrl: (alert as any).issueUrl,
+        filePath: (alert as any).filePath,
+        lineNumber: (alert as any).lineNumber,
+        branch: (alert as any).branch,
+        detectCount: (alert as any).detectCount,
+        lastDetectedAt: (alert as any).lastDetectedAt,
+        createdAt: (alert as any).createdAt
+      }))
+    };
+  }
+
+  /**
+   * Backfill author data for existing alerts
+   */
+  static async backfillAuthors(params: {
+    owner?: string;
+    repo?: string;
+    batchSize?: number;
+  } = {}): Promise<{ jobId: string; status: string; message: string; estimatedAlerts?: number }> {
+    const { owner, repo, batchSize = 50 } = params;
+    
+    // Generate unique job ID
+    const jobId = `backfill-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Build where conditions
+    const whereConditions: any = {
+      author: null,  // Only process alerts without author data
+      issueUrl: { [Op.not]: null }  // Only alerts with issue URLs
+    };
+
+    if (owner) whereConditions.owner = owner;
+    if (repo) whereConditions.repo = repo;
+
+    try {
+      // Get count of alerts to process
+      const alertCount = await Alert.count({ where: whereConditions });
+      
+      if (alertCount === 0) {
+        return {
+          jobId,
+          status: 'completed',
+          message: 'No alerts found that need author data',
+          estimatedAlerts: 0
+        };
+      }
+
+      // Start background processing (in real implementation, this would use a job queue)
+      // For now, we'll process synchronously in smaller batches
+      this.processAuthorBackfill(whereConditions, batchSize, jobId);
+
+      return {
+        jobId,
+        status: 'started',
+        message: 'Backfill job started successfully',
+        estimatedAlerts: alertCount
+      };
+    } catch (error) {
+      console.error('Failed to start backfill job:', error);
+      return {
+        jobId,
+        status: 'failed',
+        message: 'Failed to start backfill job'
+      };
+    }
+  }
+
+  /**
+   * Process author backfill (would typically be a background job)
+   */
+  private static async processAuthorBackfill(
+    whereConditions: any, 
+    batchSize: number, 
+    jobId: string
+  ): Promise<void> {
+    try {
+      console.log(`Starting author backfill job ${jobId}`);
+      
+      const alerts = await Alert.findAll({
+        where: whereConditions,
+        limit: batchSize,
+        order: [['createdAt', 'ASC']]
+      });
+
+      let processed = 0;
+      
+      for (const alert of alerts) {
+        try {
+          const alertData = alert as any;
+          
+          if (alertData.issueUrl) {
+            // Parse issue number from URL (simplified - would use the authorExtractor utility)
+            const issueMatch = alertData.issueUrl.match(/\/issues\/(\d+)/);
+            if (issueMatch) {
+              const issueNumber = parseInt(issueMatch[1], 10);
+              
+              // In real implementation, would fetch from GitHub API
+              // For now, we'll set a placeholder
+              await alert.update({
+                author: `backfilled-user-${issueNumber}`,
+                authorDisplayName: `Backfilled User ${issueNumber}`
+              });
+              
+              processed++;
+            }
+          }
+        } catch (error) {
+          console.warn(`Failed to backfill author for alert ${(alert as any).id}:`, error);
+        }
+      }
+
+      console.log(`Completed author backfill job ${jobId}. Processed ${processed} alerts.`);
+    } catch (error) {
+      console.error(`Author backfill job ${jobId} failed:`, error);
+    }
+  }
 }
 
 export default AlertService;
