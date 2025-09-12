@@ -1,0 +1,28 @@
+{
+  "commands": [
+    {
+      "name": "issue",
+      "description": "Create issue proposal (title, body, SP) based on summary",
+      "prompt": "Generate a comprehensive issue proposal using the issue generator script.\n\nRun the following command to generate the issue proposal:\n\n```bash\nnode .cursor/issue-generator.js \"{{input}}\"\n```\n\nThis will generate:\n- English title following conventional commit format\n- Structured body with Purpose, Specification, Related Links, and Checklist\n- Story Points estimation\n- Suggested labels\n\n**Summary**: {{input}}",
+      "parameters": {
+        "input": {
+          "type": "string",
+          "description": "Summary of the issue to create",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "issue regist",
+      "description": "Create and register issue to GitHub based on summary",
+      "prompt": "Generate and register an issue to GitHub using the issue registrator script.\n\nRun the following command to generate and register the issue:\n\n```bash\nnode .cursor/issue-regist.js \"{{input}}\"\n```\n\nOr on Windows PowerShell:\n```powershell\n.\\issue-regist.ps1 \"{{input}}\"\n```\n\nThis will:\n1. Generate issue proposal using the issue generator\n2. Extract title and body from the proposal\n3. Create GitHub issue with appropriate label\n4. Clean up temporary files\n\n**Summary**: {{input}}",
+      "parameters": {
+        "input": {
+          "type": "string",
+          "description": "Summary of the issue to create and register",
+          "required": true
+        }
+      }
+    }
+  ]
+}
