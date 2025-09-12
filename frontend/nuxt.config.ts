@@ -5,6 +5,7 @@ export default defineNuxtConfig({
   modules: ["@primevue/nuxt-module"],
   css: ["primeicons/primeicons.css"],
   ssr: false,
+
   primevue: {
     options: {
       theme: {
@@ -12,19 +13,24 @@ export default defineNuxtConfig({
       },
     },
   },
+
   runtimeConfig: {
     public: {
       apiBaseUrl: process.env.API_BASE_URL || "http://localhost:23000",
     },
   },
+
   postcss: {
     plugins: {}
   },
+
   vite: {
     css: {
       postcss: {
         plugins: []
       }
     }
-  }
+  },
+
+  compatibilityDate: "2025-09-11"
 });

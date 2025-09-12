@@ -23,6 +23,18 @@
           "required": true
         }
       }
+    },
+    {
+      "name": "issue get",
+      "description": "Get GitHub issue information by number or URL using gh command",
+      "prompt": "Retrieve GitHub issue information using gh command.\n\nRun the following command:\n\n```bash\ngh issue view {{issue_identifier}}\n```\n\nThis will display:\n- Issue title and description\n- Current status (open/closed)\n- Labels and assignees\n- Created and updated dates\n- Comments and activity\n- Link to the issue\n\n**Issue**: {{issue_identifier}}",
+      "parameters": {
+        "issue_identifier": {
+          "type": "string",
+          "description": "GitHub issue number (e.g., 123) or full URL (e.g., https://github.com/owner/repo/issues/123)",
+          "required": true
+        }
+      }
     }
   ]
 }
