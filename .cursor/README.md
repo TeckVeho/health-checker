@@ -12,12 +12,16 @@
 
 指定された概要に基づいて、GitHub issueの案を生成し、自動的にGitHubに登録します。
 
+### `/issue get "issue番号またはURL"`
+
+指定されたGitHub issueの詳細情報を取得します。issue番号（例：123）または完全なURL（例：https://github.com/owner/repo/issues/123）を指定できます。
+
 #### 使用方法
 
 1. **Cursor内での使用**:
    - Cursorのコマンドパレット（Ctrl+Shift+P）を開く
-   - `/issue "概要"` または `/issue regist "概要"` と入力
-   - 概要を引用符で囲んで入力
+   - `/issue "概要"`、`/issue regist "概要"`、または `/issue get "issue番号またはURL"` と入力
+   - 概要やissue番号を引用符で囲んで入力
 
 2. **コマンドラインでの使用**:
    ```bash
@@ -27,11 +31,26 @@
    # Issue案の生成とGitHub登録
    node .cursor/issue-regist.js "Add user authentication to the login flow"
    
+   # Issue情報の取得
+   gh issue view 123
+   gh issue view https://github.com/owner/repo/issues/123
+   
    # Windows PowerShell
    .\issue-regist.ps1 "Add user authentication to the login flow"
    ```
 
-#### 生成される内容
+#### `/issue get`で取得される内容
+
+- **タイトル**: issueのタイトル
+- **ステータス**: open/closed
+- **ラベル**: 付与されているラベル一覧
+- **アサイン状況**: 担当者情報
+- **作成日・更新日**: 日時情報
+- **本文**: issueの詳細説明
+- **コメント**: コメント履歴
+- **リンク**: GitHub上のissue URL
+
+#### `/issue`と`/issue regist`で生成される内容
 
 - **タイトル**: Conventional Commits形式に従ったタイトル
 - **本文**: 以下のセクションを含む構造化された本文
