@@ -2,37 +2,120 @@
   "commands": [
     {
       "name": "issue",
-      "description": "Create issue proposal (title, body, SP) based on summary",
-      "prompt": "Generate a comprehensive issue proposal using the issue generator script.\n\nRun the following command to generate the issue proposal:\n\n```bash\nnode .cursor/issue-generator.js \"{{input}}\"\n```\n\nThis will generate:\n- English title following conventional commit format\n- Structured body with Purpose, Specification, Related Links, and Checklist\n- Story Points estimation\n- Suggested labels\n\n**Summary**: {{input}}",
+      "description": "Get GitHub issue information and save to issue.md with AI Agent",
+      "prompt": "Retrieve GitHub issue information and save to issue.md file through interactive AI Agent collaboration.\n\n**Instructions for AI Agent:**\n\n1. **Fetch Issue Information**: Use GitHub CLI to retrieve issue #{{issue_number}} details\n2. **Generate Issue Document**: Create a structured issue document with status, description, and implementation tracking\n3. **Save Document**: Save the issue information to {{output_path}} (default: docs/issues/{{issue_number}}/issue.md)\n\n**Process:**\n- Use `gh issue view {{issue_number}} --json title,body,labels,assignees,state,createdAt,updatedAt,url` to fetch data\n- Generate structured issue document in Markdown format\n- Include status, description, implementation status checklist\n- Create output directory if needed\n- Save to specified file path with UTF-8 encoding\n\n**Issue**: {{issue_number}}\n**Output**: {{output_path}}",
       "parameters": {
-        "input": {
+        "issue_number": {
           "type": "string",
-          "description": "Summary of the issue to create",
+          "description": "GitHub issue number",
+          "required": true
+        },
+        "output_path": {
+          "type": "string",
+          "description": "Output file path (optional, defaults to docs/issues/{issue_number}/issue.md)",
+          "required": false
+        }
+      }
+    },
+    {
+      "name": "branch",
+      "description": "Create branch for issue with AI Agent",
+      "prompt": "Create a new branch for the specified issue through interactive AI Agent collaboration.\n\n**Instructions for AI Agent:**\n\n1. **Check Git Status**: Check for uncommitted changes in the working directory\n2. **Handle Uncommitted Changes**: If changes exist, present options to the user:\n   - **Stash**: Save changes temporarily (`git stash`)\n   - **Discard**: Discard changes (`git checkout -- .`)\n   - **Commit**: Commit changes (`git commit -m \"message\"`)\n   - **Cancel**: Abort branch creation\n3. **Generate Branch Name**: Create branch name based on issue number and type\n4. **Create Branch**: Create and checkout the new branch\n5. **Display Information**: Show branch URL and status\n\n**Branch Naming Convention:**\n- Feature: `{{issue_number}}-feat-{description}`\n- Fix: `{{issue_number}}-fix-{description}`\n- Hotfix: `{{issue_number}}-hotfix-{description}`\n\n**Interactive Process:**\n- Check `git status` for uncommitted changes\n- If changes exist, ask user to choose: stash/discard/commit/cancel\n- Generate appropriate branch name\n- Execute `git checkout -b {branch_name}`\n- Display branch information\n\n**Issue**: {{issue_number}}\n**Type**: {{branch_type}}",
+      "parameters": {
+        "issue_number": {
+          "type": "string",
+          "description": "Issue number",
+          "required": true
+        },
+        "branch_type": {
+          "type": "string",
+          "description": "Branch type (feature/fix/hotfix)",
           "required": true
         }
       }
     },
     {
-      "name": "issue regist",
-      "description": "Create and register issue to GitHub based on summary",
-      "prompt": "Generate and register an issue to GitHub using the issue registrator script.\n\nRun the following command to generate and register the issue:\n\n```bash\nnode .cursor/issue-regist.js \"{{input}}\"\n```\n\nOr on Windows PowerShell:\n```powershell\n.\\issue-regist.ps1 \"{{input}}\"\n```\n\nThis will:\n1. Generate issue proposal using the issue generator\n2. Extract title and body from the proposal\n3. Create GitHub issue with appropriate label\n4. Clean up temporary files\n\n**Summary**: {{input}}",
+      "name": "spec",
+      "description": "Generate specification document for issue with AI Agent",
+      "prompt": "Generate a detailed specification document for the specified issue through interactive AI Agent collaboration.\n\n**Instructions for AI Agent:**\n\n1. **Fetch Issue Information**: Use GitHub CLI to retrieve issue #{{issue_number}} details\n2. **Load Template**: Read the specification template from `.cursor/templates/spec-template.md`\n3. **Interactive Analysis**: Analyze the issue content and discuss requirements with the user\n4. **Generate Specification**: Create a comprehensive specification document using the template structure with placeholders\n5. **Save Document**: Save the specification to {{output_path}} (default: docs/issues/{{issue_number}}/spec.md)\n\n**Template-Based Process:**\n- Retrieve issue data from GitHub\n- Load `.cursor/templates/spec-template.md` template\n- Replace template placeholders with issue-specific content\n- Generate structured specification in English\n- Maintain template consistency and structure\n- Create output directory if needed\n- Save to specified file path\n\n**Template Placeholders to Replace:**\n- {{ISSUE_NUMBER}}, {{TITLE}}, {{OVERVIEW}}, {{PURPOSE}}\n- {{FUNCTIONAL_REQUIREMENTS}}, {{FUNCTIONALITY}}\n- {{REQUIRED_TOOLS}}, {{ENVIRONMENT}}, {{QUALITY_REQUIREMENTS}}\n- {{FUNCTIONAL_CRITERIA}}, {{NON_FUNCTIONAL_CRITERIA}}, {{REFERENCES}}\n\n**Issue**: {{issue_number}}\n**Output**: {{output_path}}",
       "parameters": {
-        "input": {
+        "issue_number": {
           "type": "string",
-          "description": "Summary of the issue to create and register",
+          "description": "GitHub issue number",
           "required": true
+        },
+        "output_path": {
+          "type": "string",
+          "description": "Output file path (optional, defaults to docs/issues/{issue_number}/spec.md)",
+          "required": false
         }
       }
     },
     {
-      "name": "issue get",
-      "description": "Get GitHub issue information by number or URL using gh command",
-      "prompt": "Retrieve GitHub issue information using gh command.\n\nRun the following command:\n\n```bash\ngh issue view {{issue_identifier}}\n```\n\nThis will display:\n- Issue title and description\n- Current status (open/closed)\n- Labels and assignees\n- Created and updated dates\n- Comments and activity\n- Link to the issue\n\n**Issue**: {{issue_identifier}}",
+      "name": "plan",
+      "description": "Generate implementation plan document for issue with AI Agent",
+      "prompt": "Generate a detailed implementation plan document for the specified issue through interactive AI Agent collaboration.\n\n**Instructions for AI Agent:**\n\n1. **Fetch Issue Information**: Use GitHub CLI to retrieve issue #{{issue_number}} details\n2. **Load Template**: Read the plan template from `.cursor/templates/plan-template.md`\n3. **Interactive Analysis**: Analyze the issue content and discuss implementation approach with the user\n4. **Generate Implementation Plan**: Create a comprehensive implementation plan using the template structure with dynamic task breakdown\n5. **Save Document**: Save the plan to {{output_path}} (default: docs/issues/{{issue_number}}/plan.md)\n\n**Template-Based Process:**\n- Retrieve issue data from GitHub\n- Load `.cursor/templates/plan-template.md` template\n- Replace template placeholders with issue-specific content\n- Generate dynamic task structure based on issue content\n- Create directory structure and architecture design\n- Include functional requirements mapping\n- Save to specified file path\n\n**Template Placeholders to Replace:**\n- {{ISSUE_NUMBER}}, {{TITLE}}\n- {{FR_MAPPING}}, {{DIRECTORY_STRUCTURE}}\n- {{ARCHITECTURE_DESIGN}}, {{DATA_MODEL}}\n- {{TASK_1_1_NAME}}, {{TASK_1_1_DESCRIPTION}}, etc.\n\n**Issue**: {{issue_number}}\n**Output**: {{output_path}}",
       "parameters": {
-        "issue_identifier": {
+        "issue_number": {
           "type": "string",
-          "description": "GitHub issue number (e.g., 123) or full URL (e.g., https://github.com/owner/repo/issues/123)",
+          "description": "GitHub issue number",
           "required": true
+        },
+        "output_path": {
+          "type": "string",
+          "description": "Output file path (optional, defaults to docs/issues/{issue_number}/plan.md)",
+          "required": false
+        }
+      }
+    },
+    {
+      "name": "dev",
+      "description": "Develop code using flexible development methodology with AI Agent",
+      "prompt": "Develop code using flexible development methodology through interactive AI Agent collaboration.\n\n**Instructions for AI Agent:**\n\n1. **Load Development Template**: Read the development template from `.cursor/templates/dev-template.md`\n2. **Choose Development Approach**: Determine if TDD or Direct Implementation is appropriate\n3. **Interactive Development Process**: Guide the user through the chosen approach\n4. **Code Implementation**: Assist with implementation based on the chosen approach\n5. **Validation**: Guide through testing and validation\n6. **Refactoring**: Help improve code quality while maintaining functionality\n\n**Development Approaches:**\n- **TDD**: For business logic, algorithms, APIs (Red-Green-Refactor cycle)\n- **Direct Implementation**: For configuration, commands, scripts, simple functionality\n\n**Interactive Process:**\n- Analyze requirements and choose appropriate approach\n- Implement using chosen methodology\n- Validate functionality through appropriate testing\n- Refactor code for quality improvement\n\n**Focus Areas:**\n- Code simplicity and readability\n- Performance and security\n- Maintainability\n- Appropriate testing strategy\n\n**Issue**: {{issue_number}}\n**Output**: {{output_path}}",
+      "parameters": {
+        "issue_number": {
+          "type": "string",
+          "description": "Issue number",
+          "required": true
+        },
+        "output_path": {
+          "type": "string",
+          "description": "Output directory path (optional, defaults to current directory)",
+          "required": false
+        }
+      }
+    },
+    {
+      "name": "test",
+      "description": "Execute tests and record results with AI Agent",
+      "prompt": "Execute tests and record results through interactive AI Agent collaboration.\n\n**Instructions for AI Agent:**\n\n1. **Analyze Project Structure**: Identify test framework and test files\n2. **Execute Test Suite**: Run appropriate test commands\n3. **Record Results**: Save test results and evidence\n4. **Generate Report**: Create test execution report\n5. **Handle Failures**: Analyze and report test failures\n\n**Test Execution Process:**\n- Identify test framework (Jest, Mocha, pytest, etc.)\n- Run test suite with appropriate commands\n- Capture test output and results\n- Save results to test report file\n- Generate evidence of test execution\n\n**Supported Test Frameworks:**\n- **JavaScript/TypeScript**: npm test, yarn test, jest\n- **Python**: pytest, python -m unittest\n- **Java**: mvn test, gradle test\n- **C#**: dotnet test\n- **Go**: go test\n\n**Output Files:**\n- Test results: `docs/issues/{issue_number}/evidence/test-results.json`\n- Test report: `docs/issues/{issue_number}/evidence/test-report.md`\n- Evidence: Screenshots, logs, coverage reports in `docs/issues/{issue_number}/evidence/`\n\n**Issue**: {{issue_number}}\n**Output**: {{output_path}}",
+      "parameters": {
+        "issue_number": {
+          "type": "string",
+          "description": "Issue number",
+          "required": true
+        },
+        "output_path": {
+          "type": "string",
+          "description": "Output directory path (optional, defaults to current directory)",
+          "required": false
+        }
+      }
+    },
+    {
+      "name": "pr",
+      "description": "Create Pull Request with 3-step process: validation, documentation, and GitHub PR creation",
+      "prompt": "Create Pull Request through interactive AI Agent collaboration with 3-step process.\n\n**Instructions for AI Agent:**\n\n## Step 1: Git Status Validation and User Confirmation\n\n1. **Check Git Status**: Run `git status` to show current repository state\n2. **Display Status Summary**: Show all modified, added, and deleted files with status indicators\n3. **User Confirmation**: Ask user \"PRを作成してよろしいですか？ (y/n)\" and wait for confirmation\n4. **Proceed Only if Confirmed**: Continue to Step 2 only if user confirms with 'y' or 'yes'\n\n## Step 2: PR Documentation Creation\n\n1. **Load Template**: Read `.cursor/templates/pr-template.md` template file\n2. **Fetch Issue Data**: Get issue #{{issue_number}} information using GitHub CLI\n3. **Generate PR Content**: Create PR documentation using template structure:\n   - Replace template placeholders with actual data\n   - Include issue title, description, and related information\n   - Add current branch and target branch information\n   - Include file changes and implementation details\n4. **Save Documentation**: Save to `docs/issues/{{issue_number}}/pr.md`\n5. **User Confirmation**: Show created pr.md content and ask \"この内容でPRを作成してよろしいですか？ (y/n)\"\n6. **Proceed Only if Confirmed**: Continue to Step 3 only if user confirms\n\n## Step 3: GitHub Pull Request Creation\n\n1. **Create GitHub PR**: Use `gh pr create` command to create pull request:\n   - Title: Based on issue title and implementation\n   - Body: Use content from created pr.md file\n   - Base branch: `develop`\n   - Head branch: Current branch\n2. **Display PR Information**: Show created PR URL and status\n3. **Confirmation**: Confirm successful PR creation\n\n**Process Flow:**\n```\nStep 1: Git Status Check\n├── Run git status\n├── Display file changes\n└── Ask: \"PRを作成してよろしいですか？ (y/n)\"\n\nStep 2: PR Documentation\n├── Load .cursor/templates/pr-template.md\n├── Fetch issue #{{issue_number}} data\n├── Generate pr.md content\n├── Save to docs/issues/{{issue_number}}/pr.md\n└── Ask: \"この内容でPRを作成してよろしいですか？ (y/n)\"\n\nStep 3: GitHub PR Creation\n├── Run gh pr create --title \"...\" --body \"...\" --base develop\n├── Display PR URL\n└── Confirm completion\n```\n\n**Required Commands:**\n- `git status` - Check repository state\n- `gh issue view {{issue_number}} --json title,body,labels,assignees,state,createdAt,updatedAt,url` - Get issue data\n- `gh pr create --title \"...\" --body \"...\" --base develop` - Create GitHub PR\n\n**Issue**: {{issue_number}}\n**Output**: {{output_path}}",
+      "parameters": {
+        "issue_number": {
+          "type": "string",
+          "description": "Issue number",
+          "required": true
+        },
+        "output_path": {
+          "type": "string",
+          "description": "Output directory path (optional, defaults to docs/issues/{issue_number}/pr.md)",
+          "required": false
         }
       }
     }
