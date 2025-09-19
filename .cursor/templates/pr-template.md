@@ -1,50 +1,92 @@
 # {{PR_TITLE}}
 
-## Overview
+## 📋 Overview
 
 {{PR_DESCRIPTION}}
 
-## Related Issue
+## 🔗 Related Issue
 
 {{RELATED_ISSUE}}
 
-## Changes Made
+## 📝 Changes Made
 
 {{CHANGES_MADE}}
 
-## Git Information
+## 🔧 Technical Details
 
-- **Source Branch**: {{SOURCE_BRANCH}}
-- **Target Branch**: {{TARGET_BRANCH}}
-- **Git Status**: {{GIT_STATUS}}
+### Modified Files
+{{GIT_STATUS}}
 
-## Evidence Validation Status
+### Architecture Changes
+- [ ] Backend changes
+- [ ] Frontend changes  
+- [ ] Database changes
+- [ ] Configuration changes
+- [ ] Documentation changes
 
+## 🧪 Testing & Validation
+
+### Evidence Status
 {{EVIDENCE_STATUS}}
 
-## Testing
-
+### Test Results
 {{TESTING_DETAILS}}
 
-## Documentation Status
+### Quality Assurance
+- [ ] Code review completed
+- [ ] Unit tests passing
+- [ ] Integration tests passing
+- [ ] Manual testing completed
+- [ ] Performance testing (if applicable)
+
+## 📚 Documentation Status
 
 - [ ] Issue documentation: `docs/issues/{{ISSUE_NUMBER}}/issue.md`
 - [ ] Specification: `docs/issues/{{ISSUE_NUMBER}}/spec.md`
 - [ ] Implementation plan: `docs/issues/{{ISSUE_NUMBER}}/plan.md`
 - [ ] Test evidence: `docs/issues/{{ISSUE_NUMBER}}/evidence/`
+- [ ] PR documentation: `docs/issues/{{ISSUE_NUMBER}}/pr.md`
 
-## Checklist
+## ✅ Completion Checklist
 
 {{CHECKLIST}}
 
-## Additional Notes
+## 🚀 Deployment Information
 
-{{ADDITIONAL_NOTES}}
+### Branch Information
+- **Source Branch**: {{SOURCE_BRANCH}}
+- **Target Branch**: {{TARGET_BRANCH}}
+- **Merge Strategy**: [ ] Squash and merge / [ ] Merge commit / [ ] Rebase and merge
 
-## Screenshots (if applicable)
+### Deployment Notes
+{{DEPLOYMENT_NOTES}}
+
+## 📸 Screenshots & Evidence
 
 {{SCREENSHOTS}}
 
-## Deployment Notes
+## ⚠️ Breaking Changes
 
-{{DEPLOYMENT_NOTES}}
+- [ ] No breaking changes
+- [ ] Breaking changes documented below:
+
+## 🔄 Migration Guide
+
+- [ ] No migration required
+- [ ] Migration steps documented below:
+
+## 📋 Additional Notes
+
+{{ADDITIONAL_NOTES}}
+
+## 🏷️ Labels & Assignees
+
+- **Labels**: `enhancement`, `documentation`, `ready-for-review`
+- **Assignees**: @{{ASSIGNEE}}
+- **Reviewers**: @{{REVIEWER}}
+
+---
+
+**Created**: {{CREATED_DATE}}  
+**Last Updated**: {{UPDATED_DATE}}  
+**Issue**: #{{ISSUE_NUMBER}}
