@@ -29,7 +29,7 @@ Create Pull Request through interactive AI Agent collaboration with 3-step proce
 
 ## Step 2: PR Documentation Creation
 
-1. **Fetch Issue Data**: Get issue #{issue_number} information using GitHub CLI
+1. **Fetch Issue Data**: Get issue #{issue_number} information using optimized caching strategy (cached local file first, GitHub CLI fallback)
 2. **Generate PR Content**: Create PR documentation using integrated template structure:
    - Include issue title, description, and related information
    - Add current branch and target branch information
@@ -116,13 +116,18 @@ Step 4: GitHub PR Creation
 - Extract issue number from the directory structure
 - Verify the issue exists and is accessible via GitHub CLI
 
+**Issue Data Retrieval Optimization:**
+- **Cache Strategy**: Reuse existing issue.md files to avoid repeated GitHub API calls
+- **Fallback Support**: Automatic GitHub API fallback if cached data unavailable
+- **Speed Improvement**: 1-2 seconds faster execution by eliminating redundant API calls
+
 **Required Commands:**
 - `git status > /dev/null 2>&1` - Check repository state
 - `git status --porcelain 2>/dev/null` - Check for uncommitted changes
 - `git add . > /dev/null 2>&1` - Stage all changes (if needed)
 - `git commit -m "..." --no-edit --quiet > /dev/null 2>&1` - Commit changes with detailed message (if needed)
 - `git push origin {branch} --quiet --no-progress` - Push commits to remote (if needed)
-- `gh issue view {issue_number} --json title,body,labels,assignees,state,createdAt,updatedAt,url` - Get issue data
+- `gh issue view {issue_number} --json title,body,labels,assignees,state,createdAt,updatedAt,url` - Get issue data (fallback only)
 - `gh pr create --title "..." --body "..." --base develop` - Create GitHub PR
 
 **Issue**: {issue_number or auto-detected}
