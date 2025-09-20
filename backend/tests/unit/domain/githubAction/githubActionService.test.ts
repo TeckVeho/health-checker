@@ -56,7 +56,7 @@ describe('GithubActionService', () => {
         const result = await GithubActionService.reviewPullRequest(owner, repo, prNumber);
 
         // hasAILogUrlメソッドが削除されていることを確認
-        expect(mockPRCheck.hasAILogUrl).toBeUndefined();
+        expect((mockPRCheck as any).hasAILogUrl).toBeUndefined();
         
         // 結果の検証
         expect(result.decision).toBe('approve');
@@ -85,7 +85,7 @@ describe('GithubActionService', () => {
         // hasTestEvidenceが呼び出されていないことを確認
         expect(mockPRCheck.hasTestEvidence).not.toHaveBeenCalled();
         // hasAILogUrlメソッドが削除されていることを確認
-        expect(mockPRCheck.hasAILogUrl).toBeUndefined();
+        expect((mockPRCheck as any).hasAILogUrl).toBeUndefined();
         
         // Test evidenceとAI Review ログの結果が含まれていないことを確認
         expect(result.reason).not.toContain('Test evidence is included');

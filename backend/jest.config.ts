@@ -3,7 +3,7 @@ import type { Config } from 'jest';
 const config: Config = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  verbose: true,
+  verbose: false,  // 詳細出力を無効化
   collectCoverage: true,
   coverageDirectory: 'coverage',
   moduleFileExtensions: ['ts', 'js'],
@@ -11,6 +11,8 @@ const config: Config = {
     '<rootDir>/tests/**/*.test.ts',
     '<rootDir>/src/**/*.test.ts',
   ],
+  setupFilesAfterEnv: ['<rootDir>/tests/setup/env.ts'],
+  testTimeout: 10000,  // タイムアウトを10秒に設定
   moduleNameMapper: {
     '@services/(.*)': '<rootDir>/src/services/$1',
     '@models/(.*)': '<rootDir>/src/models/$1',

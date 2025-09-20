@@ -3,6 +3,16 @@ import AlertController from '../../../../src/domain/alert/alertController';
 import AlertService from '../../../../src/domain/alert/alertService';
 import getMessage from '../../../../src/utils/message';
 
+// Mock database configuration to prevent connection attempts
+jest.mock('../../../../src/config/database', () => ({
+  __esModule: true,
+  default: {
+    sync: jest.fn().mockResolvedValue(undefined),
+    close: jest.fn().mockResolvedValue(undefined),
+    authenticate: jest.fn().mockResolvedValue(undefined),
+  },
+}));
+
 // Mock dependencies
 jest.mock('../../../../src/domain/alert/alertService');
 jest.mock('../../../../src/utils/message');
