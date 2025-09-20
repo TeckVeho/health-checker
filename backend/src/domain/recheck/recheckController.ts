@@ -5,6 +5,74 @@ import getMessage from '../../utils/message';
 export class ReCheckController {
   
   /**
+   * POST /api/recheck/global
+   * グローバルReCheck実行（全リポジトリ）
+   */
+  static async executeGlobalRecheck(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+    const { checks = [] } = req.body;
+
+    try {
+      console.log('[ReCheckController] Starting global recheck', { checks });
+      
+      const execution = await ReCheckService.startGlobalRecheck(checks);
+      
+      const response: RecheckResponse = {
+        success: true,
+        message: getMessage('SUCCESS.GLOBAL_RECHECK_STARTED', 'all repositories'),
+        result: {
+          owner: 'global',
+          repo: 'global',
+          executionId: execution.executionId,
+          startedAt: execution.startedAt.toISOString(),
+          estimatedDuration: 300, // 推定5分
+        },
+      };
+
+      res.status(200).json(response);
+      
+    } catch (error) {
+      console.error('[ReCheckController] Error executing global recheck:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // レート制限エラー
+      if (errorMessage.includes('Rate limit exceeded')) {
+        const retryAfterMatch = errorMessage.match(/Retry after (\d+) seconds/);
+        const retryAfter = retryAfterMatch ? parseInt(retryAfterMatch[1]) : undefined;
+        
+        const response: RecheckResponse = {
+          success: false,
+          message: 'Rate limit exceeded',
+          error: {
+            code: 'RATE_LIMITED',
+            message: errorMessage,
+            retryAfter,
+          },
+        };
+        
+        return res.status(429).json(response);
+      }
+      
+      // 同時実行制限エラー
+      if (errorMessage.includes('Maximum concurrent executions')) {
+        const response: RecheckResponse = {
+          success: false,
+          message: 'Concurrent execution limit reached',
+          error: {
+            code: 'CONCURRENT_LIMIT_EXCEEDED',
+            message: errorMessage,
+          },
+        };
+        
+        return res.status(409).json(response);
+      }
+      
+      // その他のエラー
+      next(error);
+    }
+  }
+  
+  /**
    * POST /api/recheck/:owner/:repo
    * ReCheck実行
    */

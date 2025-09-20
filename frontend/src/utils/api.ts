@@ -318,6 +318,19 @@ export class ApiService {
   }
 
   // ReCheck methods
+  async executeGlobalRecheck(checks?: string[]): Promise<RecheckResponse> {
+    try {
+      const response = await this.client.post<RecheckResponse>('/api/recheck/global', {
+        checks: checks || ['branch', 'clone', 'gitleaks', 'issue']
+      })
+      return response.data
+    } catch (error) {
+      logError(error, 'executeGlobalRecheck')
+      const context: ErrorContext = { operation: 'execute global recheck', checks }
+      throw createAppError.api(errorMessages.API.REQUEST_FAILED('Global ReCheck execution'), context)
+    }
+  }
+
   async executeRecheck(owner: string, repo: string, checks?: string[]): Promise<RecheckResponse> {
     try {
       if (!owner || !repo) {

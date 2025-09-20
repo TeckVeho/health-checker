@@ -3,6 +3,9 @@ import { ReCheckController } from './recheckController';
 
 const router = Router();
 
+// Global ReCheck実行エンドポイント
+router.post('/global', ReCheckController.executeGlobalRecheck);
+
 // ReCheck実行エンドポイント
 router.post('/:owner/:repo', ReCheckController.executeRecheck);
 

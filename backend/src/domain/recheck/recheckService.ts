@@ -45,6 +45,72 @@ export interface RecheckStatusResponse {
 export class ReCheckService {
   
   /**
+   * グローバルReCheck実行（全リポジトリ）
+   */
+  static async startGlobalRecheck(checks: string[] = ['branch', 'clone', 'gitleaks', 'issue']): Promise<{ executionId: string; startedAt: Date }> {
+    const executionId = uuidv4();
+    const startedAt = new Date();
+    
+    console.log(`[ReCheckService] Starting global recheck: ${executionId}`);
+    
+    // バックグラウンドで実行
+    setImmediate(async () => {
+      try {
+        await this.executeGlobalRecheck(executionId, checks);
+      } catch (error) {
+        console.error(`[ReCheckService] Global recheck failed: ${executionId}`, error);
+      }
+    });
+    
+    return { executionId, startedAt };
+  }
+  
+  /**
+   * グローバルReCheckの実際の実行処理
+   */
+  private static async executeGlobalRecheck(executionId: string, checks: string[]): Promise<void> {
+    try {
+      // 全リポジトリを取得
+      const repos = await this.getAllRepositories();
+      
+      console.log(`[ReCheckService] Global recheck started for ${repos.length} repositories`);
+      
+      // 各リポジトリに対してReCheckを実行
+      for (const repo of repos) {
+        try {
+          console.log(`[ReCheckService] Processing ${repo.owner}/${repo.name}`);
+          await AlertService.runAlert({
+            owner: repo.owner,
+            repo: repo.name,
+            checks: checks
+          });
+        } catch (error) {
+          console.error(`[ReCheckService] Failed to process ${repo.owner}/${repo.name}:`, error);
+          // 個別のリポジトリエラーは続行
+        }
+      }
+      
+      console.log(`[ReCheckService] Global recheck completed: ${executionId}`);
+      
+    } catch (error) {
+      console.error(`[ReCheckService] Global recheck execution failed: ${executionId}`, error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 全リポジトリを取得
+   */
+  private static async getAllRepositories(): Promise<{ owner: string; name: string }[]> {
+    // ここでリポジトリ一覧を取得する実装を追加
+    // 現在は仮実装
+    return [
+      { owner: 'TeckVeho', name: 'health-checker' },
+      // 他のリポジトリも追加
+    ];
+  }
+  
+  /**
    * レート制限チェック（終了時間から3分後に再実行可能）
    */
   static async checkRateLimit(owner: string, repo: string): Promise<RateLimitResult> {
