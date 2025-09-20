@@ -32,6 +32,7 @@ import { Octokit } from '@octokit/rest';
 import fs from 'fs/promises';
 import path from 'path';
 import { format } from 'date-fns';
+import AlertService from '../alertService';
 import { Model } from 'sequelize';
 import sequelize from '../../../config/database';
 import { alertAttributes, alertModelOptions } from '../alertSchema';
@@ -176,39 +177,13 @@ export async function checkActions(owner: string, repo: string): Promise<CheckAc
         codeSnippet: '',
       };
 
-      const keyFields = {
-        owner: issue.owner,
-        repo: issue.repo,
-        branch: issue.branch,
-        checkType: issue.checkType,
-        title: issue.title,
-        filePath: issue.filePath,
-        lineNumber: issue.lineNumber,
-        codeSnippet: issue.codeSnippet,
-      };
-
-      const [record, created] = await Alert.findOrCreate({
-        where: keyFields,
-        defaults: {
-          ...keyFields,
-          description: issue.description,
-          severity: issue.severity,
-          detectCount: 1,
-          lastDetectedAt: new Date(),
-          isIgnored: false,
-          manualResolved: false,
-          systemResolved: false,
-          createdAt: new Date(),
-        },
-      });
-
-      if (!created) {
-        await record.update({
-          detectCount: (record as any).detectCount + 1,
-          lastDetectedAt: new Date(),
-          systemResolved: false,
-          systemResolvedReason: undefined,
-        });
+      // Use AlertService.upsertAlert for consistent duplicate handling
+      const { record, created } = await AlertService.upsertAlert(issue);
+      
+      if (created) {
+        console.log(`🆕 Created new action alert: ${issue.checkType} - ${issue.title}`);
+      } else {
+        console.log(`🔄 Updated existing action alert: ${issue.checkType} - ${issue.title} (detectCount: ${record.detectCount})`);
       }
 
       alerts.push(issue);
@@ -237,9 +212,9 @@ export async function checkActions(owner: string, repo: string): Promise<CheckAc
           alert.branch,
           alert.checkType,
           alert.title,
-          alert.filePath,
-          alert.lineNumber,
-          alert.codeSnippet
+          alert.filePath || null,
+          alert.lineNumber === -1 ? null : (alert.lineNumber || null),
+          alert.codeSnippet || null
         ].join('||');
         detectedKeys.add(key);
       }
@@ -252,9 +227,9 @@ export async function checkActions(owner: string, repo: string): Promise<CheckAc
         row.getDataValue('branch'),
         row.getDataValue('checkType'),
         row.getDataValue('title'),
-        row.getDataValue('filePath'),
-        row.getDataValue('lineNumber'),
-        row.getDataValue('codeSnippet')
+        row.getDataValue('filePath') || null,
+        row.getDataValue('lineNumber') === -1 ? null : (row.getDataValue('lineNumber') || null),
+        row.getDataValue('codeSnippet') || null
       ].join('||');
 
       if (!detectedKeys.has(key)) {

@@ -46,6 +46,58 @@ class AlertService {
       return false; // If we can't fetch topics, proceed with checks
     }
   }
+
+  /**
+   * Alert フィールドの正規化（NULL値と空文字列の統一処理）
+   */
+  private static normalizeAlertFields(alert: AlertCandidate | IssueAlertCandidate) {
+    return {
+      owner: alert.owner,
+      repo: alert.repo,
+      checkType: alert.checkType,
+      title: alert.title,
+      filePath: alert.filePath || null,
+      lineNumber: alert.lineNumber === -1 ? null : (alert.lineNumber || null),
+      codeSnippet: alert.codeSnippet || null,
+      branch: alert.branch || null
+    };
+  }
+
+  /**
+   * Alert の重複チェック付き登録・更新
+   */
+  static async upsertAlert(alert: AlertCandidate | IssueAlertCandidate): Promise<{ record: Alert; created: boolean }> {
+    const keyFields = this.normalizeAlertFields(alert);
+    const timestamp = new Date();
+    
+    const [record, created] = await Alert.findOrCreate({
+      where: keyFields,
+      defaults: {
+        ...keyFields,
+        description: alert.description,
+        severity: alert.severity,
+        author: 'author' in alert ? alert.author || null : null,
+        authorDisplayName: 'authorDisplayName' in alert ? alert.authorDisplayName || null : null,
+        detectCount: 1,
+        lastDetectedAt: timestamp,
+        isIgnored: false,
+        manualResolved: false,
+        systemResolved: false,
+        createdAt: timestamp,
+      },
+    });
+
+    if (!created) {
+      await record.update({
+        detectCount: (record as any).detectCount + 1,
+        lastDetectedAt: timestamp,
+        systemResolved: false,
+        systemResolvedReason: undefined,
+      });
+    }
+
+    return { record, created };
+  }
   static async getAlertsByRepo(owner: string, repo: string) {
     const alerts = await Alert.findAll({
       where: {
@@ -149,48 +201,18 @@ class AlertService {
 
     // Process new alerts
     for (const alert of result.alerts) {
-      const key = [alert.owner, alert.repo, alert.checkType, alert.title, alert.filePath, alert.lineNumber, alert.codeSnippet, alert.branch].join('||');
+      const normalizedFields = this.normalizeAlertFields(alert);
+      const key = [normalizedFields.owner, normalizedFields.repo, normalizedFields.checkType, normalizedFields.title, normalizedFields.filePath || '', normalizedFields.lineNumber || -1, normalizedFields.codeSnippet || '', normalizedFields.branch || ''].join('||');
       detectedKeySet.add(key);
 
-      await Alert.findOrCreate({
-        where: { 
-          owner: alert.owner, 
-          repo: alert.repo, 
-          checkType: alert.checkType, 
-          title: alert.title, 
-          filePath: alert.filePath, 
-          lineNumber: alert.lineNumber, 
-          codeSnippet: alert.codeSnippet, 
-          branch: alert.branch 
-        },
-        defaults: {
-          owner: alert.owner,
-          repo: alert.repo,
-          checkType: alert.checkType,
-          title: alert.title,
-          description: alert.description,
-          severity: alert.severity,
-          filePath: alert.filePath,
-          lineNumber: alert.lineNumber,
-          codeSnippet: alert.codeSnippet,
-          branch: alert.branch,
-          detectCount: 1,
-          lastDetectedAt: timestamp,
-          isIgnored: false,
-          manualResolved: false,
-          systemResolved: false,
-          createdAt: timestamp,
-        },
-      }).then(async ([record, created]) => {
-        if (!created) {
-          await record.update({
-            detectCount: (record as any).detectCount + 1,
-            lastDetectedAt: timestamp,
-            systemResolved: false,
-            systemResolvedReason: undefined,
-          });
-        }
-      });
+      // Use the new upsertAlert method for consistent duplicate handling
+      const { record, created } = await this.upsertAlert(alert);
+      
+      if (created) {
+        console.log(`🆕 Created new branch alert: ${alert.checkType} - ${alert.title}`);
+      } else {
+        console.log(`🔄 Updated existing branch alert: ${alert.checkType} - ${alert.title} (detectCount: ${(record as any).detectCount})`);
+      }
     }
 
     // Resolve old alerts that are no longer detected
@@ -211,10 +233,10 @@ class AlertService {
         row.getDataValue('repo'), 
         row.getDataValue('checkType'), 
         row.getDataValue('title'), 
-        row.getDataValue('filePath') ?? '', 
-        row.getDataValue('lineNumber') ?? -1, 
-        row.getDataValue('codeSnippet') ?? '', 
-        row.getDataValue('branch') ?? ''
+        row.getDataValue('filePath') || null, 
+        row.getDataValue('lineNumber') === -1 ? null : (row.getDataValue('lineNumber') || null), 
+        row.getDataValue('codeSnippet') || null, 
+        row.getDataValue('branch') || null
       ].join('||');
 
       if (!detectedKeySet.has(key)) {
@@ -238,51 +260,18 @@ class AlertService {
 
     // Process new alerts
     for (const alert of result.alerts) {
-      const key = [alert.owner, alert.repo, alert.checkType, alert.title, alert.filePath || '', alert.lineNumber || -1, alert.codeSnippet || '', alert.branch || ''].join('||');
+      const normalizedFields = this.normalizeAlertFields(alert);
+      const key = [normalizedFields.owner, normalizedFields.repo, normalizedFields.checkType, normalizedFields.title, normalizedFields.filePath || '', normalizedFields.lineNumber || -1, normalizedFields.codeSnippet || '', normalizedFields.branch || ''].join('||');
       detectedKeySet.add(key);
 
-      await Alert.findOrCreate({
-        where: { 
-          owner: alert.owner, 
-          repo: alert.repo, 
-          checkType: alert.checkType, 
-          title: alert.title, 
-          filePath: alert.filePath || '', 
-          lineNumber: alert.lineNumber || -1, 
-          codeSnippet: alert.codeSnippet || '', 
-          branch: alert.branch || ''
-        },
-        defaults: {
-          owner: alert.owner,
-          repo: alert.repo,
-          checkType: alert.checkType,
-          title: alert.title,
-          description: alert.description,
-          severity: alert.severity,
-          author: alert.author || null,
-          authorDisplayName: alert.authorDisplayName || null,
-          filePath: alert.filePath,
-          lineNumber: alert.lineNumber,
-          codeSnippet: alert.codeSnippet,
-          branch: alert.branch,
-          issueUrl: alert.issueUrl,
-          detectCount: 1,
-          lastDetectedAt: timestamp,
-          isIgnored: false,
-          manualResolved: false,
-          systemResolved: false,
-          createdAt: timestamp,
-        },
-      }).then(async ([record, created]) => {
-        if (!created) {
-          await record.update({
-            detectCount: (record as any).detectCount + 1,
-            lastDetectedAt: timestamp,
-            systemResolved: false,
-            systemResolvedReason: undefined,
-          });
-        }
-      });
+      // Use the new upsertAlert method for consistent duplicate handling
+      const { record, created } = await this.upsertAlert(alert);
+      
+      if (created) {
+        console.log(`🆕 Created new issue alert: ${alert.checkType} - ${alert.title}`);
+      } else {
+        console.log(`🔄 Updated existing issue alert: ${alert.checkType} - ${alert.title} (detectCount: ${(record as any).detectCount})`);
+      }
     }
 
     // Resolve old alerts that are no longer detected
@@ -298,15 +287,16 @@ class AlertService {
     const resolveTimestamp = format(new Date(), 'yyyyMMddHHmmss');
 
     for (const row of existing) {
+      // 解決処理でも正規化されたキーを使用（新規作成と同じロジック）
       const key = [
         row.getDataValue('owner'), 
         row.getDataValue('repo'), 
         row.getDataValue('checkType'), 
         row.getDataValue('title'), 
-        row.getDataValue('filePath') || '', 
-        row.getDataValue('lineNumber') || -1, 
-        row.getDataValue('codeSnippet') || '', 
-        row.getDataValue('branch') || ''
+        row.getDataValue('filePath') || null, 
+        row.getDataValue('lineNumber') === -1 ? null : (row.getDataValue('lineNumber') || null), 
+        row.getDataValue('codeSnippet') || null, 
+        row.getDataValue('branch') || null
       ].join('||');
 
       if (!detectedKeySet.has(key)) {
@@ -345,37 +335,18 @@ class AlertService {
     // Process new alerts with progress tracking
     const alerts = result.alerts || [];
     for (const alert of alerts) {
-      const key = [alert.owner, alert.repo, alert.checkType, alert.title, alert.filePath || '', alert.lineNumber || -1, alert.codeSnippet || '', alert.branch || ''].join('||');
+      const normalizedFields = this.normalizeAlertFields(alert);
+      const key = [normalizedFields.owner, normalizedFields.repo, normalizedFields.checkType, normalizedFields.title, normalizedFields.filePath || '', normalizedFields.lineNumber || -1, normalizedFields.codeSnippet || '', normalizedFields.branch || ''].join('||');
       detectedKeySet.add(key);
 
-      await Alert.findOrCreate({
-        where: { 
-          owner: alert.owner, 
-          repo: alert.repo, 
-          checkType: alert.checkType, 
-          title: alert.title, 
-          filePath: alert.filePath || '', 
-          lineNumber: alert.lineNumber || -1, 
-          codeSnippet: alert.codeSnippet || '', 
-          branch: alert.branch || ''
-        },
-        defaults: {
-          owner: alert.owner,
-          repo: alert.repo,
-          checkType: alert.checkType,
-          title: alert.title,
-          description: alert.description,
-          severity: alert.severity,
-          author: alert.author || null,
-          authorDisplayName: alert.authorDisplayName || null,
-          filePath: alert.filePath || null,
-          lineNumber: alert.lineNumber || null,
-          codeSnippet: alert.codeSnippet || null,
-          branch: alert.branch || null,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        }
-      });
+      // Use the new upsertAlert method for consistent duplicate handling
+      const { record, created } = await this.upsertAlert(alert);
+      
+      if (created) {
+        console.log(`🆕 Created new alert: ${alert.checkType} - ${alert.title}`);
+      } else {
+        console.log(`🔄 Updated existing alert: ${alert.checkType} - ${alert.title} (detectCount: ${(record as any).detectCount})`);
+      }
 
       processed++;
       if (onProgress) {
@@ -483,10 +454,10 @@ class AlertService {
         row.getDataValue('repo'), 
         row.getDataValue('checkType'), 
         row.getDataValue('title'), 
-        row.getDataValue('filePath') ?? '', 
-        row.getDataValue('lineNumber') ?? -1, 
-        row.getDataValue('codeSnippet') ?? '', 
-        row.getDataValue('branch') ?? ''
+        row.getDataValue('filePath') || null, 
+        row.getDataValue('lineNumber') === -1 ? null : (row.getDataValue('lineNumber') || null), 
+        row.getDataValue('codeSnippet') || null, 
+        row.getDataValue('branch') || null
       ].join('||');
 
       if (!detectedKeySet.has(key)) {
