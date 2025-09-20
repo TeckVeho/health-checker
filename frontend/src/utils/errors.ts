@@ -93,13 +93,22 @@ export const errorMessages = {
     INVALID_SORT: (validSorts: string[]) => `Invalid sort parameter. Must be one of: ${validSorts.join(', ')}`,
     EMPTY_ARRAY: 'Array must not be empty',
     REQUIRED_FIELD: (field: string) => `${field} is required`,
-    INVALID_FORMAT: (field: string, format: string) => `${field} must be in ${format} format`
+    INVALID_FORMAT: (field: string, format: string) => `${field} must be in ${format} format`,
+    INVALID_CHECK_TYPES: 'Invalid check types specified',
+    RATE_LIMIT_EXCEEDED: 'Rate limit exceeded. Please wait before retrying',
+    CONCURRENT_LIMIT_EXCEEDED: 'Maximum concurrent executions reached'
   },
   API: {
     FETCH_FAILED: (operation: string) => `Failed to fetch ${operation}`,
     REQUEST_FAILED: (operation: string) => `${operation} request failed`,
     TIMEOUT: 'Request timed out',
-    RETRY_EXCEEDED: 'Maximum retry attempts exceeded'
+    RETRY_EXCEEDED: 'Maximum retry attempts exceeded',
+    RECHECK_EXECUTION_FAILED: 'Failed to execute ReCheck',
+    RECHECK_STATUS_FAILED: 'Failed to get ReCheck status',
+    RECHECK_HISTORY_FAILED: 'Failed to get ReCheck history',
+    RECHECK_STATS_FAILED: 'Failed to get ReCheck statistics',
+    RECHECK_SETTINGS_FAILED: 'Failed to get ReCheck settings',
+    RECHECK_SETTINGS_UPDATE_FAILED: 'Failed to update ReCheck settings'
   },
   AUTH: {
     UNAUTHORIZED: 'Unauthorized access - please login again',
@@ -109,6 +118,14 @@ export const errorMessages = {
   NETWORK: {
     CONNECTION_FAILED: 'Failed to connect to server',
     NO_RESPONSE: 'No response received from server'
+  },
+  RECHECK: {
+    DISABLED: 'ReCheck functionality is disabled for this repository',
+    IN_PROGRESS: 'ReCheck is already in progress',
+    NOT_AVAILABLE: 'ReCheck is not available at this time',
+    EXECUTION_ERROR: 'ReCheck execution failed',
+    TIMEOUT: 'ReCheck execution timed out',
+    INVALID_REPOSITORY: 'Invalid repository specified'
   }
 } as const
 

@@ -44,6 +44,20 @@ jest.mock('../../../../src/domain/alert/alertSchema', () => ({
   alertModelOptions: {},
 }));
 
+// Mock Alert model
+const mockAlert = {
+  findOrCreate: jest.fn(),
+  update: jest.fn(),
+};
+
+jest.mock('sequelize', () => {
+  const originalModule = jest.requireActual('sequelize');
+  return {
+    ...originalModule,
+    Model: jest.fn().mockImplementation(() => mockAlert),
+  };
+});
+
 jest.mock('../../../../src/domain/repo/repoSchema', () => ({
   repoAttributes: {},
   repoModelOptions: {},
@@ -99,12 +113,21 @@ describe('AlertService', () => {
 
     it('should use default checks when no checks specified', async () => {
       const mockProcessBranchAlerts = jest.spyOn(AlertService, 'processBranchAlerts').mockResolvedValue({ owner, repo });
-      const mockProcessIssueAlerts = jest.spyOn(AlertService, 'processIssueAlerts').mockResolvedValue({ owner, repo });
+      const mockProcessIssueAlertsWithProgress = jest.spyOn(AlertService, 'processIssueAlertsWithProgress').mockResolvedValue({ owner, repo });
 
       await AlertService.runAlert({ owner, repo });
 
       expect(mockProcessBranchAlerts).toHaveBeenCalledWith(owner, repo);
-      expect(mockProcessIssueAlerts).toHaveBeenCalledWith(owner, repo);
+      expect(mockProcessIssueAlertsWithProgress).toHaveBeenCalledWith(owner, repo, expect.any(Function));
+    });
+  });
+
+  describe('processIssueAlertsWithProgress', () => {
+    const owner = 'test-owner';
+    const repo = 'test-repo';
+
+    it('should exist and be callable', () => {
+      expect(typeof AlertService.processIssueAlertsWithProgress).toBe('function');
     });
   });
 

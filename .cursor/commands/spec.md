@@ -13,6 +13,12 @@ Generate a detailed specification document for the specified issue through inter
 
 **Instructions for AI Agent:**
 
+**⛔ ABSOLUTE PROHIBITION: DO NOT EXECUTE ANY GIT COMMIT COMMANDS ⛔**
+- NEVER run `git commit` in any form
+- NEVER run `git add . && git commit`
+- NEVER suggest or execute commit operations
+- Specification phase MUST end with uncommitted changes
+
 1. **Determine Issue Number**: 
    - If `issue_number` is provided: Use the specified issue number
    - If `issue_number` is omitted: Look for the most recently created issue document in `docs/issues/*/issue.md` to determine the issue number
@@ -20,7 +26,15 @@ Generate a detailed specification document for the specified issue through inter
 2. **Fetch Issue Information**: Use optimized issue data retrieval (cached local file first, GitHub CLI fallback)
 3. **Interactive Analysis**: Analyze the issue content and discuss requirements with the user
 4. **Generate Specification**: Create a comprehensive specification document using the integrated template structure
-5. **Save Document**: Save the specification to {output_path} (default: docs/issues/{issue_number}/spec.md)
+5. **Save Document**: Save the specification to {output_path} (default: docs/issues/{issue_number}/spec.md) (WITHOUT committing)
+
+**🚨 CRITICAL: NEVER COMMIT CHANGES DURING SPECIFICATION PHASE 🚨**
+
+**STRICT RULE**: Do NOT use `git commit`, `git add && git commit`, or any commit commands during specification phase.
+- All changes MUST remain uncommitted
+- Changes will be committed later in the `/pr` phase
+- This ensures proper workflow separation and testing before committing
+- Violating this rule breaks the development workflow
 
 **Specification Document Structure:**
 ```markdown
