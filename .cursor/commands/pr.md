@@ -61,7 +61,7 @@ Create Pull Request through interactive AI Agent collaboration with 3-step proce
      - Key improvements and features
      - Test results summary
      - "Closes #{issue_number}" to auto-close issue
-   - Run `git commit -m "..."` with detailed message
+   - Run `git commit -m "..." --no-edit --quiet` with detailed message
 3. **Push to Remote**: Check if local branch exists on remote:
    - Run `git push origin {current_branch}` to push commits
    - Ensure remote branch is up to date before PR creation
@@ -100,7 +100,7 @@ Step 2: PR Documentation
 
 Step 3: Commit and Push Verification
 ├── Check git status --porcelain for uncommitted changes
-├── If changes exist: git add . && git commit with detailed message
+├── If changes exist: git add . && git commit -m "..." --no-edit --quiet
 ├── Push to remote: git push origin {current_branch}
 └── Verify remote branch is up to date
 
@@ -120,7 +120,7 @@ Step 4: GitHub PR Creation
 - `git status` - Check repository state
 - `git status --porcelain` - Check for uncommitted changes
 - `git add .` - Stage all changes (if needed)
-- `git commit -m "..."` - Commit changes with detailed message (if needed)
+- `git commit -m "..." --no-edit --quiet` - Commit changes with detailed message (if needed)
 - `git push origin {branch}` - Push commits to remote (if needed)
 - `gh issue view {issue_number} --json title,body,labels,assignees,state,createdAt,updatedAt,url` - Get issue data
 - `gh pr create --title "..." --body "..." --base develop` - Create GitHub PR

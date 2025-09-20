@@ -21,7 +21,7 @@ Create a new branch for the specified issue through interactive AI Agent collabo
 3. **Handle Uncommitted Changes**: If changes exist, present options to the user:
    - **Stash**: Save changes temporarily (`git stash`)
    - **Discard**: Discard changes (`git checkout -- .`)
-   - **Commit**: Commit changes (`git commit -m "message"`)
+   - **Commit**: Commit changes (`git commit -m "message" --no-edit --quiet`)
    - **Cancel**: Abort branch creation
 4. **Generate Branch Name**: Create branch name based on issue number and type
 5. **Create Branch**: Create and checkout the new branch
