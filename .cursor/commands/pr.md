@@ -24,7 +24,7 @@ Create Pull Request through interactive AI Agent collaboration with 3-step proce
 
 1. **Check Git Status**: Run `git status` to show current repository state
 2. **Display Status Summary**: Show all modified, added, and deleted files with status indicators
-3. **User Confirmation**: Ask user "PRを作成してよろしいですか？ (y/n)" and wait for confirmation
+3. **User Confirmation**: Ask user "Do you want to create a PR? (y/n)" and wait for confirmation
 4. **Proceed Only if Confirmed**: Continue to Step 2 only if user confirms with 'y' or 'yes'
 
 ## Step 2: PR Documentation Creation
@@ -36,7 +36,7 @@ Create Pull Request through interactive AI Agent collaboration with 3-step proce
    - Include file changes and implementation details
    - Generate structured PR documentation
 3. **Save Documentation**: Save to `docs/issues/{issue_number}/pr.md`
-4. **User Confirmation**: Show created pr.md content and ask "この内容でPRを作成してよろしいですか？ (y/n)"
+4. **User Confirmation**: Show created pr.md content and ask "Do you want to create a PR with this content? (y/n)"
 5. **Proceed Only if Confirmed**: Continue to Step 3 only if user confirms
 
 **PR Documentation Structure:**
@@ -63,7 +63,7 @@ Create Pull Request through interactive AI Agent collaboration with 3-step proce
      - "Closes #{issue_number}" to auto-close issue
    - Run `git commit -m "..." --no-edit --quiet` with detailed message
 3. **Push to Remote**: Check if local branch exists on remote:
-   - Run `git push origin {current_branch}` to push commits
+   - Run `git push origin {current_branch} --quiet --no-progress` to push commits
    - Ensure remote branch is up to date before PR creation
 
 ## Step 4: GitHub Pull Request Creation
@@ -90,18 +90,18 @@ Step 0: Issue Number Determination
 Step 1: Git Status Check
 ├── Run git status
 ├── Display file changes
-└── Ask: "PRを作成してよろしいですか？ (y/n)"
+└── Ask: "Do you want to create a PR? (y/n)"
 
 Step 2: PR Documentation
 ├── Fetch issue #{issue_number} data
 ├── Generate pr.md content using integrated template
 ├── Save to docs/issues/{issue_number}/pr.md
-└── Ask: "この内容でPRを作成してよろしいですか？ (y/n)"
+└── Ask: "Do you want to create a PR with this content? (y/n)"
 
 Step 3: Commit and Push Verification
 ├── Check git status --porcelain for uncommitted changes
 ├── If changes exist: git add . && git commit -m "..." --no-edit --quiet
-├── Push to remote: git push origin {current_branch}
+├── Push to remote: git push origin {current_branch} --quiet --no-progress
 └── Verify remote branch is up to date
 
 Step 4: GitHub PR Creation
@@ -121,7 +121,7 @@ Step 4: GitHub PR Creation
 - `git status --porcelain` - Check for uncommitted changes
 - `git add .` - Stage all changes (if needed)
 - `git commit -m "..." --no-edit --quiet` - Commit changes with detailed message (if needed)
-- `git push origin {branch}` - Push commits to remote (if needed)
+- `git push origin {branch} --quiet --no-progress` - Push commits to remote (if needed)
 - `gh issue view {issue_number} --json title,body,labels,assignees,state,createdAt,updatedAt,url` - Get issue data
 - `gh pr create --title "..." --body "..." --base develop` - Create GitHub PR
 
