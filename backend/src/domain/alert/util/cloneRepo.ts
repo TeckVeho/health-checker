@@ -32,15 +32,18 @@ export async function cloneRepo(owner: string, repo: string): Promise<string> {
     const configText = await fs.readFile(configPath, 'utf-8');
 
     if (configText.includes(gitUrl)) {
-      // 同じリポジトリなら pull を実行
-      console.log(`🔄 Repository exists and matches. Pulling: ${targetPath}`);
+      // 同じリポジトリなら fetch して pull を実行
+      console.log(`🔄 Repository exists and matches. Fetching and pulling: ${targetPath}`);
       try {
+        // まずリモートの最新情報を取得
+        await execAsync(`git -C "${targetPath}" fetch --all`);
         await execAsync(`git -C "${targetPath}" pull`);
       } catch (pullError) {
         console.warn(`⚠️ Pull failed, attempting to reset and pull: ${pullError}`);
-        // pull が失敗した場合、変更を破棄して再度 pull
+        // pull が失敗した場合、変更を破棄して再度 fetch & pull
         await execAsync(`git -C "${targetPath}" reset --hard`);
         await execAsync(`git -C "${targetPath}" clean -fd`);
+        await execAsync(`git -C "${targetPath}" fetch --all`);
         await execAsync(`git -C "${targetPath}" pull`);
       }
       return targetPath;
@@ -49,7 +52,7 @@ export async function cloneRepo(owner: string, repo: string): Promise<string> {
       console.log(`🗑 Removing mismatched repository at: ${targetPath}`);
       await fs.rm(targetPath, { recursive: true, force: true });
     }
-  } catch (error) {
+  } catch {
     // .git が存在しない場合の処理
     console.log(`📝 No existing repository found at: ${targetPath}`);
   }

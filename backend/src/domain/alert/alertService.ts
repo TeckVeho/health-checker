@@ -585,9 +585,8 @@ class AlertService {
 
     if (effectiveChecks.includes('gitleaks')) {
       updateProgress('Security Scan (Gitleaks)', 0);
-      if (!effectiveChecks.includes('clone')) {
-        await cloneRepo(owner, repo); // ensure gitleaks has source
-      }
+      // Always fetch latest code before gitleaks scan to ensure up-to-date security checks
+      await cloneRepo(owner, repo);
       await gitleaksScanner(owner, repo, processStartTime);
       updateProgress('Security Scan (Gitleaks)', 100);
       results.gitleaks = 'done';
@@ -596,9 +595,8 @@ class AlertService {
 
     if (effectiveChecks.includes('audit')) {
       updateProgress('Security Audit', 0);
-      if (!effectiveChecks.includes('clone')) {
-        await cloneRepo(owner, repo); // ensure audit has source
-      }
+      // Always fetch latest code before audit scan to ensure up-to-date security checks
+      await cloneRepo(owner, repo);
       await auditScanner(owner, repo, processStartTime);
       updateProgress('Security Audit', 100);
       results.audit = 'done';
