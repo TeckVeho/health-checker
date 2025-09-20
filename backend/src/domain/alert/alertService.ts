@@ -531,8 +531,9 @@ class AlertService {
 
     // 進捗コールバック関数
     const updateProgress = (phase: string, phaseProgress: number, phaseDetails?: any) => {
+      console.log(`[AlertService] updateProgress called: ${phase}, phaseProgress: ${phaseProgress}, phaseDetails:`, phaseDetails);
       if (onProgress) {
-        onProgress({
+        const progressData = {
           currentPhase: phase,
           totalPhases,
           phaseProgress: Math.round((currentPhaseIndex / totalPhases) * 100),
@@ -541,7 +542,11 @@ class AlertService {
             progress: phaseProgress,
             ...phaseDetails
           }
-        });
+        };
+        console.log(`[AlertService] Calling onProgress with:`, JSON.stringify(progressData, null, 2));
+        onProgress(progressData);
+      } else {
+        console.log(`[AlertService] onProgress is null/undefined - no callback to call`);
       }
     };
 
@@ -565,6 +570,7 @@ class AlertService {
       updateProgress('Issue Analysis', 0);
       // issue処理で件数ベースの進捗を実装
       await this.processIssueAlertsWithProgress(owner, repo, (progress, total) => {
+        console.log(`[AlertService] processIssueAlertsWithProgress callback: ${progress}/${total}`);
         updateProgress('Issue Analysis', Math.round((progress / total) * 100), {
           processedItems: progress,
           totalItems: total
