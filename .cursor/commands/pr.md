@@ -53,15 +53,15 @@ Create Pull Request through interactive AI Agent collaboration with 3-step proce
 
 ## Step 3: Commit and Push Verification
 
-1. **Check Uncommitted Changes**: Run `git status --porcelain` to check for uncommitted changes
+1. **Check Uncommitted Changes**: Run `git status --porcelain 2>/dev/null` to check for uncommitted changes
 2. **Stage and Commit Changes**: If uncommitted changes exist:
-   - Run `git add .` to stage all changes
+   - Run `git add . > /dev/null 2>&1` to stage all changes
    - Create comprehensive commit message including:
      - Issue reference and main changes
      - Key improvements and features
      - Test results summary
      - "Closes #{issue_number}" to auto-close issue
-   - Run `git commit -m "..." --no-edit --quiet` with detailed message
+   - Run `git commit -m "..." --no-edit --quiet > /dev/null 2>&1` with detailed message
 3. **Push to Remote**: Check if local branch exists on remote:
    - Run `git push origin {current_branch} --quiet --no-progress` to push commits
    - Ensure remote branch is up to date before PR creation
@@ -99,8 +99,8 @@ Step 2: PR Documentation
 └── Ask: "Do you want to create a PR with this content? (y/n)"
 
 Step 3: Commit and Push Verification
-├── Check git status --porcelain for uncommitted changes
-├── If changes exist: git add . && git commit -m "..." --no-edit --quiet
+├── Check git status --porcelain 2>/dev/null for uncommitted changes
+├── If changes exist: git add . > /dev/null 2>&1 && git commit -m "..." --no-edit --quiet > /dev/null 2>&1
 ├── Push to remote: git push origin {current_branch} --quiet --no-progress
 └── Verify remote branch is up to date
 
@@ -117,10 +117,10 @@ Step 4: GitHub PR Creation
 - Verify the issue exists and is accessible via GitHub CLI
 
 **Required Commands:**
-- `git status` - Check repository state
-- `git status --porcelain` - Check for uncommitted changes
-- `git add .` - Stage all changes (if needed)
-- `git commit -m "..." --no-edit --quiet` - Commit changes with detailed message (if needed)
+- `git status > /dev/null 2>&1` - Check repository state
+- `git status --porcelain 2>/dev/null` - Check for uncommitted changes
+- `git add . > /dev/null 2>&1` - Stage all changes (if needed)
+- `git commit -m "..." --no-edit --quiet > /dev/null 2>&1` - Commit changes with detailed message (if needed)
 - `git push origin {branch} --quiet --no-progress` - Push commits to remote (if needed)
 - `gh issue view {issue_number} --json title,body,labels,assignees,state,createdAt,updatedAt,url` - Get issue data
 - `gh pr create --title "..." --body "..." --base develop` - Create GitHub PR
