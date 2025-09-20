@@ -30,6 +30,16 @@ Retrieve GitHub issue information, create development branch first, then save is
 - NEVER suggest or execute commit operations
 - Issue processing phase MUST end with uncommitted changes
 
+**📁 FILE CREATION RESTRICTIONS:**
+- **ALL verification scripts, test data, and temporary files MUST be created in `.cursor/workspace/` only**
+- **PROHIBITED locations for verification files:**
+  - `docs/issues/{issue_number}/evidence/` (except for final reports)
+  - Project root directory
+  - `backend/` or `frontend/` directories
+  - Any other project directories
+- **Only final, polished reports should be saved to `docs/issues/{issue_number}/evidence/`**
+- **All intermediate files and raw data must remain in `.cursor/workspace/`**
+
 1. **Parse Issue Input**: Determine if input is issue number or URL and extract the issue number
    - If `issue_url` is provided: Extract issue number from URL (e.g., from "https://github.com/owner/repo/issues/115" extract "115")
    - If `issue_number` is provided: Use directly

@@ -21,6 +21,16 @@ Execute tests and record results through interactive AI Agent collaboration.
 - NEVER suggest or execute commit operations
 - Testing phase MUST end with uncommitted changes
 
+**📁 FILE CREATION RESTRICTIONS:**
+- **ALL verification scripts, test data, and temporary files MUST be created in `.cursor/workspace/{issue_number}/` only**
+- **PROHIBITED locations for verification files:**
+  - `docs/issues/{issue_number}/evidence/` (except for final reports)
+  - Project root directory
+  - `backend/` or `frontend/` directories
+  - Any other project directories
+- **Only final, polished reports should be saved to `docs/issues/{issue_number}/evidence/`**
+- **All intermediate files and raw data must remain in `.cursor/workspace/{issue_number}/`**
+
 1. **Determine Issue Number**: 
    - If `issue_number` is provided: Use the specified issue number
    - If `issue_number` is omitted: Look for the most recently created issue document in `docs/issues/*/issue.md` to determine the issue number
@@ -65,9 +75,10 @@ Execute tests and record results through interactive AI Agent collaboration.
 - **Go**: go test
 
 **Output Files:**
-- Test results: `docs/issues/{issue_number}/evidence/test-results.json`
-- Test report: `docs/issues/{issue_number}/evidence/test-report.md`
-- Evidence: Screenshots, logs, coverage reports in `docs/issues/{issue_number}/evidence/`
+- **Temporary files**: `.cursor/workspace/{issue_number}/verification/` (test scripts, raw data, debug files)
+- **Final reports only**: `docs/issues/{issue_number}/evidence/test-results.json`
+- **Final reports only**: `docs/issues/{issue_number}/evidence/test-report.md`
+- **Evidence**: Screenshots, logs, coverage reports in `.cursor/workspace/{issue_number}/verification/` (move only final versions to evidence/)
 
 **Issue**: {issue_number or auto-detected}
 **Output**: {output_path}
