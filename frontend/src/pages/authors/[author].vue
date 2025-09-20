@@ -164,6 +164,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 import axios from 'axios';
+import { useAlerts } from '~/composables/useAlerts';
 
 // Types
 interface Issue {
@@ -196,6 +197,9 @@ const sortOrder = ref<number>(-1); // -1 for desc, 1 for asc
 // API config
 const config = useRuntimeConfig();
 const apiBaseUrl = config.public.apiBaseUrl;
+
+// Extract formatDate from useAlerts composable
+const { formatDate } = useAlerts(ref(null), ref(null));
 
 const totalAlerts = computed(() => issues.value.length);
 const highPriorityCount = computed(() => 
@@ -280,25 +284,6 @@ const extractIssueNumber = (issueUrl: string): string | null => {
   return match ? match[1] : null;
 };
 
-const formatDate = (dateString: string): string => {
-  if (!dateString) return '-';
-  
-  try {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return '1 day ago';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    
-    return date.toLocaleDateString();
-  } catch {
-    return '-';
-  }
-};
 
 // Lifecycle
 onMounted(() => {
