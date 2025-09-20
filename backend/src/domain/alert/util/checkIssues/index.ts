@@ -13,7 +13,6 @@ import {
   validateProjectMembership,
   validateContentQuality,
 } from './validators';
-import { extractAuthorInfo } from './authorExtractor';
 
 // Re-export public types for backward compatibility
 export type { IssueAlertCandidate, CheckIssuesResult } from './types';

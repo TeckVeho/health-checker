@@ -81,7 +81,19 @@ export async function getAllProjectFieldValues(
                   const fieldName = String(fieldValue.field.name).toLowerCase();
 
                   // Handle SP field (can be Number, Text, or Single Select)
-                  if (fieldName === 'sp' && itemFieldValues.sp === undefined) {
+                  // Support various field name formats: SP, sp, Sp, Story Point, storypoint, etc.
+                  const isStoryPointField = fieldName === 'sp' || 
+                    fieldName === 'story point' || 
+                    fieldName === 'storypoint' ||
+                    fieldName === 'story points' ||
+                    fieldName === 'storypoints' ||
+                    fieldName === 'estimate' ||
+                    fieldName === 'points' ||
+                    fieldName === 'point' ||
+                    fieldName === 'size' ||
+                    fieldName === 'effort';
+                  
+                  if (isStoryPointField && itemFieldValues.sp === undefined) {
                     if (fieldValue.number !== undefined) {
                       // Number field
                       itemFieldValues.sp = fieldValue.number;

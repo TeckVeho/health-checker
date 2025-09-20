@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { Model } from 'sequelize';
 import sequelize from '../../../config/database';
 import { alertAttributes, alertModelOptions } from '../alertSchema';
+import AlertService from '../alertService';
 
 // Define Alert model directly from schema
 class Alert extends Model {}
@@ -14,7 +15,7 @@ Alert.init(alertAttributes, {
   ...alertModelOptions,
 });
 
-export async function gitleaksScanner(owner: string, repo: string): Promise<void> {
+export async function gitleaksScanner(owner: string, repo: string, processStartTime?: Date): Promise<void> {
   const workspace = process.env.GITHUB_LOCAL_WORKSPACE;
   if (!workspace) {
     throw new Error('GITHUB_LOCAL_WORKSPACE is required');
@@ -70,65 +71,27 @@ export async function gitleaksScanner(owner: string, repo: string): Promise<void
   const detectedKeys = new Set<string>();
 
   for (const issue of issues) {
-    const keyFields = {
-      owner: issue.owner,
-      repo: issue.repo,
-      branch: issue.branch,
-      checkType: issue.checkType,
-      title: issue.title,
-      filePath: issue.filePath,
-      lineNumber: issue.lineNumber,
-      codeSnippet: issue.codeSnippet,
-    };
-
-    const [record, created] = await Alert.findOrCreate({
-      where: keyFields,
-      defaults: {
-        ...keyFields,
-        description: issue.description,
-        severity: issue.severity,
-        detectCount: 1,
-        lastDetectedAt: new Date(),
-        isIgnored: false,
-        manualResolved: false,
-        systemResolved: false,
-        createdAt: new Date(),
-      },
-    });
-
-    if (!created) {
-      await record.update({
-        detectCount: (record as any).detectCount + 1,
-        lastDetectedAt: new Date(),
-        systemResolved: false,
-        systemResolvedReason: undefined,
-      });
+    // Use AlertService.upsertAlert for consistent duplicate handling
+    const { record, created } = await AlertService.upsertAlert(issue);
+    
+    if (created) {
+      console.log(`🆕 Created new gitleaks alert: ${issue.checkType} - ${issue.title}`);
+    } else {
+      console.log(`🔄 Updated existing gitleaks alert: ${issue.checkType} - ${issue.title} (detectCount: ${(record as any).detectCount})`);
     }
 
-    const key = Object.values(keyFields).join('||');
+    const key = [issue.owner, issue.repo, issue.checkType, issue.title, issue.filePath || null, issue.lineNumber === -1 ? null : (issue.lineNumber || null), issue.codeSnippet || null, issue.branch || null].join('||');
     detectedKeys.add(key);
   }
 
-  const existing = await Alert.findAll({
-    where: {
-      owner,
-      repo,
-      branch,
-      checkType: 'exposed_secret_key',
-      systemResolved: false,
-    },
-  });
-
-  for (const row of existing) {
-    const key = [row.getDataValue('owner'), row.getDataValue('repo'), row.getDataValue('branch'), row.getDataValue('checkType'), row.getDataValue('title'), row.getDataValue('filePath'), row.getDataValue('lineNumber'), row.getDataValue('codeSnippet')].join('||');
-
-    if (!detectedKeys.has(key)) {
-      await row.update({
-        systemResolved: true,
-        systemResolvedReason: `${timestamp}:Automatically resolved: not detected`,
-      });
-    }
-  }
+  // Use AlertService.resolveUndetectedAlerts for consistent resolution logic
+  await AlertService.resolveUndetectedAlerts(
+    owner, 
+    repo, 
+    detectedKeys, 
+    ['exposed_secret_key'],
+    processStartTime
+  );
 }
 
 async function runGitleaks(workspace: string): Promise<any[]> {
