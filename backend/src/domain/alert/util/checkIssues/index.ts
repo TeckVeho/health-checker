@@ -16,7 +16,7 @@ import {
 import { extractAuthorInfo } from './authorExtractor';
 
 // Re-export public types for backward compatibility
-export { IssueAlertCandidate, CheckIssuesResult } from './types';
+export type { IssueAlertCandidate, CheckIssuesResult } from './types';
 
 /**
  * Main function to check issues for various problems

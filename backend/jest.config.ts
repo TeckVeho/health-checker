@@ -20,12 +20,12 @@ const config: Config = {
     '@utils/(.*)': '<rootDir>/src/utils/$1',
     '@config/(.*)': '<rootDir>/src/config/$1',
     '@routes/(.*)': '<rootDir>/src/routes/$1',
+    '^@octokit/rest$': '<rootDir>/tests/__mocks__/@octokit/rest.js',
   },
   transform: {
     '^.+\\.ts$': [
       'ts-jest',
       {
-        isolatedModules: true,
         useESM: true, 
       },
     ],
