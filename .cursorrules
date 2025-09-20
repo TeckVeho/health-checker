@@ -1,0 +1,34 @@
+# Health Checker Project Rules
+
+## Custom Commands
+
+This project uses Cursor Dev Commands located in `.cursor/commands/` directory.
+
+Available commands:
+- `/issue` - Get GitHub issue information, create branch, and save to issue.md (with optional auto-workflow)
+- `/spec` - Generate feature specification document
+- `/plan` - Create implementation plan
+- `/dev` - Execute development tasks with tests
+- `/test` - Run tests and save evidence
+- `/pr` - Create pull request
+
+## Development Workflow
+
+### Standard Workflow
+1. `/issue {issue_number}` - Fetch issue, create branch, and document
+2. `/spec {issue_number}` - Write specification
+3. `/plan {issue_number}` - Create implementation plan
+4. `/dev {issue_number}` - Implement with tests
+5. `/test {issue_number}` - Run tests and collect evidence
+6. `/pr {issue_number}` - Create pull request
+
+### Auto-Workflow (New)
+1. `/issue {issue_number} --auto` - Execute full pipeline automatically (issue → spec → plan → dev → test → pr)
+2. `/issue {issue_number} --auto --skip-spec --skip-plan` - Skip spec/plan for rapid development
+
+## Project Context
+
+- Language: Japanese responses preferred
+- Tech Stack: Node.js, TypeScript, Nuxt.js, PostgreSQL, Jest
+- Follow existing project conventions and patterns
+

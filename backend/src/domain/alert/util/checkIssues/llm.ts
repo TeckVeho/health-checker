@@ -46,6 +46,7 @@ Respond ONLY in this JSON format:
     const result = await generateText({
       model: openai(OPENAI_CONFIG.MODEL),
       prompt,
+      temperature: 1,
     });
 
     const content = result.text?.trim();
@@ -117,6 +118,7 @@ Respond ONLY in this JSON format:
     const result = await generateText({
       model: openai(OPENAI_CONFIG.MODEL),
       prompt,
+      temperature: 1,
     });
 
     const content = result.text?.trim();

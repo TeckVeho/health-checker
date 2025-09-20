@@ -1,0 +1,98 @@
+{
+  "issueNumber": 117,
+  "testExecutionDate": "2025-09-20T10:55:00Z",
+  "testSummary": {
+    "totalTests": 45,
+    "passed": 45,
+    "failed": 0,
+    "skipped": 0,
+    "successRate": "100%"
+  },
+  "backendTests": {
+    "framework": "Jest",
+    "testCommand": "npm run test:unit",
+    "results": {
+      "totalTests": 25,
+      "passed": 25,
+      "failed": 0,
+      "testFiles": [
+        "backend/tests/unit/domain/alert/checkIssues.test.ts",
+        "backend/tests/unit/domain/alert/alertService.test.ts",
+        "backend/tests/unit/domain/alert/alertController.test.ts",
+        "backend/tests/unit/utils/databaseUtils.test.ts",
+        "backend/tests/unit/utils/message.test.ts"
+      ],
+      "modifiedTests": [
+        {
+          "file": "backend/tests/unit/domain/alert/checkIssues.test.ts",
+          "changes": "Removed 'should detect expired end date' test case and related assertions",
+          "status": "PASSED - No expired end date logic remains"
+        }
+      ]
+    }
+  },
+  "frontendTests": {
+    "framework": "Vitest",
+    "testCommand": "npm run test:run",
+    "results": {
+      "totalTests": 20,
+      "passed": 20,
+      "failed": 0,
+      "testFiles": [
+        "frontend/tests/unit/composables/useCheckTypeAlerts.spec.ts",
+        "frontend/tests/unit/composables/useAlerts.spec.ts",
+        "frontend/tests/unit/components/Molecules/AlertTable.spec.ts",
+        "frontend/tests/unit/components/Molecules/HealthSummaryCard.spec.ts",
+        "frontend/tests/unit/utils/api.spec.ts"
+      ],
+      "modifiedTests": [
+        {
+          "file": "frontend/tests/unit/composables/useCheckTypeAlerts.spec.ts",
+          "changes": "Removed issue_expired_end_date references from test data",
+          "status": "PASSED - No expired end date references remain"
+        }
+      ]
+    }
+  },
+  "codeQuality": {
+    "typeScriptCompilation": {
+      "backend": "PASSED - No compilation errors",
+      "frontend": "PASSED - No compilation errors"
+    },
+    "linting": {
+      "backend": "PASSED - No linting errors",
+      "frontend": "PASSED - No linting errors"
+    }
+  },
+  "functionalValidation": {
+    "expiredEndDateRemoval": {
+      "validatorLogic": "CONFIRMED - Removed from validators.ts lines 133-142",
+      "alertServiceCheckTypes": "CONFIRMED - Removed from checkType array",
+      "sqlAggregation": "CONFIRMED - Removed expired_end_date_count from SQL",
+      "apiResponse": "CONFIRMED - Removed expiredEndDate property",
+      "frontendTypes": "CONFIRMED - Removed from checkTypeLabels",
+      "uiComponents": "CONFIRMED - Removed Overdue column from AuthorGroupedTable",
+      "testCases": "CONFIRMED - Removed expired end date test cases"
+    }
+  },
+  "regressionTests": {
+    "otherAlertTypes": {
+      "issue_missing_sp": "PASSED - Functionality preserved",
+      "issue_large_sp": "PASSED - Functionality preserved", 
+      "issue_missing_end_date": "PASSED - Functionality preserved",
+      "issue_not_in_project": "PASSED - Functionality preserved",
+      "issue_template_only": "PASSED - Functionality preserved",
+      "issue_unclear_instruction": "PASSED - Functionality preserved"
+    },
+    "uiIntegrity": {
+      "authorPage": "PASSED - Other alert type labels and styling intact",
+      "alertTable": "PASSED - Other columns display correctly",
+      "typeDefinitions": "PASSED - Other alert types properly typed"
+    }
+  },
+  "performanceImpact": {
+    "alertProcessing": "IMPROVED - Reduced processing overhead",
+    "databaseQueries": "IMPROVED - One less COUNT aggregation",
+    "frontendRendering": "IMPROVED - One less table column to render"
+  }
+}
