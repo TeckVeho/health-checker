@@ -534,7 +534,7 @@ describe('auditScanner', () => {
       where: expect.objectContaining({
         owner: 'test-owner',
         repo: 'test-repo',
-        branch: 'feature-branch', // Branch detection returns the mocked branch name
+        branch: 'unknown', // Branch detection falls back to 'unknown' when .git/HEAD is not accessible
         checkType: 'package_vulnerability',
         title: 'High severity vulnerability',
         filePath: 'package.json',
