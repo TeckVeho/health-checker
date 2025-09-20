@@ -11,6 +11,8 @@ Execute tests and record results with AI Agent
 
 Execute tests and record results through interactive AI Agent collaboration.
 
+**Workflow Position**: This command should be run after `/dev` (development) and before `/pr` (commit and pull request creation).
+
 **Instructions for AI Agent:**
 
 1. **Determine Issue Number**: 

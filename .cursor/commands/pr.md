@@ -1,6 +1,6 @@
 # PR Command
 
-Create Pull Request with 3-step process: validation, documentation, and GitHub PR creation
+Create Pull Request with 3-step process: commit changes, validation, documentation, and GitHub PR creation
 
 ## Parameters
 
@@ -9,9 +9,11 @@ Create Pull Request with 3-step process: validation, documentation, and GitHub P
 
 ## Instructions
 
-Create Pull Request through interactive AI Agent collaboration with 3-step process.
+Create Pull Request through interactive AI Agent collaboration with commit and 3-step process.
 
 **Instructions for AI Agent:**
+
+**New Workflow**: This command now handles committing changes before creating PR. Development should be done with `/dev` (no commits), tested with `/test`, then committed and PR created with `/pr`.
 
 ## Step 0: Issue Number Determination
 
@@ -20,12 +22,16 @@ Create Pull Request through interactive AI Agent collaboration with 3-step proce
    - If `issue_number` is omitted: Look for the most recently created issue document in `docs/issues/*/issue.md` to determine the issue number
    - Check for existing `docs/issues/{issue_number}/issue.md` file to ensure issue data is available
 
-## Step 1: Git Status Validation and User Confirmation
+## Step 1: Git Status Validation, Commit, and User Confirmation
 
 1. **Check Git Status**: Run `git status` to show current repository state
 2. **Display Status Summary**: Show all modified, added, and deleted files with status indicators
-3. **User Confirmation**: Ask user "Do you want to create a PR? (y/n)" and wait for confirmation
-4. **Proceed Only if Confirmed**: Continue to Step 2 only if user confirms with 'y' or 'yes'
+3. **Commit Changes**: If there are uncommitted changes:
+   - Stage all changes with `git add .`
+   - Create commit with descriptive message based on issue and changes
+   - Use format: `feat/fix/docs: {description} - Closes #{issue_number}`
+4. **User Confirmation**: Ask user "Do you want to create a PR? (y/n)" and wait for confirmation
+5. **Proceed Only if Confirmed**: Continue to Step 2 only if user confirms with 'y' or 'yes'
 
 ## Step 2: PR Documentation Creation
 
