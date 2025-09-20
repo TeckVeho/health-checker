@@ -165,6 +165,8 @@ export const alertModelOptions = {
     {
       name: 'unique_health_issue',
       unique: true,
+      // Note: code_snippet is intentionally excluded from unique index
+      // to allow multiple alerts with same details but different code snippets
       fields: [
         { name: 'owner', length: 100 },
         { name: 'repo', length: 100 },
