@@ -1,4 +1,4 @@
-import { ref, computed, readonly } from 'vue'
+import { ref, computed, readonly, onUnmounted } from 'vue'
 import { apiService, type Repo, type AlertSummary } from '~/utils/api'
 import { useApi } from './useApi'
 import { useApiConfig } from './useApiConfig'
@@ -25,6 +25,17 @@ function createSharedState() {
 
   // Cache the threshold date to avoid redundant computations
   const thresholdDate = ref<Date | null>(null)
+  
+  // Polling state
+  const isPolling = ref(false)
+  const pollingInterval = ref(5000) // 5 seconds default
+  let pollingTimer: NodeJS.Timeout | null = null
+  
+  // Temporary polling after ReCheck completion
+  const isTemporaryPolling = ref(false)
+  const temporaryPollingCount = ref(0)
+  const maxTemporaryPolls = 6 // Poll for 30 seconds (6 * 5s) after ReCheck completion
+  let temporaryPollingTimer: NodeJS.Timeout | null = null
 
   // Computed properties
   const reposWithAlerts = computed(() => {
@@ -126,6 +137,106 @@ function createSharedState() {
     await fetchAlertSummaryByCheckType()
   }
 
+  // Polling functionality
+  const startPolling = (interval: number = pollingInterval.value): void => {
+    if (isPolling.value) {
+      stopPolling()
+    }
+    
+    isPolling.value = true
+    pollingInterval.value = interval
+    
+    const poll = async () => {
+      if (!isPolling.value) return
+      
+      try {
+        await Promise.all([
+          fetchRepos(TABLE_CONFIG.sortField),
+          fetchAlertSummary(),
+          fetchAlertSummaryByCheckType()
+        ])
+      } catch (err) {
+        console.warn('Polling error:', err)
+        // Don't show toast for polling errors to avoid spam
+      }
+      
+      if (isPolling.value) {
+        pollingTimer = setTimeout(poll, pollingInterval.value)
+      }
+    }
+    
+    // Start polling immediately
+    poll()
+  }
+  
+  const stopPolling = (): void => {
+    isPolling.value = false
+    if (pollingTimer) {
+      clearTimeout(pollingTimer)
+      pollingTimer = null
+    }
+  }
+  
+  const setPollingInterval = (interval: number): void => {
+    pollingInterval.value = interval
+    if (isPolling.value) {
+      // Restart polling with new interval
+      startPolling(interval)
+    }
+  }
+
+  // Temporary polling after ReCheck completion
+  const startTemporaryPolling = (interval: number = 5000): void => {
+    // Stop any existing temporary polling
+    stopTemporaryPolling()
+    
+    isTemporaryPolling.value = true
+    temporaryPollingCount.value = 0
+    
+    const poll = async () => {
+      if (!isTemporaryPolling.value || temporaryPollingCount.value >= maxTemporaryPolls) {
+        stopTemporaryPolling()
+        return
+      }
+      
+      temporaryPollingCount.value++
+      
+      try {
+        await Promise.all([
+          fetchRepos(TABLE_CONFIG.sortField),
+          fetchAlertSummary(),
+          fetchAlertSummaryByCheckType()
+        ])
+      } catch (err) {
+        console.warn('Temporary polling error:', err)
+      }
+      
+      if (isTemporaryPolling.value && temporaryPollingCount.value < maxTemporaryPolls) {
+        temporaryPollingTimer = setTimeout(poll, interval)
+      } else {
+        stopTemporaryPolling()
+      }
+    }
+    
+    // Start temporary polling immediately
+    poll()
+  }
+  
+  const stopTemporaryPolling = (): void => {
+    isTemporaryPolling.value = false
+    temporaryPollingCount.value = 0
+    if (temporaryPollingTimer) {
+      clearTimeout(temporaryPollingTimer)
+      temporaryPollingTimer = null
+    }
+  }
+
+  // Cleanup function
+  const cleanup = (): void => {
+    stopPolling()
+    stopTemporaryPolling()
+  }
+
   return {
     // State
     repos: readonly(repos),
@@ -134,6 +245,11 @@ function createSharedState() {
     loading: readonly(loading),
     error: readonly(error),
     thresholdDate: readonly(thresholdDate),
+    
+    // Polling state
+    isPolling: readonly(isPolling),
+    pollingInterval: readonly(pollingInterval),
+    isTemporaryPolling: readonly(isTemporaryPolling),
 
     // Computed
     reposWithAlerts,
@@ -145,6 +261,14 @@ function createSharedState() {
     fetchAlertSummaryByCheckType,
     initializeData,
     mapFieldToBackend,
+    
+    // Polling actions
+    startPolling,
+    stopPolling,
+    setPollingInterval,
+    startTemporaryPolling,
+    stopTemporaryPolling,
+    cleanup,
   }
 }
 

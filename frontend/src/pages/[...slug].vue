@@ -135,6 +135,8 @@ const {
   resolvedAlerts,
   hasAlerts,
   hasResolvedAlerts,
+  startTemporaryPolling,
+  isTemporaryPolling,
 } = useAlerts(owner, repo)
 
 // ReCheck functionality
@@ -149,7 +151,18 @@ const recheck = computed(() => {
     owner: owner.value,
     repo: repo.value,
     autoRefresh: true,
-    refreshInterval: 3000
+    refreshInterval: 3000,
+    onRecheckComplete: async () => {
+      // ReCheck完了後にアラートデータを更新
+      console.log('ReCheck completed, refreshing alerts...')
+      await fetchAlerts()
+      
+      // 一時的なポーリングを開始（30秒間、5秒間隔で6回）
+      startTemporaryPolling(5000)
+      
+      // 成功通知を表示
+      toast.success('ReCheck完了', 'アラート情報を更新し、継続的に監視しています')
+    }
   })
 })
 

@@ -9,10 +9,11 @@ export interface RecheckOptions {
   autoRefresh?: boolean
   refreshInterval?: number
   isGlobal?: boolean
+  onRecheckComplete?: () => void | Promise<void>
 }
 
 export function useRecheck(options: RecheckOptions) {
-  const { owner, repo, checks = ['branch', 'clone', 'gitleaks', 'issue'], autoRefresh = true, refreshInterval = 2000, isGlobal = false } = options
+  const { owner, repo, checks = ['branch', 'clone', 'gitleaks', 'issue'], autoRefresh = true, refreshInterval = 2000, isGlobal = false, onRecheckComplete } = options
   
   const { loading, error, callApi } = useApi()
   
@@ -256,12 +257,24 @@ export function useRecheck(options: RecheckOptions) {
     }
   }
   
-  // Watch for status changes to manage auto-refresh
-  watch(isRunning, (newIsRunning) => {
+  // Watch for status changes to manage auto-refresh and completion callbacks
+  watch(isRunning, async (newIsRunning, oldIsRunning) => {
     if (newIsRunning && autoRefresh) {
       startAutoRefresh()
     } else {
       stopAutoRefresh()
+    }
+    
+    // Check if ReCheck just completed (was running, now not running)
+    if (oldIsRunning && !newIsRunning && status.value?.status === 'completed') {
+      // Call completion callback if provided
+      if (onRecheckComplete) {
+        try {
+          await onRecheckComplete()
+        } catch (error) {
+          console.error('Error in ReCheck completion callback:', error)
+        }
+      }
     }
   })
   

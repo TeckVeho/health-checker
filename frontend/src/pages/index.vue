@@ -130,6 +130,10 @@ const {
   loading,
 } = useRepoHealth()
 
+// Shared state for polling functionality
+const sharedState = useSharedState()
+const { startTemporaryPolling, isTemporaryPolling } = sharedState
+
 // CheckType-based data
 const {
   columns: checkTypeColumns,
@@ -165,7 +169,18 @@ const recheck = useRecheck({
   repo: 'global',
   autoRefresh: true,
   refreshInterval: 5000,
-  isGlobal: true
+  isGlobal: true,
+  onRecheckComplete: async () => {
+    // ReCheck完了後に全データを更新
+    console.log('Global ReCheck completed, refreshing all data...')
+    await refreshAllData()
+    
+    // 一時的なポーリングを開始（30秒間、5秒間隔で6回）
+    startTemporaryPolling(5000)
+    
+    // 成功通知を表示
+    toast.success('ReCheck完了', '全リポジトリの情報を更新し、継続的に監視しています')
+  }
 })
 
 // ReCheck state
