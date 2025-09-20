@@ -28,7 +28,6 @@ export const checkTypeLabels: Record<string, string> = {
   issue_unclear_instruction: 'Issue Unclear Instruction',
   issue_template_only: 'Issue Template Only',
   issue_missing_end_date: 'Issue Missing End Date',
-  issue_expired_end_date: 'Issue Expired End Date',
   issue_missing_sp: 'Issue Missing Story Point',
   issue_large_sp: 'Issue Large Story Point',
   issue_not_in_project: 'Issue Not In Project',

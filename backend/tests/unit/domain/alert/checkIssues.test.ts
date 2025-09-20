@@ -173,44 +173,6 @@ describe('checkIssues', () => {
       expect(alert?.severity).toBe('low');
     });
 
-    it('should detect expired end date', async () => {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 2);
-      const expiredDate = yesterday.toISOString().split('T')[0];
-
-      const mockIssues = [
-        {
-          number: 4,
-          title: 'Test Issue',
-          body: `This issue has expired end date: ${expiredDate}`,
-          html_url: 'https://github.com/test-owner/test-repo/issues/4',
-          created_at: '2025-08-18T00:00:00Z', // After CREATED_SINCE
-        },
-      ];
-
-      mockOctokit.paginate.mockResolvedValue(mockIssues);
-      // Mock GraphQL query for getting project field values (returns empty)
-      mockOctokit.graphql.mockResolvedValueOnce({
-        repository: {
-          issue: {
-            projectItems: {
-              nodes: []
-            }
-          }
-        }
-      });
-
-      // Mock LLM response
-      mockGenerateText.mockResolvedValueOnce({ text: '{"result": true, "reason": "Unclear instructions detected"}' });
-
-      const result = await checkIssues(owner, repo);
-
-      expect(result.alerts).toHaveLength(5); // various alerts + unclear_instruction
-      const alert = result.alerts.find(a => a.checkType === 'issue_expired_end_date');
-      expect(alert).toBeDefined();
-      expect(alert?.title).toBe('issue:4');
-      expect(alert?.severity).toBe('middle');
-    });
 
     it('should detect unassigned issue', async () => {
       const mockIssues = [
@@ -1088,10 +1050,6 @@ describe('checkIssues', () => {
 
       const result = await checkIssues(owner, repo);
 
-      // Should have expired end date alert
-      const expiredEndDateAlert = result.alerts.find(a => a.checkType === 'issue_expired_end_date');
-      expect(expiredEndDateAlert).toBeDefined();
-      expect(expiredEndDateAlert?.title).toBe('issue:17');
     });
 
     it('should handle issues in projects but without field values', async () => {

@@ -14,7 +14,6 @@ interface AuthorAggregation {
     missingSp: number;
     largeSp: number;
     missingEndDate: number;
-    expiredEndDate: number;
     notInProject: number;
     templateOnly: number;
     unclearInstruction: number;
