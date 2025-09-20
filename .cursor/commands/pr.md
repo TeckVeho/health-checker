@@ -1,19 +1,25 @@
 # PR Command
 
-Create Pull Request with 3-step process: commit changes, validation, documentation, and GitHub PR creation
+Create Pull Request with streamlined 2-step process: commit changes and GitHub PR creation with automatic issue linking
 
 ## Parameters
 
 - `issue_number` (optional): Issue number. If omitted, uses the most recently processed issue from previous `/issue` command
-- `output_path` (optional): Output directory path (defaults to docs/issues/{issue_number}/pr.md)
+- `auto_link` (optional): Automatically link PR to issue (defaults to true)
 
 ## Instructions
 
-Create Pull Request through interactive AI Agent collaboration with commit and 3-step process.
+Create Pull Request through interactive AI Agent collaboration with streamlined 2-step process and automatic issue linking.
 
 **Instructions for AI Agent:**
 
-**New Workflow**: This command now handles committing changes before creating PR. Development should be done with `/dev` (no commits), tested with `/test`, then committed and PR created with `/pr`.
+**🔗 CRITICAL: AUTOMATIC ISSUE LINKING 🔗**
+- ALWAYS link PR to the corresponding issue
+- Use "Closes #{issue_number}" in commit messages and PR body
+- Ensure GitHub automatically closes the issue when PR is merged
+- This maintains proper issue tracking and project management
+
+**Streamlined Workflow**: This command handles committing changes and creating PR with automatic issue linking. Development should be done with `/dev` (no commits), tested with `/test`, then committed and PR created with `/pr`.
 
 ## Step 0: Issue Number Determination
 
@@ -33,31 +39,7 @@ Create Pull Request through interactive AI Agent collaboration with commit and 3
 4. **User Confirmation**: Ask user "Do you want to create a PR? (y/n)" and wait for confirmation
 5. **Proceed Only if Confirmed**: Continue to Step 2 only if user confirms with 'y' or 'yes'
 
-## Step 2: PR Documentation Creation
-
-1. **Fetch Issue Data**: Get issue #{issue_number} information using optimized caching strategy (cached local file first, GitHub CLI fallback)
-2. **Generate PR Content**: Create PR documentation using integrated template structure:
-   - Include issue title, description, and related information
-   - Add current branch and target branch information
-   - Include file changes and implementation details
-   - Generate structured PR documentation
-3. **Save Documentation**: Save to `docs/issues/{issue_number}/pr.md`
-4. **User Confirmation**: Show created pr.md content and ask "Do you want to create a PR with this content? (y/n)"
-5. **Proceed Only if Confirmed**: Continue to Step 3 only if user confirms
-
-**PR Documentation Structure:**
-```markdown
-## Description
-{pull_request_description}
-
-## Cursor Log
-{development_process_log}
-
-## Evidence
-{implementation_evidence}
-```
-
-## Step 3: Commit and Push Verification
+## Step 2: Commit and Push Verification
 
 1. **Check Uncommitted Changes**: Run `git --no-pager status --porcelain 2>$null` to check for uncommitted changes (with pager disabled)
 2. **Stage and Commit Changes**: If uncommitted changes exist:
@@ -72,19 +54,24 @@ Create Pull Request through interactive AI Agent collaboration with commit and 3
    - Run `git push origin {current_branch} --quiet --no-progress` to push commits
    - Ensure remote branch is up to date before PR creation
 
-## Step 4: GitHub Pull Request Creation
+## Step 3: GitHub Pull Request Creation with Issue Linking
 
-1. **Create GitHub PR**: Use `gh pr create` command to create pull request:
-   - Title: Based on issue title and implementation
-   - Body: Use content from created pr.md file
+1. **Fetch Issue Data**: Get issue #{issue_number} information using optimized caching strategy (cached local file first, GitHub CLI fallback)
+2. **Generate PR Content**: Create PR title and body with automatic issue linking:
+   - Title: Based on issue title with proper prefix (feat/fix/docs)
+   - Body: Include issue reference and "Closes #{issue_number}" for automatic linking
+   - Add implementation summary and key changes
+3. **Create GitHub PR**: Use `gh pr create` command to create pull request:
+   - Title: `{type}: {issue_title}`
+   - Body: Auto-generated with issue linking
    - Base branch: `develop`
    - Head branch: Current branch
-2. **Handle PR Creation Errors**: If PR creation fails:
+4. **Handle PR Creation Errors**: If PR creation fails:
    - Check if commits exist between base and head branches
    - Verify remote branch is properly pushed
    - Retry PR creation after resolving issues
-3. **Display PR Information**: Show created PR URL and status
-4. **Confirmation**: Confirm successful PR creation
+5. **Display PR Information**: Show created PR URL and linked issue status
+6. **Confirmation**: Confirm successful PR creation and issue linking
 
 **Process Flow:**
 ```
@@ -93,28 +80,25 @@ Step 0: Issue Number Determination
 ├── If not, auto-detect from docs/issues/*/issue.md
 └── Verify issue exists and is accessible
 
-Step 1: Git Status Check
+Step 1: Git Status Check and Commit
 ├── Run git --no-pager status (pager disabled)
 ├── Display file changes with git --no-pager diff --name-status origin/develop..HEAD
+├── Commit changes with "Closes #{issue_number}" message
 └── Ask: "Do you want to create a PR? (y/n)"
 
-Step 2: PR Documentation
-├── Fetch issue #{issue_number} data
-├── Generate pr.md content using integrated template
-├── Save to docs/issues/{issue_number}/pr.md
-└── Ask: "Do you want to create a PR with this content? (y/n)"
-
-Step 3: Commit and Push Verification
+Step 2: Commit and Push Verification
 ├── Check git --no-pager status --porcelain 2>$null for uncommitted changes (pager disabled)
 ├── If changes exist: git add . > $null 2>&1 && git commit -m "..." --no-edit --quiet > $null 2>&1
 ├── Push to remote: git push origin {current_branch} --quiet --no-progress
 └── Verify remote branch is up to date
 
-Step 4: GitHub PR Creation
+Step 3: GitHub PR Creation with Issue Linking
+├── Fetch issue data for PR content generation
+├── Generate PR title and body with "Closes #{issue_number}"
 ├── Run gh pr create --title "..." --body "..." --base develop
 ├── Handle errors: check commits between branches, retry if needed
-├── Display PR URL
-└── Confirm completion
+├── Display PR URL and linked issue status
+└── Confirm completion and issue linking
 ```
 
 **Auto-Detection Process:**
@@ -127,15 +111,27 @@ Step 4: GitHub PR Creation
 - **Fallback Support**: Automatic GitHub API fallback if cached data unavailable
 - **Speed Improvement**: 1-2 seconds faster execution by eliminating redundant API calls
 
+**🔗 Issue Linking Requirements:**
+- **Commit Messages**: MUST include "Closes #{issue_number}" for automatic issue closure
+- **PR Body**: MUST include "Closes #{issue_number}" to link PR to issue
+- **PR Title**: Should follow format "{type}: {issue_title}" for consistency
+- **Verification**: Confirm issue linking is successful after PR creation
+
 **Required Commands:**
 - `git --no-pager status` - Check repository state (with pager disabled)
 - `git --no-pager status --porcelain 2>$null` - Check for uncommitted changes (with pager disabled)
 - `git --no-pager diff --name-status origin/develop..HEAD` - Show file changes (with pager disabled)
 - `git add . > $null 2>&1` - Stage all changes (if needed)
-- `git commit -m "..." --no-edit --quiet > $null 2>&1` - Commit changes with detailed message (if needed)
+- `git commit -m "..." --no-edit --quiet > $null 2>&1` - Commit changes with "Closes #{issue_number}" (if needed)
 - `git push origin {branch} --quiet --no-progress` - Push commits to remote (if needed)
-- `gh issue view {issue_number} --json title,body,labels,assignees,state,createdAt,updatedAt,url` - Get issue data (fallback only)
-- `gh pr create --title "..." --body "..." --base develop` - Create GitHub PR
+- `gh issue view {issue_number} --json title,body,labels,assignees,state,createdAt,updatedAt,url` - Get issue data for PR content
+- `gh pr create --title "..." --body "..." --base develop` - Create GitHub PR with issue linking
+
+**Key Features:**
+- **Streamlined Process**: Removed pr.md creation step for faster execution
+- **Automatic Issue Linking**: Every PR automatically links to its corresponding issue
+- **Consistent Formatting**: Standardized PR titles and commit messages
+- **Error Handling**: Robust error handling for Git and GitHub operations
 
 **Issue**: {issue_number or auto-detected}
-**Output**: {output_path}
+**Auto Link**: {auto_link (defaults to true)}
