@@ -13,6 +13,12 @@ Develop code using flexible development methodology through interactive AI Agent
 
 **Instructions for AI Agent:**
 
+**⛔ ABSOLUTE PROHIBITION: DO NOT EXECUTE ANY GIT COMMIT COMMANDS ⛔**
+- NEVER run `git commit` in any form
+- NEVER run `git add . && git commit`
+- NEVER suggest or execute commit operations
+- Development phase MUST end with uncommitted changes
+
 1. **Determine Issue Number**: 
    - If `issue_number` is provided: Use the specified issue number
    - If `issue_number` is omitted: Look for the most recently created issue document in `docs/issues/*/issue.md` to determine the issue number
@@ -20,10 +26,17 @@ Develop code using flexible development methodology through interactive AI Agent
 2. **Choose Development Approach**: Determine if TDD or Direct Implementation is appropriate based on integrated development methodology
 3. **Interactive Development Process**: Guide the user through the chosen approach
 4. **Code Implementation**: Assist with implementation based on the chosen approach
-5. **Validation**: Guide through testing and validation
-6. **Refactoring**: Help improve code quality while maintaining functionality
+5. **Validation**: Guide through testing and validation (WITHOUT committing)
+6. **Refactoring**: Help improve code quality while maintaining functionality (WITHOUT committing)
+7. **Final Check**: Ensure all changes remain uncommitted before completing development phase
 
-**Important**: Do NOT commit changes during development. Leave all changes uncommitted for testing phase.
+**🚨 CRITICAL: NEVER COMMIT CHANGES DURING DEVELOPMENT 🚨**
+
+**STRICT RULE**: Do NOT use `git commit`, `git add && git commit`, or any commit commands during development phase.
+- All changes MUST remain uncommitted
+- Changes will be committed later in the `/test` and `/pr` phases
+- This ensures proper testing before committing
+- Violating this rule breaks the development workflow
 
 **Development Approach Guidelines:**
 
@@ -75,7 +88,16 @@ For configuration, commands, scripts, or simple implementations:
 - **Approach**: Clean up code, improve performance, enhance readability
 - **Focus**: Code quality without breaking existing functionality
 
-**Development Output**: Leave all changes uncommitted for testing with `/test` command before final commit in `/pr` command.
+**🔒 DEVELOPMENT OUTPUT REQUIREMENTS 🔒**
+
+**MANDATORY**: All changes MUST remain uncommitted after development completion
+- **NO git commit commands** during `/dev` execution
+- **NO git add && git commit** combinations
+- **NO automatic commits** of any kind
+- Changes will be properly committed in `/pr` command after testing
+- This separation ensures code quality and proper testing workflow
+
+**Workflow Sequence**: `/dev` (no commits) → `/test` (validation) → `/pr` (commit & PR creation)
 
 **Auto-Detection Process:**
 - Search `docs/issues/*/issue.md` files for the most recently modified file
