@@ -290,7 +290,7 @@ class AlertService {
       where: {
         owner,
         repo,
-        checkType: ['issue_missing_sp', 'issue_large_sp', 'issue_missing_end_date', 'issue_expired_end_date', 'issue_not_in_project', 'issue_template_only', 'issue_unclear_instruction'],
+        checkType: ['issue_missing_sp', 'issue_large_sp', 'issue_missing_end_date', 'issue_not_in_project', 'issue_template_only', 'issue_unclear_instruction'],
         systemResolved: false,
       },
     });
@@ -569,7 +569,6 @@ class AlertService {
         COUNT(CASE WHEN check_type = 'issue_missing_sp' THEN 1 END) as missing_sp_count,
         COUNT(CASE WHEN check_type = 'issue_large_sp' THEN 1 END) as large_sp_count,
         COUNT(CASE WHEN check_type = 'issue_missing_end_date' THEN 1 END) as missing_end_date_count,
-        COUNT(CASE WHEN check_type = 'issue_expired_end_date' THEN 1 END) as expired_end_date_count,
         COUNT(CASE WHEN check_type = 'issue_not_in_project' THEN 1 END) as not_in_project_count,
         COUNT(CASE WHEN check_type = 'issue_template_only' THEN 1 END) as template_only_count,
         COUNT(CASE WHEN check_type = 'issue_unclear_instruction' THEN 1 END) as unclear_instruction_count,
@@ -621,7 +620,6 @@ class AlertService {
         missingSp: parseInt(row.missing_sp_count),
         largeSp: parseInt(row.large_sp_count),
         missingEndDate: parseInt(row.missing_end_date_count),
-        expiredEndDate: parseInt(row.expired_end_date_count),
         notInProject: parseInt(row.not_in_project_count),
         templateOnly: parseInt(row.template_only_count),
         unclearInstruction: parseInt(row.unclear_instruction_count),

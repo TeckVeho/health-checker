@@ -130,16 +130,6 @@ export function validateEndDates(
       `Issue #${issue.number} has no End Date assigned.`,
       'low'
     ));
-  } else if (endDate < new Date(Date.now() - 24 * 60 * 60 * 1000)) {
-    // End Date expired (before yesterday)
-    alerts.push(createAlert(
-      issue,
-      owner,
-      repo,
-      'issue_expired_end_date',
-      `Issue #${issue.number} has expired End Date: ${endDate.toISOString().split('T')[0]}.`,
-      'middle'
-    ));
   }
 
   return alerts;

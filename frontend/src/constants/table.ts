@@ -27,7 +27,6 @@ export const CHECK_TYPE_MAPPING = {
     'issue_unclear_instruction',
     'issue_template_only', 
     'issue_missing_end_date',
-    'issue_expired_end_date',
     'issue_missing_sp',
     'issue_large_sp',
     'issue_not_in_project',

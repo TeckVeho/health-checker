@@ -105,16 +105,6 @@
           </template>
         </Column>
 
-        <!-- Expired End Date Column -->
-        <Column field="issueTypeCounts.expiredEndDate" header="Overdue" :sortable="true" class="text-center min-w-16">
-          <template #body="{ data: row }">
-            <Badge 
-              :value="row.issueTypeCounts.expiredEndDate || 0" 
-              :severity="row.issueTypeCounts.expiredEndDate > 0 ? 'danger' : 'secondary'"
-              size="small"
-            />
-          </template>
-        </Column>
 
         <!-- Not In Project Column -->
         <Column field="issueTypeCounts.notInProject" header="No Project" :sortable="true" class="text-center min-w-18">
