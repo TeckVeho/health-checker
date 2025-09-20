@@ -247,7 +247,8 @@ export class ReCheckService {
               phaseDetails: progress.phaseDetails
             }
           });
-          console.log(`[ReCheck] Progress for ${execution.owner}/${execution.repo}: ${progress.currentPhase} (${progress.phaseProgress}%)`);
+          // Progress行とPhaseProgress行を表示しないようにコメントアウト
+          // console.log(`[ReCheck] Progress for ${execution.owner}/${execution.repo}: ${progress.currentPhase} (${progress.phaseProgress}%)`);
         }
       });
 
