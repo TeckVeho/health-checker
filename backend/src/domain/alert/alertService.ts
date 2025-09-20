@@ -46,6 +46,191 @@ class AlertService {
       return false; // If we can't fetch topics, proceed with checks
     }
   }
+
+  /**
+   * Alert フィールドの正規化（NULL値と空文字列の統一処理）
+   */
+  private static normalizeAlertFields(alert: AlertCandidate | IssueAlertCandidate) {
+    return {
+      owner: alert.owner,
+      repo: alert.repo,
+      checkType: alert.checkType,
+      title: alert.title,
+      filePath: alert.filePath || null,
+      lineNumber: alert.lineNumber === -1 ? null : (alert.lineNumber || null),
+      codeSnippet: alert.codeSnippet || null,
+      branch: alert.branch || null
+    };
+  }
+
+  /**
+   * Alert の重複チェック付き登録・更新
+   */
+  static async upsertAlert(alert: AlertCandidate | IssueAlertCandidate): Promise<{ record: Alert; created: boolean }> {
+    const keyFields = this.normalizeAlertFields(alert);
+    const timestamp = new Date();
+    
+    const [record, created] = await Alert.findOrCreate({
+      where: keyFields,
+      defaults: {
+        ...keyFields,
+        description: alert.description,
+        severity: alert.severity,
+        author: 'author' in alert ? alert.author || null : null,
+        authorDisplayName: 'authorDisplayName' in alert ? alert.authorDisplayName || null : null,
+        detectCount: 1,
+        lastDetectedAt: timestamp,
+        isIgnored: false,
+        manualResolved: false,
+        systemResolved: false,
+        createdAt: timestamp,
+      },
+    });
+
+    if (!created) {
+      await record.update({
+        detectCount: (record as any).detectCount + 1,
+        lastDetectedAt: timestamp,
+        systemResolved: false,
+        systemResolvedReason: undefined,
+      });
+    }
+
+    return { record, created };
+  }
+
+  /**
+   * ReCheck時に検出されなかったalertを自動解決
+   * @param owner リポジトリオーナー
+   * @param repo リポジトリ名
+   * @param detectedKeys 今回検出されたalertのキーセット
+   * @param checkTypes 対象となるcheckTypeの配列
+   * @param processStartTime 処理開始時刻（この時刻より前のlastDetectedAtを持つalertは解決対象）
+   */
+  static async resolveUndetectedAlerts(
+    owner: string, 
+    repo: string, 
+    detectedKeys: Set<string>, 
+    checkTypes: string[],
+    processStartTime?: Date
+  ): Promise<void> {
+    const existing = await Alert.findAll({
+      where: {
+        owner,
+        repo,
+        checkType: checkTypes,
+        systemResolved: false,
+      },
+    });
+
+    const resolveTimestamp = format(new Date(), 'yyyyMMddHHmmss');
+    let resolvedCount = 0;
+
+    if (existing && existing.length > 0) {
+      for (const row of existing) {
+        // 解決処理でも正規化されたキーを使用（新規作成と同じロジック）
+        const key = [
+          row.getDataValue('owner'), 
+          row.getDataValue('repo'), 
+          row.getDataValue('checkType'), 
+          row.getDataValue('title'), 
+          row.getDataValue('filePath') || null, 
+          row.getDataValue('lineNumber') === -1 ? null : (row.getDataValue('lineNumber') || null), 
+          row.getDataValue('codeSnippet') || null, 
+          row.getDataValue('branch') || null
+        ].join('||');
+
+        const lastDetectedAt = row.getDataValue('lastDetectedAt');
+        const shouldResolve = !detectedKeys.has(key) && 
+          (!processStartTime || !lastDetectedAt || lastDetectedAt < processStartTime);
+        
+        if (shouldResolve) {
+          const author = row.getDataValue('author');
+          const authorInfo = author ? ` (by @${author})` : '';
+          const checkType = row.getDataValue('checkType');
+          const title = row.getDataValue('title');
+          console.log(`🛠 Resolving: ${checkType} - ${title}${authorInfo}`);
+          
+          await row.update({
+            systemResolved: true,
+            systemResolvedReason: `${resolveTimestamp}:Automatically resolved: not detected in ReCheck`,
+          });
+          resolvedCount++;
+        }
+      }
+    }
+
+    if (resolvedCount > 0) {
+      console.log(`✅ Resolved ${resolvedCount} alerts that were not detected in ReCheck`);
+    }
+  }
+
+  /**
+   * ReCheck完了後に全ての未解決alertを統合的に解決
+   * 各checkタイプで個別に解決処理が行われた後、漏れがないか最終チェック
+   * @param owner リポジトリオーナー
+   * @param repo リポジトリ名
+   * @param processStartTime 処理開始時刻（この時刻より前のlastDetectedAtを持つalertは解決対象）
+   */
+  static async resolveAllUndetectedAlerts(owner: string, repo: string, processStartTime: Date): Promise<void> {
+    // 全てのcheckTypeを対象とする
+    const allCheckTypes = [
+      'branch_name_violation', 
+      'branch_protect_rule_violation', 
+      'default_branch_violation',
+      'issue_unassigned',
+      'issue_missing_sp', 
+      'issue_large_sp', 
+      'issue_missing_end_date', 
+      'issue_not_in_project', 
+      'issue_template_only', 
+      'issue_unclear_instruction',
+      'pr_review_workflow_missing', 
+      'release_labeling_workflow_missing',
+      'exposed_secret_key',
+      'package_vulnerability'
+    ];
+
+    const existing = await Alert.findAll({
+      where: {
+        owner,
+        repo,
+        checkType: allCheckTypes,
+        systemResolved: false,
+      },
+    });
+
+    const resolveTimestamp = format(new Date(), 'yyyyMMddHHmmss');
+    let resolvedCount = 0;
+
+    if (existing && existing.length > 0) {
+      for (const row of existing) {
+        const lastDetectedAt = row.getDataValue('lastDetectedAt');
+        
+        // 処理開始時刻より前のlastDetectedAtを持つalertのみを解決対象とする
+        // これにより、今回のReCheckで検出されなかったalertのみを解決対象とする
+        if (!lastDetectedAt || lastDetectedAt < processStartTime) {
+          const author = row.getDataValue('author');
+          const authorInfo = author ? ` (by @${author})` : '';
+          const checkType = row.getDataValue('checkType');
+          const title = row.getDataValue('title');
+          console.log(`🛠 Final resolution: ${checkType} - ${title}${authorInfo}`);
+          
+          await row.update({
+            systemResolved: true,
+            systemResolvedReason: `${resolveTimestamp}:Automatically resolved: not detected in recent ReCheck`,
+          });
+          resolvedCount++;
+        }
+      }
+    }
+
+    if (resolvedCount > 0) {
+      console.log(`✅ Final resolution: ${resolvedCount} alerts resolved as not detected in recent ReCheck`);
+    } else {
+      console.log(`✅ All alerts are up-to-date or recently detected`);
+    }
+  }
   static async getAlertsByRepo(owner: string, repo: string) {
     const alerts = await Alert.findAll({
       where: {
@@ -142,196 +327,119 @@ class AlertService {
 
     return summary;
   }
-  static async processBranchAlerts(owner: string, repo: string): Promise<{ owner: string; repo: string }> {
+  static async processBranchAlerts(owner: string, repo: string, processStartTime?: Date): Promise<{ owner: string; repo: string }> {
     const timestamp = new Date();
     const result = await checkBranches(owner, repo);
     const detectedKeySet = new Set<string>();
 
     // Process new alerts
     for (const alert of result.alerts) {
-      const key = [alert.owner, alert.repo, alert.checkType, alert.title, alert.filePath, alert.lineNumber, alert.codeSnippet, alert.branch].join('||');
+      const normalizedFields = this.normalizeAlertFields(alert);
+      const key = [normalizedFields.owner, normalizedFields.repo, normalizedFields.checkType, normalizedFields.title, normalizedFields.filePath || '', normalizedFields.lineNumber || -1, normalizedFields.codeSnippet || '', normalizedFields.branch || ''].join('||');
       detectedKeySet.add(key);
 
-      await Alert.findOrCreate({
-        where: { 
-          owner: alert.owner, 
-          repo: alert.repo, 
-          checkType: alert.checkType, 
-          title: alert.title, 
-          filePath: alert.filePath, 
-          lineNumber: alert.lineNumber, 
-          codeSnippet: alert.codeSnippet, 
-          branch: alert.branch 
-        },
-        defaults: {
-          owner: alert.owner,
-          repo: alert.repo,
-          checkType: alert.checkType,
-          title: alert.title,
-          description: alert.description,
-          severity: alert.severity,
-          filePath: alert.filePath,
-          lineNumber: alert.lineNumber,
-          codeSnippet: alert.codeSnippet,
-          branch: alert.branch,
-          detectCount: 1,
-          lastDetectedAt: timestamp,
-          isIgnored: false,
-          manualResolved: false,
-          systemResolved: false,
-          createdAt: timestamp,
-        },
-      }).then(async ([record, created]) => {
-        if (!created) {
-          await record.update({
-            detectCount: (record as any).detectCount + 1,
-            lastDetectedAt: timestamp,
-            systemResolved: false,
-            systemResolvedReason: undefined,
-          });
-        }
-      });
+      // Use the new upsertAlert method for consistent duplicate handling
+      const { record, created } = await this.upsertAlert(alert);
+      
+      if (created) {
+        console.log(`🆕 Created new branch alert: ${alert.checkType} - ${alert.title}`);
+      } else {
+        console.log(`🔄 Updated existing branch alert: ${alert.checkType} - ${alert.title} (detectCount: ${(record as any).detectCount})`);
+      }
     }
 
     // Resolve old alerts that are no longer detected
-    const existing = await Alert.findAll({
-      where: {
-        owner,
-        repo,
-        checkType: ['branch_name_violation', 'branch_protect_rule_violation', 'default_branch_violation'],
-        systemResolved: false,
-      },
-    });
-
-    const resolveTimestamp = format(new Date(), 'yyyyMMddHHmmss');
-
-    for (const row of existing) {
-      const key = [
-        row.getDataValue('owner'), 
-        row.getDataValue('repo'), 
-        row.getDataValue('checkType'), 
-        row.getDataValue('title'), 
-        row.getDataValue('filePath') ?? '', 
-        row.getDataValue('lineNumber') ?? -1, 
-        row.getDataValue('codeSnippet') ?? '', 
-        row.getDataValue('branch') ?? ''
-      ].join('||');
-
-      if (!detectedKeySet.has(key)) {
-        console.log(`🛠 Resolving: ${key}`);
-        await row.update({
-          systemResolved: true,
-          systemResolvedReason: `${resolveTimestamp}:Automatically resolved: not detected`,
-        });
-      } else {
-        console.log(`✅ Still active: ${key}`);
-      }
-    }
+    await this.resolveUndetectedAlerts(
+      owner, 
+      repo, 
+      detectedKeySet, 
+      ['branch_name_violation', 'branch_protect_rule_violation', 'default_branch_violation'],
+      processStartTime
+    );
 
     return { owner, repo };
   }
 
-  static async processIssueAlerts(owner: string, repo: string): Promise<{ owner: string; repo: string }> {
+  static async processIssueAlerts(owner: string, repo: string, processStartTime?: Date): Promise<{ owner: string; repo: string }> {
     const timestamp = new Date();
     const result = await checkIssues(owner, repo);
     const detectedKeySet = new Set<string>();
 
     // Process new alerts
     for (const alert of result.alerts) {
-      const key = [alert.owner, alert.repo, alert.checkType, alert.title, alert.filePath || '', alert.lineNumber || -1, alert.codeSnippet || '', alert.branch || ''].join('||');
+      const normalizedFields = this.normalizeAlertFields(alert);
+      const key = [normalizedFields.owner, normalizedFields.repo, normalizedFields.checkType, normalizedFields.title, normalizedFields.filePath || '', normalizedFields.lineNumber || -1, normalizedFields.codeSnippet || '', normalizedFields.branch || ''].join('||');
       detectedKeySet.add(key);
 
-      await Alert.findOrCreate({
-        where: { 
-          owner: alert.owner, 
-          repo: alert.repo, 
-          checkType: alert.checkType, 
-          title: alert.title, 
-          filePath: alert.filePath || '', 
-          lineNumber: alert.lineNumber || -1, 
-          codeSnippet: alert.codeSnippet || '', 
-          branch: alert.branch || ''
-        },
-        defaults: {
-          owner: alert.owner,
-          repo: alert.repo,
-          checkType: alert.checkType,
-          title: alert.title,
-          description: alert.description,
-          severity: alert.severity,
-          author: alert.author || null,
-          authorDisplayName: alert.authorDisplayName || null,
-          filePath: alert.filePath,
-          lineNumber: alert.lineNumber,
-          codeSnippet: alert.codeSnippet,
-          branch: alert.branch,
-          issueUrl: alert.issueUrl,
-          detectCount: 1,
-          lastDetectedAt: timestamp,
-          isIgnored: false,
-          manualResolved: false,
-          systemResolved: false,
-          createdAt: timestamp,
-        },
-      }).then(async ([record, created]) => {
-        if (!created) {
-          await record.update({
-            detectCount: (record as any).detectCount + 1,
-            lastDetectedAt: timestamp,
-            systemResolved: false,
-            systemResolvedReason: undefined,
-          });
-        }
-      });
+      // Use the new upsertAlert method for consistent duplicate handling
+      const { record, created } = await this.upsertAlert(alert);
+      
+      if (created) {
+        console.log(`🆕 Created new issue alert: ${alert.checkType} - ${alert.title}`);
+      } else {
+        console.log(`🔄 Updated existing issue alert: ${alert.checkType} - ${alert.title} (detectCount: ${(record as any).detectCount})`);
+      }
     }
 
     // Resolve old alerts that are no longer detected
-    const existing = await Alert.findAll({
-      where: {
-        owner,
-        repo,
-        checkType: ['issue_missing_sp', 'issue_large_sp', 'issue_missing_end_date', 'issue_not_in_project', 'issue_template_only', 'issue_unclear_instruction'],
-        systemResolved: false,
-      },
-    });
-
-    const resolveTimestamp = format(new Date(), 'yyyyMMddHHmmss');
-
-    for (const row of existing) {
-      const key = [
-        row.getDataValue('owner'), 
-        row.getDataValue('repo'), 
-        row.getDataValue('checkType'), 
-        row.getDataValue('title'), 
-        row.getDataValue('filePath') || '', 
-        row.getDataValue('lineNumber') || -1, 
-        row.getDataValue('codeSnippet') || '', 
-        row.getDataValue('branch') || ''
-      ].join('||');
-
-      if (!detectedKeySet.has(key)) {
-        const author = row.getDataValue('author');
-        const authorInfo = author ? ` (by @${author})` : '';
-        const checkType = row.getDataValue('checkType');
-        const title = row.getDataValue('title');
-        console.log(`🛠 Resolving: ${checkType} - ${title}${authorInfo}`);
-        await row.update({
-          systemResolved: true,
-          systemResolvedReason: `${resolveTimestamp}:Automatically resolved: not detected`,
-        });
-      } else {
-        const author = row.getDataValue('author');
-        const authorInfo = author ? ` (by @${author})` : '';
-        const checkType = row.getDataValue('checkType');
-        const title = row.getDataValue('title');
-        console.log(`✅ Still active: ${checkType} - ${title}${authorInfo}`);
-      }
-    }
+    await this.resolveUndetectedAlerts(
+      owner, 
+      repo, 
+      detectedKeySet, 
+      ['issue_missing_sp', 'issue_large_sp', 'issue_missing_end_date', 'issue_not_in_project', 'issue_template_only', 'issue_unclear_instruction'],
+      processStartTime
+    );
 
     return { owner, repo };
   }
 
-  static async processActionAlerts(owner: string, repo: string): Promise<{ owner: string; repo: string }> {
+  static async processIssueAlertsWithProgress(
+    owner: string, 
+    repo: string, 
+    onProgress?: (processed: number, total: number) => void,
+    processStartTime?: Date
+  ): Promise<{ owner: string; repo: string }> {
+    const timestamp = new Date();
+    const result = await checkIssues(owner, repo);
+    const detectedKeySet = new Set<string>();
+    const total = result.alerts?.length || 0;
+    let processed = 0;
+
+    // Process new alerts with progress tracking
+    const alerts = result.alerts || [];
+    for (const alert of alerts) {
+      const normalizedFields = this.normalizeAlertFields(alert);
+      const key = [normalizedFields.owner, normalizedFields.repo, normalizedFields.checkType, normalizedFields.title, normalizedFields.filePath || '', normalizedFields.lineNumber || -1, normalizedFields.codeSnippet || '', normalizedFields.branch || ''].join('||');
+      detectedKeySet.add(key);
+
+      // Use the new upsertAlert method for consistent duplicate handling
+      const { record, created } = await this.upsertAlert(alert);
+      
+      if (created) {
+        console.log(`🆕 Created new alert: ${alert.checkType} - ${alert.title}`);
+      } else {
+        console.log(`🔄 Updated existing alert: ${alert.checkType} - ${alert.title} (detectCount: ${(record as any).detectCount})`);
+      }
+
+      processed++;
+      if (onProgress) {
+        onProgress(processed, total);
+      }
+    }
+
+    // Resolve old alerts that are no longer detected
+    await this.resolveUndetectedAlerts(
+      owner, 
+      repo, 
+      detectedKeySet, 
+      ['pr_review_workflow_missing', 'release_labeling_workflow_missing'],
+      processStartTime
+    );
+
+    return { owner, repo };
+  }
+
+  static async processActionAlerts(owner: string, repo: string, processStartTime?: Date): Promise<{ owner: string; repo: string }> {
     const timestamp = new Date();
     const result = await checkActions(owner, repo);
     const detectedKeySet = new Set<string>();
@@ -383,82 +491,126 @@ class AlertService {
     }
 
     // Resolve old alerts that are no longer detected
-    const existing = await Alert.findAll({
-      where: {
-        owner,
-        repo,
-        checkType: ['pr_review_workflow_missing', 'release_labeling_workflow_missing'],
-        systemResolved: false,
-      },
-    });
-
-    const resolveTimestamp = format(new Date(), 'yyyyMMddHHmmss');
-
-    for (const row of existing) {
-      const key = [
-        row.getDataValue('owner'), 
-        row.getDataValue('repo'), 
-        row.getDataValue('checkType'), 
-        row.getDataValue('title'), 
-        row.getDataValue('filePath') ?? '', 
-        row.getDataValue('lineNumber') ?? -1, 
-        row.getDataValue('codeSnippet') ?? '', 
-        row.getDataValue('branch') ?? ''
-      ].join('||');
-
-      if (!detectedKeySet.has(key)) {
-        console.log(`🛠 Resolving: ${key}`);
-        await row.update({
-          systemResolved: true,
-          systemResolvedReason: `${resolveTimestamp}:Automatically resolved: not detected`,
-        });
-      } else {
-        console.log(`✅ Still active: ${key}`);
-      }
-    }
+    await this.resolveUndetectedAlerts(
+      owner, 
+      repo, 
+      detectedKeySet, 
+      ['pr_review_workflow_missing', 'release_labeling_workflow_missing'],
+      processStartTime
+    );
 
     return { owner, repo };
   }
 
-  static async runAlert(options: { owner: string; repo: string; checks?: string[] }): Promise<Record<string, unknown>> {
-    const { owner, repo, checks } = options;
+  static async runAlert(
+    options: { 
+      owner: string; 
+      repo: string; 
+      checks?: string[];
+      onProgress?: (progress: {
+        currentPhase: string;
+        totalPhases: number;
+        phaseProgress: number;
+        phaseDetails?: {
+          phase: string;
+          progress: number;
+          totalItems?: number;
+          processedItems?: number;
+        };
+      }) => void;
+    }
+  ): Promise<Record<string, unknown>> {
+    const { owner, repo, checks, onProgress } = options;
     const effectiveChecks = checks ?? ['branch', 'clone', 'gitleaks', 'issue'];
     const results: Record<string, unknown> = {};
+    const totalPhases = effectiveChecks.length;
+    let currentPhaseIndex = 0;
+    
+    // 処理開始時刻を記録（この時刻より前のlastDetectedAtを持つalertは解決対象）
+    const processStartTime = new Date();
+
+    // 進捗コールバック関数
+    const updateProgress = (phase: string, phaseProgress: number, phaseDetails?: any) => {
+      if (onProgress) {
+        onProgress({
+          currentPhase: phase,
+          totalPhases,
+          phaseProgress: Math.round((currentPhaseIndex / totalPhases) * 100),
+          phaseDetails: {
+            phase,
+            progress: phaseProgress,
+            ...phaseDetails
+          }
+        });
+      }
+    };
 
     if (effectiveChecks.includes('clone')) {
+      updateProgress('Repository Cloning', 0);
       await cloneRepo(owner, repo);
+      updateProgress('Repository Cloning', 100);
       results.clone = 'done';
+      currentPhaseIndex++;
     }
 
     if (effectiveChecks.includes('branch')) {
-      await this.processBranchAlerts(owner, repo);
+      updateProgress('Branch Analysis', 0);
+      await this.processBranchAlerts(owner, repo, processStartTime);
+      updateProgress('Branch Analysis', 100);
       results.branch = 'checked';
+      currentPhaseIndex++;
     }
 
     if (effectiveChecks.includes('issue')) {
-      await this.processIssueAlerts(owner, repo);
+      updateProgress('Issue Analysis', 0);
+      // issue処理で件数ベースの進捗を実装
+      await this.processIssueAlertsWithProgress(owner, repo, (progress, total) => {
+        updateProgress('Issue Analysis', Math.round((progress / total) * 100), {
+          processedItems: progress,
+          totalItems: total
+        });
+      }, processStartTime);
+      updateProgress('Issue Analysis', 100);
       results.issue = 'checked';
+      currentPhaseIndex++;
     }
 
     if (effectiveChecks.includes('actions')) {
-      await this.processActionAlerts(owner, repo);
+      updateProgress('GitHub Actions Analysis', 0);
+      await this.processActionAlerts(owner, repo, processStartTime);
+      updateProgress('GitHub Actions Analysis', 100);
       results.actions = 'checked';
+      currentPhaseIndex++;
     }
 
     if (effectiveChecks.includes('gitleaks')) {
+      updateProgress('Security Scan (Gitleaks)', 0);
       if (!effectiveChecks.includes('clone')) {
         await cloneRepo(owner, repo); // ensure gitleaks has source
       }
-      await gitleaksScanner(owner, repo);
+      await gitleaksScanner(owner, repo, processStartTime);
+      updateProgress('Security Scan (Gitleaks)', 100);
       results.gitleaks = 'done';
+      currentPhaseIndex++;
     }
 
     if (effectiveChecks.includes('audit')) {
+      updateProgress('Security Audit', 0);
       if (!effectiveChecks.includes('clone')) {
         await cloneRepo(owner, repo); // ensure audit has source
       }
-      await auditScanner(owner, repo);
+      await auditScanner(owner, repo, processStartTime);
+      updateProgress('Security Audit', 100);
       results.audit = 'done';
+      currentPhaseIndex++;
+    }
+
+    // ReCheck完了後、検出されなかったalertを統合的に解決
+    if (effectiveChecks.length > 1) { // 複数のcheckが実行された場合のみ
+      updateProgress('Resolving Undetected Alerts', 0);
+      await this.resolveAllUndetectedAlerts(owner, repo, processStartTime);
+      updateProgress('Resolving Undetected Alerts', 100);
+      results.resolution = 'completed';
     }
 
     return results;
@@ -694,7 +846,7 @@ class AlertService {
         lineNumber: (alert as any).lineNumber,
         branch: (alert as any).branch,
         detectCount: (alert as any).detectCount,
-        lastDetectedAt: (alert as any).lastDetectedAt,
+        lastDetectedAt: (alert as any).lastDetectedAt || (alert as any).createdAt,
         createdAt: (alert as any).createdAt
       }))
     };

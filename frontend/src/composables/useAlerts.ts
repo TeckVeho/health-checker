@@ -64,8 +64,24 @@ export function useAlerts(owner: Ref<string | null>, repo: Ref<string | null>) {
   }
 
   // Utility functions
-  const formatDate = (dateStr: string): string => {
-    return moment(dateStr).format('YYYY-MM-DD HH:mm:ss')
+  const formatDate = (dateStr: string | null | undefined): string => {
+    if (!dateStr || dateStr === null || dateStr === undefined || dateStr === 'null' || dateStr === 'undefined') {
+      return 'N/A'
+    }
+    
+    try {
+      // momentを使用する前に有効な日付かチェック
+      const date = new Date(dateStr)
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date string:', dateStr)
+        return 'Invalid Date'
+      }
+      
+      return moment(dateStr).format('YYYY-MM-DD HH:mm:ss')
+    } catch (error) {
+      console.error('Error formatting date:', dateStr, error)
+      return 'Invalid Date'
+    }
   }
 
   const severityMap = {

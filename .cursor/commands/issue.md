@@ -24,6 +24,12 @@ Retrieve GitHub issue information, create development branch first, then save is
 
 **Instructions for AI Agent:**
 
+**⛔ ABSOLUTE PROHIBITION: DO NOT EXECUTE ANY GIT COMMIT COMMANDS ⛔**
+- NEVER run `git commit` in any form
+- NEVER run `git add . && git commit`
+- NEVER suggest or execute commit operations
+- Issue processing phase MUST end with uncommitted changes
+
 1. **Parse Issue Input**: Determine if input is issue number or URL and extract the issue number
    - If `issue_url` is provided: Extract issue number from URL (e.g., from "https://github.com/owner/repo/issues/115" extract "115")
    - If `issue_number` is provided: Use directly
@@ -36,7 +42,7 @@ Retrieve GitHub issue information, create development branch first, then save is
    - Create and checkout new branch
    - Display branch information
 4. **Generate Issue Document**: Create a structured issue document with status, description, and implementation tracking (in the new branch)
-5. **Save Document**: Save the issue information to {output_path} (default: docs/issues/{issue_number}/issue.md) in the new branch
+5. **Save Document**: Save the issue information to {output_path} (default: docs/issues/{issue_number}/issue.md) in the new branch (WITHOUT committing)
 6. **Auto-Workflow Execution (Optional)**: If `--auto` or `--workflow` is specified, execute full development pipeline:
    - Execute `/spec {issue_number}` (unless `--skip-spec` is specified)
    - Execute `/plan {issue_number}` (unless `--skip-plan` is specified)
@@ -53,8 +59,16 @@ Retrieve GitHub issue information, create development branch first, then save is
 - Generate structured issue document in Markdown format (after branch creation)
 - Include status, description, implementation status checklist
 - Create output directory if needed
-- Save to specified file path with UTF-8 encoding in the new branch
+- Save to specified file path with UTF-8 encoding in the new branch (WITHOUT committing)
 - If `--auto` or `--workflow` is specified: Execute auto-workflow pipeline with progress tracking
+
+**🚨 CRITICAL: NEVER COMMIT CHANGES DURING ISSUE PROCESSING 🚨**
+
+**STRICT RULE**: Do NOT use `git commit`, `git add && git commit`, or any commit commands during issue processing phase.
+- All changes MUST remain uncommitted
+- Changes will be committed later in the `/pr` phase
+- This ensures proper workflow separation and testing before committing
+- Violating this rule breaks the development workflow
 
 **Branch Creation Workflow (default behavior, unless no_branch=true):**
 - Check `git status` for uncommitted changes in working directory
