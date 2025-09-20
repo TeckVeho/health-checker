@@ -51,15 +51,34 @@ Create Pull Request through interactive AI Agent collaboration with 3-step proce
 {implementation_evidence}
 ```
 
-## Step 3: GitHub Pull Request Creation
+## Step 3: Commit and Push Verification
+
+1. **Check Uncommitted Changes**: Run `git status --porcelain` to check for uncommitted changes
+2. **Stage and Commit Changes**: If uncommitted changes exist:
+   - Run `git add .` to stage all changes
+   - Create comprehensive commit message including:
+     - Issue reference and main changes
+     - Key improvements and features
+     - Test results summary
+     - "Closes #{issue_number}" to auto-close issue
+   - Run `git commit -m "..."` with detailed message
+3. **Push to Remote**: Check if local branch exists on remote:
+   - Run `git push origin {current_branch}` to push commits
+   - Ensure remote branch is up to date before PR creation
+
+## Step 4: GitHub Pull Request Creation
 
 1. **Create GitHub PR**: Use `gh pr create` command to create pull request:
    - Title: Based on issue title and implementation
    - Body: Use content from created pr.md file
    - Base branch: `develop`
    - Head branch: Current branch
-2. **Display PR Information**: Show created PR URL and status
-3. **Confirmation**: Confirm successful PR creation
+2. **Handle PR Creation Errors**: If PR creation fails:
+   - Check if commits exist between base and head branches
+   - Verify remote branch is properly pushed
+   - Retry PR creation after resolving issues
+3. **Display PR Information**: Show created PR URL and status
+4. **Confirmation**: Confirm successful PR creation
 
 **Process Flow:**
 ```
@@ -79,8 +98,15 @@ Step 2: PR Documentation
 ├── Save to docs/issues/{issue_number}/pr.md
 └── Ask: "この内容でPRを作成してよろしいですか？ (y/n)"
 
-Step 3: GitHub PR Creation
+Step 3: Commit and Push Verification
+├── Check git status --porcelain for uncommitted changes
+├── If changes exist: git add . && git commit with detailed message
+├── Push to remote: git push origin {current_branch}
+└── Verify remote branch is up to date
+
+Step 4: GitHub PR Creation
 ├── Run gh pr create --title "..." --body "..." --base develop
+├── Handle errors: check commits between branches, retry if needed
 ├── Display PR URL
 └── Confirm completion
 ```
@@ -92,6 +118,10 @@ Step 3: GitHub PR Creation
 
 **Required Commands:**
 - `git status` - Check repository state
+- `git status --porcelain` - Check for uncommitted changes
+- `git add .` - Stage all changes (if needed)
+- `git commit -m "..."` - Commit changes with detailed message (if needed)
+- `git push origin {branch}` - Push commits to remote (if needed)
 - `gh issue view {issue_number} --json title,body,labels,assignees,state,createdAt,updatedAt,url` - Get issue data
 - `gh pr create --title "..." --body "..." --base develop` - Create GitHub PR
 
