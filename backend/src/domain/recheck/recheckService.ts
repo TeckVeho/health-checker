@@ -238,7 +238,6 @@ export class ReCheckService {
         repo: execution.repo,
         checks: execution.checkTypes,
         onProgress: async (progress) => {
-          console.log(`[ReCheck] onProgress called for ${execution.owner}/${execution.repo}:`, JSON.stringify(progress, null, 2));
           try {
             // 進捗情報をデータベースに保存
             await execution.update({
@@ -249,9 +248,8 @@ export class ReCheckService {
                 phaseDetails: progress.phaseDetails
               }
             });
-            console.log(`[ReCheck] ✅ Progress saved to DB for ${execution.owner}/${execution.repo}: ${progress.currentPhase} (${progress.phaseDetails?.processedItems || 0}/${progress.phaseDetails?.totalItems || 0})`);
           } catch (error) {
-            console.error(`[ReCheck] ❌ Failed to save progress to DB for ${execution.owner}/${execution.repo}:`, error);
+            console.error(`[ReCheck] Failed to save progress to DB for ${execution.owner}/${execution.repo}:`, error);
           }
         }
       });

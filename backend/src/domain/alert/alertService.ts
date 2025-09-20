@@ -394,8 +394,8 @@ class AlertService {
   }
 
   static async processIssueAlertsWithProgress(
-    owner: string, 
-    repo: string, 
+    owner: string,
+    repo: string,
     onProgress?: (processed: number, total: number) => void,
     processStartTime?: Date
   ): Promise<{ owner: string; repo: string }> {
@@ -404,6 +404,13 @@ class AlertService {
     const detectedKeySet = new Set<string>();
     const total = result.alerts?.length || 0;
     let processed = 0;
+
+    console.log(`[AlertService] processIssueAlertsWithProgress: Found ${total} issues to process`);
+
+    // Send initial progress (0/total)
+    if (onProgress) {
+      onProgress(processed, total);
+    }
 
     // Process new alerts with progress tracking
     const alerts = result.alerts || [];
@@ -414,7 +421,7 @@ class AlertService {
 
       // Use the new upsertAlert method for consistent duplicate handling
       const { record, created } = await this.upsertAlert(alert);
-      
+
       if (created) {
         console.log(`🆕 Created new alert: ${alert.checkType} - ${alert.title}`);
       } else {
@@ -425,6 +432,11 @@ class AlertService {
       if (onProgress) {
         onProgress(processed, total);
       }
+    }
+
+    // Send final progress to ensure completion is reported
+    if (onProgress && processed === total) {
+      onProgress(total, total);
     }
 
     // Resolve old alerts that are no longer detected
@@ -531,7 +543,6 @@ class AlertService {
 
     // 進捗コールバック関数
     const updateProgress = (phase: string, phaseProgress: number, phaseDetails?: any) => {
-      console.log(`[AlertService] updateProgress called: ${phase}, phaseProgress: ${phaseProgress}, phaseDetails:`, phaseDetails);
       if (onProgress) {
         const progressData = {
           currentPhase: phase,
@@ -543,10 +554,7 @@ class AlertService {
             ...phaseDetails
           }
         };
-        console.log(`[AlertService] Calling onProgress with:`, JSON.stringify(progressData, null, 2));
         onProgress(progressData);
-      } else {
-        console.log(`[AlertService] onProgress is null/undefined - no callback to call`);
       }
     };
 
@@ -570,7 +578,6 @@ class AlertService {
       updateProgress('Issue Analysis', 0);
       // issue処理で件数ベースの進捗を実装
       await this.processIssueAlertsWithProgress(owner, repo, (progress, total) => {
-        console.log(`[AlertService] processIssueAlertsWithProgress callback: ${progress}/${total}`);
         updateProgress('Issue Analysis', Math.round((progress / total) * 100), {
           processedItems: progress,
           totalItems: total
