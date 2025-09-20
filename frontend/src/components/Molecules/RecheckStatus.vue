@@ -195,17 +195,17 @@ const retryAfterSeconds = computed(() => {
 
 const showPhaseProgress = computed(() => {
   const execution = props.status?.currentExecution
-  if (!execution?.result?.phaseDetails) return false
+  if (!execution?.phaseDetails) return false
 
-  const details = execution.result.phaseDetails
+  const details = execution.phaseDetails
   return details.totalItems !== undefined && details.processedItems !== undefined
 })
 
 const phaseProgressText = computed(() => {
   const execution = props.status?.currentExecution
-  if (!execution?.result?.phaseDetails) return ''
+  if (!execution?.phaseDetails) return ''
 
-  const details = execution.result.phaseDetails
+  const details = execution.phaseDetails
   if (details.totalItems !== undefined && details.processedItems !== undefined) {
     return `${details.processedItems}/${details.totalItems}`
   }
