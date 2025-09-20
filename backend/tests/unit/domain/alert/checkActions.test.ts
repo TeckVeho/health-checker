@@ -253,7 +253,7 @@ describe('checkActions', () => {
         filePath: '.github/workflows/release-labeling.yml',
         lineNumber: -1,
         codeSnippet: '',
-        branch: 'unknown'
+        branch: 'main'
       });
     });
 
