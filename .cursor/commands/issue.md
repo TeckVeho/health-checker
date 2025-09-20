@@ -8,6 +8,9 @@ Get GitHub issue information, create development branch first, then save issue.m
 - `branch_type` (optional): Branch type (feature/fix/hotfix, defaults to feature). Automatically creates development branch before issue document creation
 - `output_path` (optional): Output file path (defaults to docs/issues/{issue_number}/issue.md)
 - `no_branch` (optional): Set to true to skip branch creation and only retrieve issue information
+- `--auto` or `--workflow` (optional): Enable auto-workflow mode to execute full development pipeline (issue → spec → plan → dev → test → pr)
+- `--skip-spec` (optional): Skip spec generation in auto-workflow mode
+- `--skip-plan` (optional): Skip plan generation in auto-workflow mode
 
 ## Instructions
 
@@ -34,6 +37,14 @@ Retrieve GitHub issue information, create development branch first, then save is
    - Display branch information
 4. **Generate Issue Document**: Create a structured issue document with status, description, and implementation tracking (in the new branch)
 5. **Save Document**: Save the issue information to {output_path} (default: docs/issues/{issue_number}/issue.md) in the new branch
+6. **Auto-Workflow Execution (Optional)**: If `--auto` or `--workflow` is specified, execute full development pipeline:
+   - Execute `/spec {issue_number}` (unless `--skip-spec` is specified)
+   - Execute `/plan {issue_number}` (unless `--skip-plan` is specified)
+   - Execute `/dev {issue_number}`
+   - Execute `/test {issue_number}`
+   - Execute `/pr {issue_number}`
+   - Handle errors at each stage and provide appropriate feedback
+   - Display progress and completion status
 
 **Process:**
 - Parse input to extract issue number from URL if needed
@@ -43,6 +54,7 @@ Retrieve GitHub issue information, create development branch first, then save is
 - Include status, description, implementation status checklist
 - Create output directory if needed
 - Save to specified file path with UTF-8 encoding in the new branch
+- If `--auto` or `--workflow` is specified: Execute auto-workflow pipeline with progress tracking
 
 **Branch Creation Workflow (default behavior, unless no_branch=true):**
 - Check `git status` for uncommitted changes in working directory
@@ -66,8 +78,49 @@ Retrieve GitHub issue information, create development branch first, then save is
 - Use `no_branch=true` to skip branch creation (legacy behavior)
 - `branch_type` defaults to "feature" if not specified
 - All existing `/issue` command functionality is preserved
+- Auto-workflow mode (`--auto` or `--workflow`) executes full development pipeline automatically
 
-**Issue**: {issue_number or issue_url}
-**Branch Type**: {branch_type (defaults to feature)}
-**No Branch**: {no_branch (optional, set to true to skip branch creation)}
-**Output**: {output_path}
+**Auto-Workflow Pipeline:**
+When `--auto` or `--workflow` is specified, the following sequence is executed:
+1. **Issue Processing**: Standard issue retrieval and branch creation
+2. **Spec Generation**: `/spec {issue_number}` (skipped if `--skip-spec`)
+3. **Plan Creation**: `/plan {issue_number}` (skipped if `--skip-plan`)
+4. **Development**: `/dev {issue_number}` with interactive development
+5. **Testing**: `/test {issue_number}` with test execution and evidence collection
+6. **Pull Request**: `/pr {issue_number}` with commit and PR creation
+
+**Auto-Workflow Features:**
+- **Progress Tracking**: Real-time progress display with stage indicators
+- **Error Handling**: Graceful error handling with detailed error messages
+- **Stage Skipping**: Optional spec/plan skipping for rapid development
+- **Interactive Mode**: User interaction at critical decision points
+- **Rollback Support**: Ability to stop and rollback on errors
+- **Log Generation**: Comprehensive execution log for troubleshooting
+
+**Usage Examples:**
+
+**Standard Issue Processing:**
+```
+/issue 129
+/issue https://github.com/owner/repo/issues/129
+/issue 129 branch_type=fix
+/issue 129 no_branch=true
+```
+
+**Auto-Workflow Mode:**
+```
+/issue 129 --auto
+/issue 129 --workflow
+/issue 129 --auto --skip-spec
+/issue 129 --workflow --skip-plan
+/issue 129 --auto --skip-spec --skip-plan branch_type=fix
+```
+
+**Parameters:**
+- **Issue**: {issue_number or issue_url}
+- **Branch Type**: {branch_type (defaults to feature)}
+- **No Branch**: {no_branch (optional, set to true to skip branch creation)}
+- **Auto-Workflow**: {--auto or --workflow (optional, enables full pipeline)}
+- **Skip Spec**: {--skip-spec (optional, skips spec generation in auto mode)}
+- **Skip Plan**: {--skip-plan (optional, skips plan generation in auto mode)}
+- **Output**: {output_path}
