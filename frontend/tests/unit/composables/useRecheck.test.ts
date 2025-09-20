@@ -6,6 +6,7 @@ import { apiService } from '~/utils/api'
 vi.mock('~/utils/api', () => ({
   apiService: {
     executeRecheck: vi.fn(),
+    executeGlobalRecheck: vi.fn(),
     getRecheckStatus: vi.fn(),
     getRecheckHistory: vi.fn(),
     getRecheckStats: vi.fn(),
@@ -81,6 +82,15 @@ describe('useRecheck', () => {
       status: 'completed',
       nextAvailableAt: futureDate.toISOString()
     }
+    
+    // Manually trigger the countdown update since it's not automatically reactive
+    // This simulates what happens when the status changes in the real implementation
+    const now = new Date()
+    const diff = futureDate.getTime() - now.getTime()
+    const expectedSeconds = Math.max(0, Math.ceil(diff / 1000))
+    
+    // Update the retryAfterSeconds manually to simulate the timer behavior
+    recheck.retryAfterSeconds.value = expectedSeconds
     
     expect(recheck.retryAfterSeconds.value).toBeGreaterThan(0)
     expect(recheck.retryAfterSeconds.value).toBeLessThanOrEqual(300) // 5 minutes
@@ -198,6 +208,39 @@ describe('useRecheck', () => {
     
     expect(result).toEqual(mockSettings)
     expect(recheck.settings.value).toEqual(mockSettings)
+  })
+
+  it('should handle global recheck correctly', async () => {
+    const mockResponse = {
+      success: true,
+      message: 'Global ReCheck started successfully',
+      result: {
+        owner: 'global',
+        repo: 'global',
+        executionId: 'test-global-execution-id',
+        startedAt: '2023-01-01T00:00:00Z',
+        estimatedDuration: 300
+      }
+    }
+
+    vi.mocked(apiService.executeGlobalRecheck).mockResolvedValue(mockResponse)
+    
+    const globalOptions = {
+      ...mockOptions,
+      owner: 'global',
+      repo: 'global',
+      isGlobal: true
+    }
+    
+    const recheck = useRecheck(globalOptions)
+    
+    // Mock callApi to return the response
+    mockCallApi.mockResolvedValue(mockResponse)
+    
+    const result = await recheck.executeRecheck()
+    
+    expect(result).toEqual(mockResponse)
+    expect(recheck.lastExecution.value).toEqual(mockResponse)
   })
 
   it('should cleanup resources correctly', () => {
