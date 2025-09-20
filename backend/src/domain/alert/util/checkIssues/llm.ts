@@ -96,17 +96,11 @@ You are analyzing a GitHub Issue body to determine if it lacks clear, actionable
 Issue Title: ${title}
 Issue Body: ${body}
 
-Mark it as UNCLEAR (result=true) if:
-- Lacks specific, actionable steps or clear next actions
-- Vague or ambiguous description where expected outcome is unclear
-- Not enough context to understand what needs to be done
-- Very generic requests without specifics
+Mark UNCLEAR (result=true) if:
+- The request is too vague to understand at all
 
-Mark it as CLEAR (result=false) if:
-- Contains concrete directives or specific tasks
-- References specific files, code areas, links, or resources
-- Has clear steps or requirements outlined
-- Provides sufficient context for someone to take action
+Mark CLEAR (result=false) if:
+- The task direction is understandable and gives enough to act on
 
 Respond ONLY in this JSON format:
 {
