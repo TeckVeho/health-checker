@@ -38,7 +38,6 @@ export class GithubActionService {
       // [Check] Test evidence（codeタイプのときのみ）
       if (type === 'code') {
         pushCheck(PRCheck.hasTestEvidence(prBody), 'Test evidence is included');
-        pushCheck(PRCheck.hasAILogUrl(prBody), 'AI execution log URL is included');
       }
 
       // [Check] PR body clarity
