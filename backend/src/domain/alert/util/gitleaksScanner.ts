@@ -15,7 +15,7 @@ Alert.init(alertAttributes, {
   ...alertModelOptions,
 });
 
-export async function gitleaksScanner(owner: string, repo: string): Promise<void> {
+export async function gitleaksScanner(owner: string, repo: string, processStartTime?: Date): Promise<void> {
   const workspace = process.env.GITHUB_LOCAL_WORKSPACE;
   if (!workspace) {
     throw new Error('GITHUB_LOCAL_WORKSPACE is required');
@@ -77,33 +77,21 @@ export async function gitleaksScanner(owner: string, repo: string): Promise<void
     if (created) {
       console.log(`🆕 Created new gitleaks alert: ${issue.checkType} - ${issue.title}`);
     } else {
-      console.log(`🔄 Updated existing gitleaks alert: ${issue.checkType} - ${issue.title} (detectCount: ${record.detectCount})`);
+      console.log(`🔄 Updated existing gitleaks alert: ${issue.checkType} - ${issue.title} (detectCount: ${(record as any).detectCount})`);
     }
 
     const key = [issue.owner, issue.repo, issue.checkType, issue.title, issue.filePath || null, issue.lineNumber === -1 ? null : (issue.lineNumber || null), issue.codeSnippet || null, issue.branch || null].join('||');
     detectedKeys.add(key);
   }
 
-  const existing = await Alert.findAll({
-    where: {
-      owner,
-      repo,
-      branch,
-      checkType: 'exposed_secret_key',
-      systemResolved: false,
-    },
-  });
-
-  for (const row of existing) {
-    const key = [row.getDataValue('owner'), row.getDataValue('repo'), row.getDataValue('branch'), row.getDataValue('checkType'), row.getDataValue('title'), row.getDataValue('filePath') || null, row.getDataValue('lineNumber') === -1 ? null : (row.getDataValue('lineNumber') || null), row.getDataValue('codeSnippet') || null].join('||');
-
-    if (!detectedKeys.has(key)) {
-      await row.update({
-        systemResolved: true,
-        systemResolvedReason: `${timestamp}:Automatically resolved: not detected`,
-      });
-    }
-  }
+  // Use AlertService.resolveUndetectedAlerts for consistent resolution logic
+  await AlertService.resolveUndetectedAlerts(
+    owner, 
+    repo, 
+    detectedKeys, 
+    ['exposed_secret_key'],
+    processStartTime
+  );
 }
 
 async function runGitleaks(workspace: string): Promise<any[]> {

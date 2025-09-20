@@ -183,7 +183,7 @@ export async function checkActions(owner: string, repo: string): Promise<CheckAc
       if (created) {
         console.log(`🆕 Created new action alert: ${issue.checkType} - ${issue.title}`);
       } else {
-        console.log(`🔄 Updated existing action alert: ${issue.checkType} - ${issue.title} (detectCount: ${record.detectCount})`);
+        console.log(`🔄 Updated existing action alert: ${issue.checkType} - ${issue.title} (detectCount: ${(record as any).detectCount})`);
       }
 
       alerts.push(issue);

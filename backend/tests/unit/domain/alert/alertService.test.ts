@@ -95,7 +95,7 @@ describe('AlertService', () => {
 
       await AlertService.runAlert({ owner, repo, checks });
 
-      expect(mockProcessActionAlerts).toHaveBeenCalledWith(owner, repo);
+      expect(mockProcessActionAlerts).toHaveBeenCalledWith(owner, repo, expect.any(Date));
     });
 
     it('should not run actions check when not specified', async () => {
@@ -107,7 +107,7 @@ describe('AlertService', () => {
 
       await AlertService.runAlert({ owner, repo, checks });
 
-      expect(mockProcessBranchAlerts).toHaveBeenCalledWith(owner, repo);
+      expect(mockProcessBranchAlerts).toHaveBeenCalledWith(owner, repo, expect.any(Date));
       expect(mockProcessActionAlerts).not.toHaveBeenCalled();
     });
 
@@ -117,8 +117,8 @@ describe('AlertService', () => {
 
       await AlertService.runAlert({ owner, repo });
 
-      expect(mockProcessBranchAlerts).toHaveBeenCalledWith(owner, repo);
-      expect(mockProcessIssueAlertsWithProgress).toHaveBeenCalledWith(owner, repo, expect.any(Function));
+      expect(mockProcessBranchAlerts).toHaveBeenCalledWith(owner, repo, expect.any(Date));
+      expect(mockProcessIssueAlertsWithProgress).toHaveBeenCalledWith(owner, repo, expect.any(Function), expect.any(Date));
     });
   });
 
