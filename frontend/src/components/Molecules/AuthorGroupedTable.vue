@@ -72,6 +72,17 @@
           </template>
         </Column>
 
+        <!-- Total Alerts Column -->
+        <Column field="totalAlerts" header="Total" :sortable="true" class="text-center min-w-16">
+          <template #body="{ data: row }">
+            <Badge
+              :value="row.totalAlerts ?? 0"
+              :severity="getBadgeSeverity(row.totalAlerts)"
+              size="small"
+            />
+          </template>
+        </Column>
+
         <!-- Missing SP Column -->
         <Column field="issueTypeCounts.missingSp" header="No SP" :sortable="true" class="text-center min-w-16">
           <template #body="{ data: row }">
@@ -221,6 +232,8 @@ const onSort = (event: any) => {
   // Map nested fields to API parameter names
   if (field === 'author') {
     sortBy.value = 'author';
+  } else if (field === 'totalAlerts') {
+    sortBy.value = 'totalAlerts';
   } else if (field.startsWith('issueTypeCounts.')) {
     // For issue type counts, sort by total alerts as a fallback
     sortBy.value = 'totalAlerts';
@@ -250,6 +263,16 @@ const getAuthorColor = (author: string): string => {
   }
   
   return colors[Math.abs(hash) % colors.length];
+};
+
+const getBadgeSeverity = (totalAlerts: number | null | undefined): string => {
+  // Determine badge severity based on total alert count
+  // Handle null/undefined values by treating them as 0
+  const alertCount = totalAlerts ?? 0;
+  if (alertCount === 0) return 'secondary';
+  if (alertCount <= 5) return 'success';
+  if (alertCount <= 15) return 'warning';
+  return 'danger';
 };
 
 const navigateToAuthor = (author: string) => {
