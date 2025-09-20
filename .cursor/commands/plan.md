@@ -13,6 +13,12 @@ Generate a detailed implementation plan document for the specified issue through
 
 **Instructions for AI Agent:**
 
+**⛔ ABSOLUTE PROHIBITION: DO NOT EXECUTE ANY GIT COMMIT COMMANDS ⛔**
+- NEVER run `git commit` in any form
+- NEVER run `git add . && git commit`
+- NEVER suggest or execute commit operations
+- Planning phase MUST end with uncommitted changes
+
 1. **Determine Issue Number**: 
    - If `issue_number` is provided: Use the specified issue number
    - If `issue_number` is omitted: Look for the most recently created issue document in `docs/issues/*/issue.md` to determine the issue number
@@ -20,7 +26,15 @@ Generate a detailed implementation plan document for the specified issue through
 2. **Fetch Issue Information**: Use optimized issue data retrieval (cached local file first, GitHub CLI fallback)
 3. **Interactive Analysis**: Analyze the issue content and discuss implementation approach with the user
 4. **Generate Implementation Plan**: Create a comprehensive implementation plan using the integrated template structure with dynamic task breakdown
-5. **Save Document**: Save the plan to {output_path} (default: docs/issues/{issue_number}/plan.md)
+5. **Save Document**: Save the plan to {output_path} (default: docs/issues/{issue_number}/plan.md) (WITHOUT committing)
+
+**🚨 CRITICAL: NEVER COMMIT CHANGES DURING PLANNING PHASE 🚨**
+
+**STRICT RULE**: Do NOT use `git commit`, `git add && git commit`, or any commit commands during planning phase.
+- All changes MUST remain uncommitted
+- Changes will be committed later in the `/pr` phase
+- This ensures proper workflow separation and testing before committing
+- Violating this rule breaks the development workflow
 
 **Implementation Plan Document Structure:**
 ```markdown

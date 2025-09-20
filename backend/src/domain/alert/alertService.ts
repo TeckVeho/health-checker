@@ -331,6 +331,89 @@ class AlertService {
     return { owner, repo };
   }
 
+  static async processIssueAlertsWithProgress(
+    owner: string, 
+    repo: string, 
+    onProgress?: (processed: number, total: number) => void
+  ): Promise<{ owner: string; repo: string }> {
+    const timestamp = new Date();
+    const result = await checkIssues(owner, repo);
+    const detectedKeySet = new Set<string>();
+    const total = result.alerts?.length || 0;
+    let processed = 0;
+
+    // Process new alerts with progress tracking
+    const alerts = result.alerts || [];
+    for (const alert of alerts) {
+      const key = [alert.owner, alert.repo, alert.checkType, alert.title, alert.filePath || '', alert.lineNumber || -1, alert.codeSnippet || '', alert.branch || ''].join('||');
+      detectedKeySet.add(key);
+
+      await Alert.findOrCreate({
+        where: { 
+          owner: alert.owner, 
+          repo: alert.repo, 
+          checkType: alert.checkType, 
+          title: alert.title, 
+          filePath: alert.filePath || '', 
+          lineNumber: alert.lineNumber || -1, 
+          codeSnippet: alert.codeSnippet || '', 
+          branch: alert.branch || ''
+        },
+        defaults: {
+          owner: alert.owner,
+          repo: alert.repo,
+          checkType: alert.checkType,
+          title: alert.title,
+          description: alert.description,
+          severity: alert.severity,
+          author: alert.author || null,
+          authorDisplayName: alert.authorDisplayName || null,
+          filePath: alert.filePath || null,
+          lineNumber: alert.lineNumber || null,
+          codeSnippet: alert.codeSnippet || null,
+          branch: alert.branch || null,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        }
+      });
+
+      processed++;
+      if (onProgress) {
+        onProgress(processed, total);
+      }
+    }
+
+    // Mark alerts not in current detection as resolved
+    await Alert.update(
+      { 
+        status: 'resolved', 
+        updatedAt: timestamp 
+      },
+      {
+        where: {
+          owner,
+          repo,
+          checkType: 'issue',
+          status: 'active',
+          [Op.not]: {
+            [Op.or]: Array.from(detectedKeySet).map(key => {
+              const parts = key.split('||');
+              return {
+                title: parts[3],
+                filePath: parts[4] || '',
+                lineNumber: parseInt(parts[5]) || -1,
+                codeSnippet: parts[6] || '',
+                branch: parts[7] || ''
+              };
+            })
+          }
+        }
+      }
+    );
+
+    return { owner, repo };
+  }
+
   static async processActionAlerts(owner: string, repo: string): Promise<{ owner: string; repo: string }> {
     const timestamp = new Date();
     const result = await checkActions(owner, repo);
@@ -420,45 +503,104 @@ class AlertService {
     return { owner, repo };
   }
 
-  static async runAlert(options: { owner: string; repo: string; checks?: string[] }): Promise<Record<string, unknown>> {
-    const { owner, repo, checks } = options;
+  static async runAlert(
+    options: { 
+      owner: string; 
+      repo: string; 
+      checks?: string[];
+      onProgress?: (progress: {
+        currentPhase: string;
+        totalPhases: number;
+        phaseProgress: number;
+        phaseDetails?: {
+          phase: string;
+          progress: number;
+          totalItems?: number;
+          processedItems?: number;
+        };
+      }) => void;
+    }
+  ): Promise<Record<string, unknown>> {
+    const { owner, repo, checks, onProgress } = options;
     const effectiveChecks = checks ?? ['branch', 'clone', 'gitleaks', 'issue'];
     const results: Record<string, unknown> = {};
+    const totalPhases = effectiveChecks.length;
+    let currentPhaseIndex = 0;
+
+    // 進捗コールバック関数
+    const updateProgress = (phase: string, phaseProgress: number, phaseDetails?: any) => {
+      if (onProgress) {
+        onProgress({
+          currentPhase: phase,
+          totalPhases,
+          phaseProgress: Math.round((currentPhaseIndex / totalPhases) * 100),
+          phaseDetails: {
+            phase,
+            progress: phaseProgress,
+            ...phaseDetails
+          }
+        });
+      }
+    };
 
     if (effectiveChecks.includes('clone')) {
+      updateProgress('Repository Cloning', 0);
       await cloneRepo(owner, repo);
+      updateProgress('Repository Cloning', 100);
       results.clone = 'done';
+      currentPhaseIndex++;
     }
 
     if (effectiveChecks.includes('branch')) {
+      updateProgress('Branch Analysis', 0);
       await this.processBranchAlerts(owner, repo);
+      updateProgress('Branch Analysis', 100);
       results.branch = 'checked';
+      currentPhaseIndex++;
     }
 
     if (effectiveChecks.includes('issue')) {
-      await this.processIssueAlerts(owner, repo);
+      updateProgress('Issue Analysis', 0);
+      // issue処理で件数ベースの進捗を実装
+      await this.processIssueAlertsWithProgress(owner, repo, (progress, total) => {
+        updateProgress('Issue Analysis', Math.round((progress / total) * 100), {
+          processedItems: progress,
+          totalItems: total
+        });
+      });
+      updateProgress('Issue Analysis', 100);
       results.issue = 'checked';
+      currentPhaseIndex++;
     }
 
     if (effectiveChecks.includes('actions')) {
+      updateProgress('GitHub Actions Analysis', 0);
       await this.processActionAlerts(owner, repo);
+      updateProgress('GitHub Actions Analysis', 100);
       results.actions = 'checked';
+      currentPhaseIndex++;
     }
 
     if (effectiveChecks.includes('gitleaks')) {
+      updateProgress('Security Scan (Gitleaks)', 0);
       if (!effectiveChecks.includes('clone')) {
         await cloneRepo(owner, repo); // ensure gitleaks has source
       }
       await gitleaksScanner(owner, repo);
+      updateProgress('Security Scan (Gitleaks)', 100);
       results.gitleaks = 'done';
+      currentPhaseIndex++;
     }
 
     if (effectiveChecks.includes('audit')) {
+      updateProgress('Security Audit', 0);
       if (!effectiveChecks.includes('clone')) {
         await cloneRepo(owner, repo); // ensure audit has source
       }
       await auditScanner(owner, repo);
+      updateProgress('Security Audit', 100);
       results.audit = 'done';
+      currentPhaseIndex++;
     }
 
     return results;
@@ -694,7 +836,7 @@ class AlertService {
         lineNumber: (alert as any).lineNumber,
         branch: (alert as any).branch,
         detectCount: (alert as any).detectCount,
-        lastDetectedAt: (alert as any).lastDetectedAt,
+        lastDetectedAt: (alert as any).lastDetectedAt || (alert as any).createdAt,
         createdAt: (alert as any).createdAt
       }))
     };

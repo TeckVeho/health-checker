@@ -12,6 +12,8 @@ const messages = {
     CHECK_SUCCESS: 'Check completed successfully.',
     FETCH_SUCCESS: 'Fetch completed successfully.',
     REVIEW_SUCCESS: 'Review completed successfully.',
+    RECHECK_STARTED: 'ReCheck started successfully for {0}.',
+    SETTINGS_UPDATED: 'Settings updated successfully for {0}.',
   },
   ERROR: {
     CREATE_ERROR: 'Failed to create {0}.',

@@ -1,0 +1,946 @@
+
+openapi: 3.0.3
+info:
+  title: Health Checker ReCheck API
+  description: |
+    Health Checker system ReCheck functionality API specification
+    
+    ## Overview
+    This API provides functionality to manually re-execute health checks for repositories.
+    
+    ## Authentication
+    Currently accessible without authentication.
+    
+    ## Rate Limiting
+    - 3-minute execution interval limit for each repository
+    - Concurrent execution count is limited per repository
+    
+    ## Error Responses
+    All error responses are returned in the following format:
+    ```json
+    {
+      "success": false,
+      "error": {
+        "code": "ERROR_CODE",
+        "message": "Error message"
+      }
+    }
+    ```
+  version: 1.0.0
+  contact:
+    name: Health Checker Team
+    email: support@health-checker.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3001/api
+    description: Development environment
+  - url: https://api.health-checker.com/api
+    description: Production environment
+
+paths:
+  /recheck/{owner}/{repo}:
+    post:
+      tags:
+        - ReCheck
+      summary: Execute ReCheck
+      description: |
+        Manually re-execute health checks for the specified repository.
+        
+        ## Executed Checks
+        - branch: Branch status check
+        - clone: Repository clone verification
+        - gitleaks: Sensitive information detection
+        - issue: Issue status check
+        - actions: GitHub Actions status check
+        - audit: Security audit
+        
+        ## Rate Limiting
+        - 3-minute execution interval limit for the same repository
+        - Concurrent execution count is limited per repository
+      operationId: executeRecheck
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          description: GitHub repository owner name
+          schema:
+            type: string
+          example: "octocat"
+        - name: repo
+          in: path
+          required: true
+          description: GitHub repository name
+          schema:
+            type: string
+          example: "Hello-World"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                checks:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - branch
+                      - clone
+                      - gitleaks
+                      - issue
+                      - actions
+                      - audit
+                  description: Array of check types to execute (all checks if not specified)
+                  example: ["branch", "clone", "gitleaks", "issue"]
+            examples:
+              all_checks:
+                summary: Execute all checks
+                value:
+                  checks: ["branch", "clone", "gitleaks", "issue", "actions", "audit"]
+              specific_checks:
+                summary: Execute specific checks
+                value:
+                  checks: ["branch", "issue"]
+              x-default:
+                summary: Default (all checks)
+                value: {}
+      responses:
+        '200':
+          description: ReCheck execution started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecheckResponse'
+              examples:
+                success:
+                  summary: Execution started successfully
+                  value:
+                    success: true
+                    message: "ReCheck started successfully for octocat/Hello-World."
+                    result:
+                      owner: "octocat"
+                      repo: "Hello-World"
+                      executionId: "recheck_1695123456789_abc12345"
+                      startedAt: "2023-09-19T12:34:56.789Z"
+                      estimatedDuration: 60
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecheckResponse'
+              examples:
+                invalid_checks:
+                  summary: Invalid check types
+                  value:
+                    success: false
+                    message: "Invalid check types specified"
+                    error:
+                      code: "INVALID_CHECK_TYPES"
+                      message: "No valid check types specified."
+        '403':
+          description: ReCheck functionality is disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecheckResponse'
+              examples:
+                disabled:
+                  summary: Functionality disabled
+                  value:
+                    success: false
+                    message: "ReCheck is disabled for this repository"
+                    error:
+                      code: "RECHECK_DISABLED"
+                      message: "ReCheck is disabled for this repository"
+        '409':
+          description: Concurrent execution limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecheckResponse'
+              examples:
+                concurrent_limit:
+                  summary: Concurrent execution limit
+                  value:
+                    success: false
+                    message: "Concurrent execution limit reached"
+                    error:
+                      code: "CONCURRENT_LIMIT_EXCEEDED"
+                      message: "Maximum concurrent executions reached for this repository."
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecheckResponse'
+              examples:
+                rate_limited:
+                  summary: Rate limited
+                  value:
+                    success: false
+                    message: "Rate limit exceeded"
+                    error:
+                      code: "RATE_LIMITED"
+                      message: "Rate limit exceeded. Retry after 120 seconds."
+                      retryAfter: 120
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /recheck/{owner}/{repo}/status:
+    get:
+      tags:
+        - ReCheck
+      summary: Get ReCheck status
+      description: |
+        Get the ReCheck execution status for the specified repository.
+        
+        ## Status
+        - idle: Not running
+        - running: Currently running
+        - completed: Completed
+        - error: Error occurred
+      operationId: getRecheckStatus
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          description: GitHub repository owner name
+          schema:
+            type: string
+          example: "octocat"
+        - name: repo
+          in: path
+          required: true
+          description: GitHub repository name
+          schema:
+            type: string
+          example: "Hello-World"
+      responses:
+        '200':
+          description: Status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecheckStatusResponse'
+              examples:
+                idle:
+                  summary: Idle status
+                  value:
+                    status: "idle"
+                running:
+                  summary: Running
+                  value:
+                    status: "running"
+                    lastExecutedAt: "2023-09-19T12:34:56.789Z"
+                    currentExecution:
+                      executionId: "recheck_1695123456789_abc12345"
+                      startedAt: "2023-09-19T12:34:56.789Z"
+                      progress: 45
+                      durationSeconds: 27
+                completed:
+                  summary: Completed
+                  value:
+                    status: "completed"
+                    lastExecutedAt: "2023-09-19T12:34:56.789Z"
+                    nextAvailableAt: "2023-09-19T12:37:56.789Z"
+                error:
+                  summary: Error
+                  value:
+                    status: "error"
+                    lastExecutedAt: "2023-09-19T12:34:56.789Z"
+                    nextAvailableAt: "2023-09-19T12:37:56.789Z"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /recheck/{owner}/{repo}/history:
+    get:
+      tags:
+        - ReCheck
+      summary: Get ReCheck execution history
+      description: |
+        Get the ReCheck execution history for the specified repository.
+      operationId: getExecutionHistory
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          description: GitHub repository owner name
+          schema:
+            type: string
+          example: "octocat"
+        - name: repo
+          in: path
+          required: true
+          description: GitHub repository name
+          schema:
+            type: string
+          example: "Hello-World"
+        - name: limit
+          in: query
+          required: false
+          description: Number of records to retrieve
+          schema:
+            type: integer
+            default: 10
+        - name: offset
+          in: query
+          required: false
+          description: Offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: History retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RecheckExecution'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /recheck/{owner}/{repo}/stats:
+    get:
+      tags:
+        - ReCheck
+      summary: Get repository statistics
+      description: |
+        Get ReCheck statistics for the specified repository.
+      operationId: getRepoStats
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          description: GitHub repository owner name
+          schema:
+            type: string
+          example: "octocat"
+        - name: repo
+          in: path
+          required: true
+          description: GitHub repository name
+          schema:
+            type: string
+          example: "Hello-World"
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/RecheckStats'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /recheck/{owner}/{repo}/settings:
+    get:
+      tags:
+        - Settings
+      summary: Get repository settings
+      description: |
+        Get ReCheck settings for the specified repository.
+      operationId: getSettings
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          description: GitHub repository owner name
+          schema:
+            type: string
+          example: "octocat"
+        - name: repo
+          in: path
+          required: true
+          description: GitHub repository name
+          schema:
+            type: string
+          example: "Hello-World"
+      responses:
+        '200':
+          description: Settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/RecheckSettings'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Settings
+      summary: Update repository settings
+      description: |
+        Update ReCheck settings for the specified repository.
+      operationId: updateSettings
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          description: GitHub repository owner name
+          schema:
+            type: string
+          example: "octocat"
+        - name: repo
+          in: path
+          required: true
+          description: GitHub repository name
+          schema:
+            type: string
+          example: "Hello-World"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecheckSettingsUpdate'
+            examples:
+              basic_settings:
+                summary: Update basic settings
+                value:
+                  rateLimitMinutes: 5
+                  maxConcurrentExecutions: 2
+                  timeoutMinutes: 15
+                  isEnabled: true
+              disable_recheck:
+                summary: Disable ReCheck
+                value:
+                  isEnabled: false
+      responses:
+        '200':
+          description: Settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Settings updated successfully for octocat/Hello-World."
+                  data:
+                    $ref: '#/components/schemas/RecheckSettings'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_rate_limit:
+                  summary: Invalid rate limit
+                  value:
+                    success: false
+                    error:
+                      code: "INVALID_RATE_LIMIT"
+                      message: "Rate limit must be between 1 and 60 minutes"
+                invalid_concurrent_limit:
+                  summary: Invalid concurrent limit
+                  value:
+                    success: false
+                    error:
+                      code: "INVALID_CONCURRENT_LIMIT"
+                      message: "Max concurrent executions must be between 1 and 5"
+                invalid_timeout:
+                  summary: Invalid timeout
+                  value:
+                    success: false
+                    error:
+                      code: "INVALID_TIMEOUT"
+                      message: "Timeout must be between 1 and 30 minutes"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /recheck/maintenance/timeout:
+    post:
+      tags:
+        - Maintenance
+      summary: Handle timeouts
+      description: |
+        Process timed out ReCheck executions.
+        Admin maintenance function.
+      operationId: handleTimeouts
+      responses:
+        '200':
+          description: Timeout processing successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Processed 3 timeout executions"
+                  data:
+                    type: object
+                    properties:
+                      timeoutCount:
+                        type: integer
+                        example: 3
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /recheck/maintenance/cleanup:
+    post:
+      tags:
+        - Maintenance
+      summary: Cleanup old history records
+      description: |
+        Delete ReCheck execution history records older than the specified number of days.
+        Admin maintenance function.
+      operationId: cleanupOldRecords
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                retentionDays:
+                  type: integer
+                  minimum: 1
+                  maximum: 365
+                  description: Retention period in days
+                  default: 30
+            examples:
+              x-default_cleanup:
+                summary: Default (30 days)
+                value: {}
+              custom_cleanup:
+                summary: Custom (7 days)
+                value:
+                  retentionDays: 7
+      responses:
+        '200':
+          description: Cleanup successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Cleaned up 25 old records"
+                  data:
+                    type: object
+                    properties:
+                      deletedCount:
+                        type: integer
+                        example: 25
+                      retentionDays:
+                        type: integer
+                        example: 30
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    RecheckResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          description: Success flag
+          example: true
+        message:
+          type: string
+          description: Response message
+          example: "ReCheck started successfully for octocat/Hello-World."
+        result:
+          type: object
+          description: Execution result (only on success)
+          properties:
+            owner:
+              type: string
+              example: "octocat"
+            repo:
+              type: string
+              example: "Hello-World"
+            executionId:
+              type: string
+              example: "recheck_1695123456789_abc12345"
+            startedAt:
+              type: string
+              format: date-time
+              example: "2023-09-19T12:34:56.789Z"
+            estimatedDuration:
+              type: integer
+              description: Estimated execution time in seconds
+              example: 60
+        error:
+          type: object
+          description: Error information (only on error)
+          properties:
+            code:
+              type: string
+              example: "RATE_LIMITED"
+            message:
+              type: string
+              example: "Rate limit exceeded. Retry after 120 seconds."
+            retryAfter:
+              type: integer
+              description: Retry time in seconds
+              example: 120
+
+    RecheckStatusResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - idle
+            - running
+            - completed
+            - error
+          description: Execution status
+          example: "running"
+        lastExecutedAt:
+          type: string
+          format: date-time
+          description: Last execution time
+          example: "2023-09-19T12:34:56.789Z"
+        nextAvailableAt:
+          type: string
+          format: date-time
+          description: Next available execution time
+          example: "2023-09-19T12:37:56.789Z"
+        currentExecution:
+          type: object
+          description: Current execution information (only when running)
+          properties:
+            executionId:
+              type: string
+              example: "recheck_1695123456789_abc12345"
+            startedAt:
+              type: string
+              format: date-time
+              example: "2023-09-19T12:34:56.789Z"
+            progress:
+              type: integer
+              minimum: 0
+              maximum: 100
+              description: Progress percentage
+              example: 45
+            durationSeconds:
+              type: integer
+              description: Elapsed time in seconds
+              example: 27
+
+    RecheckExecution:
+      type: object
+      required:
+        - id
+        - executionId
+        - status
+        - checkTypes
+        - startedAt
+      properties:
+        id:
+          type: integer
+          example: 123
+        executionId:
+          type: string
+          example: "recheck_1695123456789_abc12345"
+        status:
+          type: string
+          enum:
+            - running
+            - completed
+            - error
+            - timeout
+          example: "completed"
+        checkTypes:
+          type: array
+          items:
+            type: string
+            enum:
+              - branch
+              - clone
+              - gitleaks
+              - issue
+              - actions
+              - audit
+          example: ["branch", "clone", "gitleaks", "issue"]
+        startedAt:
+          type: string
+          format: date-time
+          example: "2023-09-19T12:34:56.789Z"
+        completedAt:
+          type: string
+          format: date-time
+          example: "2023-09-19T12:35:23.456Z"
+        durationSeconds:
+          type: integer
+          description: Execution time in seconds
+          example: 67
+        errorMessage:
+          type: string
+          description: Error message (only on error)
+          example: "Failed to clone repository"
+        errorCode:
+          type: string
+          description: Error code (only on error)
+          example: "CLONE_ERROR"
+
+    RecheckSettings:
+      type: object
+      required:
+        - owner
+        - repo
+        - rateLimitMinutes
+        - maxConcurrentExecutions
+        - allowedCheckTypes
+        - timeoutMinutes
+        - isEnabled
+      properties:
+        id:
+          type: integer
+          example: 1
+        owner:
+          type: string
+          example: "octocat"
+        repo:
+          type: string
+          example: "Hello-World"
+        rateLimitMinutes:
+          type: integer
+          minimum: 1
+          maximum: 60
+          description: Rate limit time in minutes
+          example: 3
+        maxConcurrentExecutions:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Maximum concurrent executions
+          example: 1
+        allowedCheckTypes:
+          type: array
+          items:
+            type: string
+            enum:
+              - branch
+              - clone
+              - gitleaks
+              - issue
+              - actions
+              - audit
+          description: Allowed check types
+          example: ["branch", "clone", "gitleaks", "issue"]
+        timeoutMinutes:
+          type: integer
+          minimum: 1
+          maximum: 30
+          description: Timeout time in minutes
+          example: 10
+        isEnabled:
+          type: boolean
+          description: ReCheck functionality enabled/disabled
+          example: true
+
+    RecheckSettingsUpdate:
+      type: object
+      properties:
+        rateLimitMinutes:
+          type: integer
+          minimum: 1
+          maximum: 60
+          description: Rate limit time in minutes
+          example: 5
+        maxConcurrentExecutions:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Maximum concurrent executions
+          example: 2
+        allowedCheckTypes:
+          type: array
+          items:
+            type: string
+            enum:
+              - branch
+              - clone
+              - gitleaks
+              - issue
+              - actions
+              - audit
+          description: Allowed check types
+          example: ["branch", "clone", "gitleaks"]
+        timeoutMinutes:
+          type: integer
+          minimum: 1
+          maximum: 30
+          description: Timeout time in minutes
+          example: 15
+        isEnabled:
+          type: boolean
+          description: ReCheck functionality enabled/disabled
+          example: true
+
+    RecheckStats:
+      type: object
+      required:
+        - totalExecutions
+        - successRate
+        - averageDuration
+      properties:
+        totalExecutions:
+          type: integer
+          description: Total execution count
+          example: 25
+        successRate:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          description: Success rate percentage
+          example: 84.0
+        averageDuration:
+          type: number
+          format: float
+          description: Average execution time in seconds
+          example: 67.5
+        lastExecutedAt:
+          type: string
+          format: date-time
+          description: Last execution time
+          example: "2023-09-19T12:34:56.789Z"
+
+    Pagination:
+      type: object
+      required:
+        - total
+        - limit
+        - offset
+      properties:
+        total:
+          type: integer
+          description: Total count
+          example: 50
+        limit:
+          type: integer
+          description: Number of records retrieved
+          example: 10
+        offset:
+          type: integer
+          description: Offset
+          example: 0
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              example: "INTERNAL_SERVER_ERROR"
+            message:
+              type: string
+              example: "An internal server error occurred."
+
+  parameters:
+    Owner:
+      name: owner
+      in: path
+      required: true
+      description: GitHub repository owner name
+      schema:
+        type: string
+        example: "octocat"
+    Repo:
+      name: repo
+      in: path
+      required: true
+      description: GitHub repository name
+      schema:
+        type: string
+        example: "Hello-World"
+
+tags:
+  - name: ReCheck
+    description: ReCheck execution related endpoints
+  - name: Settings
+    description: Repository settings related endpoints
+  - name: Maintenance
+    description: Maintenance related endpoints

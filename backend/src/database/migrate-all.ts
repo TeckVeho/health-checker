@@ -3,6 +3,12 @@ import { Model } from 'sequelize';
 import sequelize from '../config/database';
 import { repoAttributes, repoModelOptions } from '../domain/repo/repoSchema';
 import { alertAttributes, alertModelOptions } from '../domain/alert/alertSchema';
+import { 
+  recheckExecutionAttributes, 
+  recheckExecutionModelOptions,
+  recheckSettingsAttributes,
+  recheckSettingsModelOptions
+} from '../domain/recheck/recheckSchema';
 
 /**
  * Create tables directly from schema definitions without importing model classes
@@ -20,6 +26,20 @@ async function createTablesFromSchemas(): Promise<void> {
   Alert.init(alertAttributes, {
     sequelize,
     ...alertModelOptions,
+  });
+
+  // Define RecheckExecution model directly from schema
+  class RecheckExecution extends Model {}
+  RecheckExecution.init(recheckExecutionAttributes, {
+    sequelize,
+    ...recheckExecutionModelOptions,
+  });
+
+  // Define RecheckSettings model directly from schema
+  class RecheckSettings extends Model {}
+  RecheckSettings.init(recheckSettingsAttributes, {
+    sequelize,
+    ...recheckSettingsModelOptions,
   });
 
   /**
