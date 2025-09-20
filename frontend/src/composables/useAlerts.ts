@@ -33,7 +33,7 @@ export function useAlerts(owner: Ref<string | null>, repo: Ref<string | null>) {
   // Temporary polling after ReCheck completion
   const isTemporaryPolling = ref(false)
   const temporaryPollingCount = ref(0)
-  const maxTemporaryPolls = 6 // Poll for 30 seconds (6 * 5s) after ReCheck completion
+  const maxTemporaryPolls = 1 // Poll once after 1 second after ReCheck completion
   let temporaryPollingTimer: NodeJS.Timeout | null = null
 
   // Computed properties
@@ -228,7 +228,7 @@ export function useAlerts(owner: Ref<string | null>, repo: Ref<string | null>) {
   }
 
   // Temporary polling after ReCheck completion
-  const startTemporaryPolling = (interval: number = 5000): void => {
+  const startTemporaryPolling = (interval: number = 1000): void => {
     if (!validateParams()) {
       return
     }
@@ -260,8 +260,8 @@ export function useAlerts(owner: Ref<string | null>, repo: Ref<string | null>) {
       }
     }
     
-    // Start temporary polling immediately
-    poll()
+    // Start temporary polling after 1 second
+    temporaryPollingTimer = setTimeout(poll, interval)
   }
   
   const stopTemporaryPolling = (): void => {

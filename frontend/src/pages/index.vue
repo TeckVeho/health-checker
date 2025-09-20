@@ -175,11 +175,11 @@ const recheck = useRecheck({
     console.log('Global ReCheck completed, refreshing all data...')
     await refreshAllData()
     
-    // 一時的なポーリングを開始（30秒間、5秒間隔で6回）
-    startTemporaryPolling(5000)
+    // 一時的なポーリングを開始（1秒後に1回だけ）
+    startTemporaryPolling(1000)
     
     // 成功通知を表示
-    toast.success('ReCheck完了', '全リポジトリの情報を更新し、継続的に監視しています')
+    toast.success('ReCheck完了', '全リポジトリの情報を更新しました')
   }
 })
 

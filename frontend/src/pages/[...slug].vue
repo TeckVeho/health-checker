@@ -157,11 +157,11 @@ const recheck = computed(() => {
       console.log('ReCheck completed, refreshing alerts...')
       await fetchAlerts()
       
-      // 一時的なポーリングを開始（30秒間、5秒間隔で6回）
-      startTemporaryPolling(5000)
+      // 一時的なポーリングを開始（1秒後に1回だけ）
+      startTemporaryPolling(1000)
       
       // 成功通知を表示
-      toast.success('ReCheck完了', 'アラート情報を更新し、継続的に監視しています')
+      toast.success('ReCheck完了', 'アラート情報を更新しました')
     }
   })
 })
