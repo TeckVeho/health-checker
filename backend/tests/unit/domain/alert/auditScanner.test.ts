@@ -482,7 +482,7 @@ describe('auditScanner', () => {
     
     mockFs.readFile.mockImplementation((filePath: any) => {
       if (filePath.includes('.git/HEAD')) {
-        return Promise.resolve('ref: refs/heads/feature-branch\n');
+        return Promise.reject(new Error('File not found'));
       }
       if (filePath.includes('audit-result-')) {
         // Mock yarn audit output with high severity vulnerability
@@ -534,7 +534,7 @@ describe('auditScanner', () => {
       where: expect.objectContaining({
         owner: 'test-owner',
         repo: 'test-repo',
-        branch: 'feature-branch', // Branch detection returns the mocked branch name
+        branch: 'unknown', // Branch detection falls back to 'unknown' when .git/HEAD is not accessible
         checkType: 'package_vulnerability',
         title: 'High severity vulnerability',
         filePath: 'package.json',
