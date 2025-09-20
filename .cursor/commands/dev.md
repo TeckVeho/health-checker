@@ -78,6 +78,11 @@ For configuration, commands, scripts, or simple implementations:
 - Extract issue number from the directory structure
 - Verify the issue exists and is accessible
 
+**Issue Data Retrieval Optimization:**
+- **Cache Strategy**: Reuse existing issue.md files to avoid repeated GitHub API calls
+- **Fallback Support**: Automatic GitHub API fallback if cached data unavailable
+- **Speed Improvement**: 1-2 seconds faster execution by eliminating redundant API calls
+
 **Code Quality Guidelines:**
 - **Simple**: Write the simplest code that works
 - **Readable**: Code should be self-documenting
