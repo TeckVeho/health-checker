@@ -96,6 +96,20 @@ export class ReCheckController {
         return res.status(400).json(response);
       }
       
+      // 環境変数エラー
+      if (errorMessage.includes('Environment validation failed') || errorMessage.includes('GITHUB_LOCAL_WORKSPACE is required')) {
+        const response: RecheckResponse = {
+          success: false,
+          message: 'Environment configuration error',
+          error: {
+            code: 'ENVIRONMENT_ERROR',
+            message: errorMessage,
+          },
+        };
+        
+        return res.status(500).json(response);
+      }
+      
       // その他のエラー
       next(error);
     }
