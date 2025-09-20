@@ -400,7 +400,16 @@ class AlertService {
     processStartTime?: Date
   ): Promise<{ owner: string; repo: string }> {
     const timestamp = new Date();
-    const result = await checkIssues(owner, repo);
+
+    // Call checkIssues with progress callback for issue analysis phase
+    const result = await checkIssues(owner, repo, (progress, total) => {
+      console.log(`[AlertService] checkIssues progress: ${progress}/${total}`);
+      if (onProgress) {
+        console.log(`[AlertService] Calling onProgress from checkIssues: ${progress}/${total}`);
+        onProgress(progress, total);
+      }
+    });
+
     const detectedKeySet = new Set<string>();
     const total = result.alerts?.length || 0;
     let processed = 0;
@@ -409,6 +418,7 @@ class AlertService {
 
     // Send initial progress (0/total)
     if (onProgress) {
+      console.log(`[AlertService] Calling initial onProgress: ${processed}/${total}`);
       onProgress(processed, total);
     }
 
@@ -430,6 +440,7 @@ class AlertService {
 
       processed++;
       if (onProgress) {
+        console.log(`[AlertService] Calling onProgress: ${processed}/${total}`);
         onProgress(processed, total);
       }
     }
@@ -543,6 +554,7 @@ class AlertService {
 
     // 進捗コールバック関数
     const updateProgress = (phase: string, phaseProgress: number, phaseDetails?: any) => {
+      console.log(`[AlertService] updateProgress called: ${phase}, phaseProgress: ${phaseProgress}, phaseDetails:`, phaseDetails);
       if (onProgress) {
         const progressData = {
           currentPhase: phase,
@@ -554,7 +566,10 @@ class AlertService {
             ...phaseDetails
           }
         };
+        console.log(`[AlertService] Calling onProgress with:`, JSON.stringify(progressData, null, 2));
         onProgress(progressData);
+      } else {
+        console.log(`[AlertService] onProgress is null/undefined - no callback to call`);
       }
     };
 
@@ -578,6 +593,7 @@ class AlertService {
       updateProgress('Issue Analysis', 0);
       // issue処理で件数ベースの進捗を実装
       await this.processIssueAlertsWithProgress(owner, repo, (progress, total) => {
+        console.log(`[AlertService] processIssueAlertsWithProgress callback called: ${progress}/${total}`);
         updateProgress('Issue Analysis', Math.round((progress / total) * 100), {
           processedItems: progress,
           totalItems: total

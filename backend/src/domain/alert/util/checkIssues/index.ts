@@ -21,7 +21,11 @@ export type { IssueAlertCandidate, CheckIssuesResult } from './types';
  * Main function to check issues for various problems
  * This maintains the exact same interface as the original implementation
  */
-export async function checkIssues(owner: string, repo: string): Promise<CheckIssuesResult> {
+export async function checkIssues(
+  owner: string,
+  repo: string,
+  onProgress?: (processed: number, total: number) => void
+): Promise<CheckIssuesResult> {
   const alerts: IssueAlertCandidate[] = [];
 
   // Note: This function only processes actual GitHub Issues, not Pull Requests.
@@ -57,6 +61,11 @@ export async function checkIssues(owner: string, repo: string): Promise<CheckIss
       }
 
       console.log(`  Processing issue #${issue.number} (${i + 1}/${issues.length})`);
+
+      // Report progress to callback
+      if (onProgress) {
+        onProgress(i + 1, issues.length);
+      }
 
       // Get project field values for this issue
       const projectValues = projectFieldValues.get(issue.number) || {};
