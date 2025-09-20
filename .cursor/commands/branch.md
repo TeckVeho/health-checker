@@ -1,4 +1,6 @@
-# Branch Command
+# Branch Command (DEPRECATED)
+
+⚠️ **DEPRECATED**: This command has been integrated into the `/issue` command. Use `/issue {issue_number} {branch_type}` instead.
 
 Create branch for issue with AI Agent
 
@@ -12,6 +14,15 @@ Create branch for issue with AI Agent
 Create a new branch for the specified issue through interactive AI Agent collaboration.
 
 **Instructions for AI Agent:**
+
+⚠️ **MIGRATION NOTICE**: Redirect users to use the integrated `/issue` command instead:
+
+**Recommended Usage:**
+- Instead of `/branch {issue_number} {branch_type}`, use `/issue {issue_number} {branch_type}`
+- The `/issue` command now handles both issue retrieval and branch creation in one step
+- All functionality from this command is preserved in the `/issue` command
+
+**Legacy Support (if user insists on using /branch):**
 
 1. **Determine Issue Number**: 
    - If `issue_number` is provided: Use the specified issue number

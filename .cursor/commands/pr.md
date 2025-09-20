@@ -1,6 +1,6 @@
 # PR Command
 
-Create Pull Request with 3-step process: validation, documentation, and GitHub PR creation
+Create Pull Request with 3-step process: commit changes, validation, documentation, and GitHub PR creation
 
 ## Parameters
 
@@ -9,9 +9,11 @@ Create Pull Request with 3-step process: validation, documentation, and GitHub P
 
 ## Instructions
 
-Create Pull Request through interactive AI Agent collaboration with 3-step process.
+Create Pull Request through interactive AI Agent collaboration with commit and 3-step process.
 
 **Instructions for AI Agent:**
+
+**New Workflow**: This command now handles committing changes before creating PR. Development should be done with `/dev` (no commits), tested with `/test`, then committed and PR created with `/pr`.
 
 ## Step 0: Issue Number Determination
 
@@ -20,12 +22,16 @@ Create Pull Request through interactive AI Agent collaboration with 3-step proce
    - If `issue_number` is omitted: Look for the most recently created issue document in `docs/issues/*/issue.md` to determine the issue number
    - Check for existing `docs/issues/{issue_number}/issue.md` file to ensure issue data is available
 
-## Step 1: Git Status Validation and User Confirmation
+## Step 1: Git Status Validation, Commit, and User Confirmation
 
-1. **Check Git Status**: Run `git status` to show current repository state
-2. **Display Status Summary**: Show all modified, added, and deleted files with status indicators
-3. **User Confirmation**: Ask user "Do you want to create a PR? (y/n)" and wait for confirmation
-4. **Proceed Only if Confirmed**: Continue to Step 2 only if user confirms with 'y' or 'yes'
+1. **Check Git Status**: Run `git --no-pager status` to show current repository state (with pager disabled)
+2. **Display Status Summary**: Show all modified, added, and deleted files with status indicators using `git --no-pager diff --name-status origin/develop..HEAD`
+3. **Commit Changes**: If there are uncommitted changes:
+   - Stage all changes with `git add .`
+   - Create commit with descriptive message based on issue and changes
+   - Use format: `feat/fix/docs: {description} - Closes #{issue_number}`
+4. **User Confirmation**: Ask user "Do you want to create a PR? (y/n)" and wait for confirmation
+5. **Proceed Only if Confirmed**: Continue to Step 2 only if user confirms with 'y' or 'yes'
 
 ## Step 2: PR Documentation Creation
 
@@ -53,15 +59,15 @@ Create Pull Request through interactive AI Agent collaboration with 3-step proce
 
 ## Step 3: Commit and Push Verification
 
-1. **Check Uncommitted Changes**: Run `git status --porcelain 2>/dev/null` to check for uncommitted changes
+1. **Check Uncommitted Changes**: Run `git --no-pager status --porcelain 2>$null` to check for uncommitted changes (with pager disabled)
 2. **Stage and Commit Changes**: If uncommitted changes exist:
-   - Run `git add . > /dev/null 2>&1` to stage all changes
+   - Run `git add . > $null 2>&1` to stage all changes
    - Create comprehensive commit message including:
      - Issue reference and main changes
      - Key improvements and features
      - Test results summary
      - "Closes #{issue_number}" to auto-close issue
-   - Run `git commit -m "..." --no-edit --quiet > /dev/null 2>&1` with detailed message
+   - Run `git commit -m "..." --no-edit --quiet > $null 2>&1` with detailed message
 3. **Push to Remote**: Check if local branch exists on remote:
    - Run `git push origin {current_branch} --quiet --no-progress` to push commits
    - Ensure remote branch is up to date before PR creation
@@ -88,8 +94,8 @@ Step 0: Issue Number Determination
 └── Verify issue exists and is accessible
 
 Step 1: Git Status Check
-├── Run git status --porcelain
-├── Display file changes
+├── Run git --no-pager status (pager disabled)
+├── Display file changes with git --no-pager diff --name-status origin/develop..HEAD
 └── Ask: "Do you want to create a PR? (y/n)"
 
 Step 2: PR Documentation
@@ -99,8 +105,8 @@ Step 2: PR Documentation
 └── Ask: "Do you want to create a PR with this content? (y/n)"
 
 Step 3: Commit and Push Verification
-├── Check git status --porcelain 2>/dev/null for uncommitted changes
-├── If changes exist: git add . > /dev/null 2>&1 && git commit -m "..." --no-edit --quiet > /dev/null 2>&1
+├── Check git --no-pager status --porcelain 2>$null for uncommitted changes (pager disabled)
+├── If changes exist: git add . > $null 2>&1 && git commit -m "..." --no-edit --quiet > $null 2>&1
 ├── Push to remote: git push origin {current_branch} --quiet --no-progress
 └── Verify remote branch is up to date
 
@@ -122,10 +128,11 @@ Step 4: GitHub PR Creation
 - **Speed Improvement**: 1-2 seconds faster execution by eliminating redundant API calls
 
 **Required Commands:**
-- `git status > /dev/null 2>&1` - Check repository state
-- `git status --porcelain 2>/dev/null` - Check for uncommitted changes
-- `git add . > /dev/null 2>&1` - Stage all changes (if needed)
-- `git commit -m "..." --no-edit --quiet > /dev/null 2>&1` - Commit changes with detailed message (if needed)
+- `git --no-pager status` - Check repository state (with pager disabled)
+- `git --no-pager status --porcelain 2>$null` - Check for uncommitted changes (with pager disabled)
+- `git --no-pager diff --name-status origin/develop..HEAD` - Show file changes (with pager disabled)
+- `git add . > $null 2>&1` - Stage all changes (if needed)
+- `git commit -m "..." --no-edit --quiet > $null 2>&1` - Commit changes with detailed message (if needed)
 - `git push origin {branch} --quiet --no-progress` - Push commits to remote (if needed)
 - `gh issue view {issue_number} --json title,body,labels,assignees,state,createdAt,updatedAt,url` - Get issue data (fallback only)
 - `gh pr create --title "..." --body "..." --base develop` - Create GitHub PR

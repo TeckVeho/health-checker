@@ -23,6 +23,8 @@ Develop code using flexible development methodology through interactive AI Agent
 5. **Validation**: Guide through testing and validation
 6. **Refactoring**: Help improve code quality while maintaining functionality
 
+**Important**: Do NOT commit changes during development. Leave all changes uncommitted for testing phase.
+
 **Development Approach Guidelines:**
 
 ### Test-Driven Development (TDD) - When Applicable
@@ -72,6 +74,8 @@ For configuration, commands, scripts, or simple implementations:
 - **Objective**: Improve code quality while maintaining functionality
 - **Approach**: Clean up code, improve performance, enhance readability
 - **Focus**: Code quality without breaking existing functionality
+
+**Development Output**: Leave all changes uncommitted for testing with `/test` command before final commit in `/pr` command.
 
 **Auto-Detection Process:**
 - Search `docs/issues/*/issue.md` files for the most recently modified file
