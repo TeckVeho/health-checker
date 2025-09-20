@@ -76,7 +76,7 @@
         <Column field="totalAlerts" header="Total" :sortable="true" class="text-center min-w-16">
           <template #body="{ data: row }">
             <Badge
-              :value="row.totalAlerts || 0"
+              :value="row.totalAlerts ?? 0"
               :severity="getBadgeSeverity(row.totalAlerts)"
               size="small"
             />
@@ -265,11 +265,13 @@ const getAuthorColor = (author: string): string => {
   return colors[Math.abs(hash) % colors.length];
 };
 
-const getBadgeSeverity = (totalAlerts: number): string => {
+const getBadgeSeverity = (totalAlerts: number | null | undefined): string => {
   // Determine badge severity based on total alert count
-  if (totalAlerts === 0) return 'secondary';
-  if (totalAlerts <= 5) return 'success';
-  if (totalAlerts <= 15) return 'warning';
+  // Handle null/undefined values by treating them as 0
+  const alertCount = totalAlerts ?? 0;
+  if (alertCount === 0) return 'secondary';
+  if (alertCount <= 5) return 'success';
+  if (alertCount <= 15) return 'warning';
   return 'danger';
 };
 

@@ -5,11 +5,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 describe('AuthorGroupedTable Logic - Issue #150 Total Column', () => {
   // Implementation of getBadgeSeverity function from the component
-  const getBadgeSeverity = (totalAlerts: number): string => {
+  const getBadgeSeverity = (totalAlerts: number | null | undefined): string => {
     // Determine badge severity based on total alert count
-    if (totalAlerts === 0) return 'secondary';
-    if (totalAlerts <= 5) return 'success';
-    if (totalAlerts <= 15) return 'warning';
+    // Handle null/undefined values by treating them as 0
+    const alertCount = totalAlerts ?? 0;
+    if (alertCount === 0) return 'secondary';
+    if (alertCount <= 5) return 'success';
+    if (alertCount <= 15) return 'warning';
     return 'danger';
   };
 
@@ -66,6 +68,8 @@ describe('AuthorGroupedTable Logic - Issue #150 Total Column', () => {
     it('should handle edge cases correctly', () => {
       expect(getBadgeSeverity(-1)).toBe('success') // Negative numbers
       expect(getBadgeSeverity(0.5)).toBe('success') // Decimal numbers (should be floored)
+      expect(getBadgeSeverity(null)).toBe('secondary') // Null values
+      expect(getBadgeSeverity(undefined)).toBe('secondary') // Undefined values
     })
   })
 
@@ -129,10 +133,10 @@ describe('AuthorGroupedTable Logic - Issue #150 Total Column', () => {
     })
 
     it('should handle null/undefined totalAlerts values', () => {
-      // Test with undefined/null values
-      expect(getBadgeSeverity(0 || 0)).toBe('secondary')
-      expect(getBadgeSeverity(null as any || 0)).toBe('secondary')
-      expect(getBadgeSeverity(undefined as any || 0)).toBe('secondary')
+      // Test with undefined/null values directly
+      expect(getBadgeSeverity(null)).toBe('secondary')
+      expect(getBadgeSeverity(undefined)).toBe('secondary')
+      expect(getBadgeSeverity(0)).toBe('secondary')
     })
   })
 
