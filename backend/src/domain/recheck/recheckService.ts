@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { RecheckExecution, RecheckSettings, RateLimitResult } from './recheckModel';
 import AlertService from '../alert/alertService';
+import { EnvironmentValidator, EnvironmentValidationResult } from '../../utils/environmentUtils';
 
 // Response interfaces
 export interface RecheckResponse {
@@ -68,6 +69,16 @@ export class ReCheckService {
     repo: string, 
     checks: string[] = ['branch', 'clone', 'gitleaks', 'issue']
   ): Promise<RecheckExecution> {
+    
+    // 環境変数検証
+    console.log(`[ReCheck] Validating environment for ${owner}/${repo}`);
+    const envValidation = await EnvironmentValidator.validateEnvironment();
+    EnvironmentValidator.logValidationResult(envValidation);
+    
+    if (!envValidation.isValid) {
+      const errorMessage = this.buildEnvironmentErrorMessage(envValidation);
+      throw new Error(errorMessage);
+    }
     
     // レート制限チェック
     const rateLimitResult = await this.checkRateLimit(owner, repo);
@@ -140,6 +151,20 @@ export class ReCheckService {
 
     try {
       console.log(`[ReCheck] Executing health check for ${execution.owner}/${execution.repo} (${execution.executionId})`);
+      
+      // 実行前の環境変数再検証（フォールバック処理）
+      const envValidation = await EnvironmentValidator.validateEnvironment();
+      if (!envValidation.isValid && !process.env.GITHUB_LOCAL_WORKSPACE) {
+        console.warn(`[ReCheck] GITHUB_LOCAL_WORKSPACE not set, attempting to create fallback workspace`);
+        try {
+          const fallbackPath = await EnvironmentValidator.createFallbackWorkspace();
+          process.env.GITHUB_LOCAL_WORKSPACE = fallbackPath;
+          console.log(`[ReCheck] Using fallback workspace: ${fallbackPath}`);
+        } catch (fallbackError) {
+          console.error(`[ReCheck] Failed to create fallback workspace:`, fallbackError);
+          throw new Error(`Environment setup failed: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`);
+        }
+      }
       
       // 既存のAlertService.runAlertを使用（進捗管理付き）
       const result = await AlertService.runAlert({
@@ -331,6 +356,29 @@ export class ReCheckService {
     settings: Partial<import('./recheckSchema').RecheckSettingsAttributes>
   ): Promise<RecheckSettings> {
     return await RecheckSettings.upsertSettings(owner, repo, settings);
+  }
+
+  /**
+   * 環境変数エラーメッセージの構築
+   */
+  private static buildEnvironmentErrorMessage(validation: EnvironmentValidationResult): string {
+    let message = 'Environment validation failed:\n';
+    
+    if (validation.missingVars.length > 0) {
+      message += `Missing required variables: ${validation.missingVars.join(', ')}\n`;
+    }
+    
+    if (validation.warnings.length > 0) {
+      message += `Warnings:\n${validation.warnings.map(w => `  - ${w}`).join('\n')}\n`;
+    }
+    
+    if (validation.fallbackPaths.length > 0) {
+      message += `Suggested fallback paths:\n${validation.fallbackPaths.map(p => `  - ${p}`).join('\n')}\n`;
+    }
+    
+    message += '\nPlease check your environment configuration and try again.';
+    
+    return message;
   }
 }
 
