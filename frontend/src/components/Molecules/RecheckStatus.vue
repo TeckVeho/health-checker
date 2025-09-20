@@ -27,35 +27,10 @@
             />
           </div>
           
-          <!-- Progress (if running) -->
-          <div v-if="status?.status === 'running' && status.currentExecution" class="status-row">
-            <span class="status-label">Progress:</span>
-            <ProgressBar 
-              :value="status.currentExecution.progress" 
-              :showValue="true"
-              class="progress-bar"
-            />
-          </div>
-          
           <!-- Current Phase (if running) -->
           <div v-if="status?.status === 'running' && status.currentExecution?.currentPhase" class="status-row">
             <span class="status-label">Current Phase:</span>
             <span class="status-value">{{ status.currentExecution.currentPhase }}</span>
-          </div>
-          
-          <!-- Phase Progress (if running with phase details) -->
-          <div v-if="status?.status === 'running' && status.currentExecution?.phaseDetails" class="status-row">
-            <span class="status-label">Phase Progress:</span>
-            <div class="phase-progress">
-              <ProgressBar 
-                :value="status.currentExecution.phaseDetails.progress" 
-                :showValue="true"
-                class="phase-progress-bar"
-              />
-              <span v-if="status.currentExecution.phaseDetails.totalItems" class="phase-details">
-                ({{ status.currentExecution.phaseDetails.processedItems || 0 }} / {{ status.currentExecution.phaseDetails.totalItems }} items)
-              </span>
-            </div>
           </div>
           
           <!-- Duration (if running) -->
@@ -108,7 +83,6 @@ import { computed } from 'vue'
 import Card from 'primevue/card'
 import Tag from 'primevue/tag'
 import Badge from 'primevue/badge'
-import ProgressBar from 'primevue/progressbar'
 import Button from 'primevue/button'
 import type { RecheckStatusResponse } from '~/utils/api'
 
@@ -348,27 +322,6 @@ function formatDuration(seconds: number): string {
   font-size: 0.875rem;
 }
 
-.progress-bar {
-  width: 200px;
-  flex-shrink: 0;
-}
-
-.phase-progress {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.phase-progress-bar {
-  width: 200px;
-  flex-shrink: 0;
-}
-
-.phase-details {
-  font-size: 0.875rem;
-  color: var(--text-color-secondary);
-  margin-top: 0.25rem;
-}
 
 .error-row {
   background-color: var(--red-50);
