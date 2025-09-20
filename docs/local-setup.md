@@ -32,7 +32,7 @@ DB_NAME=health-checker
 DB_PASSWORD=health-checker-123
 DB_PORT=3306
 
-JWT_SECRET=a1b2c3d4e5f6g7h6q7r8s9t0u1v2w8i9j0k1l2m3n4o5p3x4y5z6
+JWT_SECRET=your-secure-jwt-secret-here
 
 OPENAI_API_KEY=sk-proj-...
 GITHUB_API_KEY=ghp_...
@@ -41,9 +41,9 @@ GITHUB_LOCAL_WORKSPACE="C:/Users/yourname/Documents/github-workspace"
 # ChatGPT Model Configuration
 OPENAI_MODEL=gpt-4o-mini
 ```
-> ⚠️ **Important**: `GITHUB_LOCAL_WORKSPACE` should point to an **empty directory on your local machine**.
-> This is where cloned GitHub repositories will be copied to.
-> If the directory already contains files, they might be overwritten during sync.
+> ⚠️ **Important**:
+> - `GITHUB_LOCAL_WORKSPACE` should point to an **empty directory on your local machine**. This is where cloned GitHub repositories will be copied to. If the directory already contains files, they might be overwritten during sync.
+> - `JWT_SECRET` should be a strong, randomly generated secret. You can generate one using: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
 
 Please generate the `GITHUB_API_KEY` yourself by following these steps:
 1. Go to [https://github.com/settings/tokens](https://github.com/settings/tokens)
