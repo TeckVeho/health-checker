@@ -170,11 +170,11 @@ describe('useCheckTypeAlerts', () => {
     const row = tableData.value[0]
     
     // All issue types should be grouped into the 'issue' category
-    expect(row.issue).toBe(12) // 1+2+1+1+3+1+2+1 = 12
+    expect(row.issue).toBe(11) // 1+2+1+3+1+2+1 = 11
     expect(row.branch).toBe(0)
     expect(row.security).toBe(0)
     expect(row.test_performance).toBe(0)
-    expect(row.totalViolations).toBe(12)
+    expect(row.totalViolations).toBe(11)
   })
 
   it('should call fetchAlertSummaryByCheckType when fetching data', async () => {

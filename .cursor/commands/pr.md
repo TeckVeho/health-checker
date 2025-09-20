@@ -88,7 +88,7 @@ Step 0: Issue Number Determination
 └── Verify issue exists and is accessible
 
 Step 1: Git Status Check
-├── Run git status
+├── Run git status --porcelain
 ├── Display file changes
 └── Ask: "Do you want to create a PR? (y/n)"
 

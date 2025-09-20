@@ -1,0 +1,91 @@
+{
+  "issue_number": 122,
+  "test_execution_date": "2025-09-20T13:16:58Z",
+  "project_name": "health-checker",
+  "test_frameworks": {
+    "backend": "Jest + TypeScript",
+    "frontend": "Vitest + Vue Test Utils"
+  },
+  "backend_results": {
+    "framework": "Jest",
+    "command": "yarn test:unit",
+    "test_suites": 7,
+    "test_suites_passed": 7,
+    "test_suites_failed": 0,
+    "total_tests": 93,
+    "tests_passed": 93,
+    "tests_failed": 0,
+    "execution_time": "1.559s",
+    "coverage": {
+      "statements": 58.5,
+      "branches": 47.33,
+      "functions": 52.57,
+      "lines": 59.33
+    },
+    "status": "PASSED",
+    "test_files": [
+      "tests/unit/domain/alert/checkIssues.test.ts",
+      "tests/unit/domain/alert/auditScanner.test.ts", 
+      "tests/unit/domain/alert/checkActions.test.ts",
+      "tests/unit/domain/alert/alertService.test.ts",
+      "tests/unit/domain/alert/alertController.test.ts",
+      "tests/unit/utils/message.test.ts",
+      "tests/unit/utils/databaseUtils.test.ts"
+    ]
+  },
+  "frontend_results": {
+    "framework": "Vitest",
+    "command": "yarn test:run",
+    "test_files": 14,
+    "test_files_passed": 14,
+    "test_files_failed": 0,
+    "total_tests": 179,
+    "tests_passed": 179,
+    "tests_failed": 0,
+    "execution_time": "1.65s",
+    "status": "PASSED",
+    "test_categories": {
+      "components_atoms": {
+        "files": 1,
+        "tests": 15
+      },
+      "components_molecules": {
+        "files": 5,
+        "tests": 68
+      },
+      "composables": {
+        "files": 6,
+        "tests": 72
+      },
+      "utils": {
+        "files": 2,
+        "tests": 32
+      }
+    }
+  },
+  "overall_summary": {
+    "total_test_suites": 21,
+    "total_tests": 272,
+    "tests_passed": 272,
+    "tests_failed": 0,
+    "success_rate": "100%",
+    "total_execution_time": "3.209s",
+    "status": "ALL_PASSED"
+  },
+  "issue_122_resolution": {
+    "primary_issue": "ESModule import errors in Jest tests",
+    "resolution_status": "RESOLVED",
+    "key_fixes": [
+      "Added @octokit/rest mock mapping in jest.config.ts",
+      "Created comprehensive mock for @octokit/rest package",
+      "Fixed TypeScript isolatedModules configuration",
+      "Separated unit tests from integration tests",
+      "Fixed frontend test calculation error"
+    ],
+    "evidence_of_resolution": {
+      "backend_esm_errors": "RESOLVED - No ESModule errors in test output",
+      "frontend_test_failures": "RESOLVED - All 179 tests passing",
+      "test_execution_speed": "OPTIMAL - Backend: 1.559s, Frontend: 1.65s"
+    }
+  }
+}
