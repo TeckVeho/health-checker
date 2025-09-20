@@ -26,6 +26,40 @@ Available commands:
 1. `/issue {issue_number} --auto` - Execute full pipeline automatically (issue → spec → plan → dev → test → pr)
 2. `/issue {issue_number} --auto --skip-spec --skip-plan` - Skip spec/plan for rapid development
 
+## File Creation Restrictions
+
+### Verification and Data Files
+- **ALL verification scripts, test data, and temporary files MUST be created in `.cursor/workspace/` only**
+- **PROHIBITED locations for verification files:**
+  - `docs/issues/{issue_number}/evidence/` (except for final reports)
+  - Project root directory
+  - `backend/` or `frontend/` directories
+  - Any other project directories
+
+### Allowed File Types in `.cursor/workspace/`:
+- Test execution scripts
+- Verification data files
+- Temporary analysis files
+- Debug output files
+- Validation scripts
+- Any other non-production files
+
+### Final Reports Only
+- Only final, polished reports should be saved to `docs/issues/{issue_number}/evidence/`
+- All intermediate files and raw data must remain in `.cursor/workspace/`
+
+### Standard Directory Structure
+```
+.cursor/workspace/
+├── {issue_number}/
+│   ├── verification/
+│   │   ├── test-scripts/     # Test execution scripts
+│   │   ├── data-files/       # Raw test data and debug files
+│   │   ├── temp-files/       # Temporary analysis files
+│   │   └── debug-output/     # Debug logs and output files
+│   └── final-reports/        # Final reports (moved to docs/issues/{issue_number}/evidence/)
+```
+
 ## Project Context
 
 - Language: Japanese responses preferred
