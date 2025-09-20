@@ -1,5 +1,0 @@
-## Description
-
-## Cursor Log
-
-## Evidence
