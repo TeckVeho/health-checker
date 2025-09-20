@@ -30,7 +30,12 @@
           <!-- Current Phase (if running) -->
           <div v-if="status?.status === 'running' && status.currentExecution?.currentPhase" class="status-row">
             <span class="status-label">Current Phase:</span>
-            <span class="status-value">{{ status.currentExecution.currentPhase }}</span>
+            <span class="status-value">
+              {{ status.currentExecution.currentPhase }}
+              <span v-if="showPhaseProgress" class="phase-progress">
+                ( {{ phaseProgressText }} )
+              </span>
+            </span>
           </div>
           
           <!-- Duration (if running) -->
@@ -188,6 +193,26 @@ const retryAfterSeconds = computed(() => {
   return Math.max(0, Math.ceil(diff / 1000))
 })
 
+const showPhaseProgress = computed(() => {
+  const execution = props.status?.currentExecution
+  if (!execution?.result?.phaseDetails) return false
+
+  const details = execution.result.phaseDetails
+  return details.totalItems !== undefined && details.processedItems !== undefined
+})
+
+const phaseProgressText = computed(() => {
+  const execution = props.status?.currentExecution
+  if (!execution?.result?.phaseDetails) return ''
+
+  const details = execution.result.phaseDetails
+  if (details.totalItems !== undefined && details.processedItems !== undefined) {
+    return `${details.processedItems}/${details.totalItems}`
+  }
+
+  return ''
+})
+
 // Methods
 function formatDateTime(dateString: string): string {
   try {
@@ -320,6 +345,12 @@ function formatDuration(seconds: number): string {
 
 .status-tag {
   font-size: 0.875rem;
+}
+
+.phase-progress {
+  color: var(--primary-color);
+  font-weight: 600;
+  margin-left: 0.5rem;
 }
 
 
