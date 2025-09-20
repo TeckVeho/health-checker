@@ -19,6 +19,11 @@ Create Pull Request through interactive AI Agent collaboration with streamlined 
 - Ensure GitHub automatically closes the issue when PR is merged
 - This maintains proper issue tracking and project management
 
+**🚫 CRITICAL: NO LOCAL FILE CREATION 🚫**
+- **DO NOT CREATE pr.md FILES**: This command must NEVER create any local pr.md files in docs/issues/{issue_number}/
+- **GitHub Only**: Only create the GitHub Pull Request, do not save PR content to local files
+- **No Documentation Files**: Avoid creating any local documentation files related to the PR
+
 **Streamlined Workflow**: This command handles committing changes and creating PR with automatic issue linking. Development should be done with `/dev` (no commits), tested with `/test`, then committed and PR created with `/pr`.
 
 ## Step 0: Issue Number Determination
@@ -70,8 +75,8 @@ Create Pull Request through interactive AI Agent collaboration with streamlined 
    - Check if commits exist between base and head branches
    - Verify remote branch is properly pushed
    - Retry PR creation after resolving issues
-5. **Display PR Information**: Show created PR URL and linked issue status
-6. **Confirmation**: Confirm successful PR creation and issue linking
+5. **Display PR Information**: Show created PR URL and linked issue status (DO NOT save to local files)
+6. **Confirmation**: Confirm successful PR creation and issue linking (NO local file creation)
 
 **Process Flow:**
 ```
@@ -128,6 +133,7 @@ Step 3: GitHub PR Creation with Issue Linking
 - `gh pr create --title "..." --body "..." --base develop` - Create GitHub PR with issue linking
 
 **Key Features:**
+- **No Local Files**: Does NOT create pr.md or any other local PR documentation files
 - **Streamlined Process**: Removed pr.md creation step for faster execution
 - **Automatic Issue Linking**: Every PR automatically links to its corresponding issue
 - **Consistent Formatting**: Standardized PR titles and commit messages
