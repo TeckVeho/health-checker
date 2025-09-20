@@ -10,13 +10,6 @@ export class PRCheck {
   static isBodyEmpty(body: string): boolean {
     return !body || body.trim().length === 0;
   }
-  static hasAILogUrl(body: string): boolean {
-    const aiServiceDomains = ['chatgpt.com', 'openai.com', 'claude.ai', 'bard.google.com', 'gemini.google.com', 'huggingface.co', 'poe.com', 'perplexity.ai', 'deepseek.com', '58llm', 'dodoai', 'llm.dev', 'chatanywhere.com', 'openrouter.ai'];
-    return aiServiceDomains.some((domain) => {
-      const regex = new RegExp(`https://[^\\s)]*${domain}[^\\s)]*`, 'i');
-      return regex.test(body);
-    });
-  }
   static isTemplateOnly(body: string): boolean {
     const normalized = body.trim().toLowerCase();
     
@@ -40,15 +33,38 @@ export class PRCheck {
     return trimmed.length >= 30;
   }
   static hasTestEvidence(body: string): boolean {
+    // 既存のテスト証拠パターン
     const testLogRegex = /\b(yarn|npm|php\s+artisan)\b.*test/i;
     const looseTestKeywordRegex = /\b(yarn|npm|php\s+artisan)\b/i;
-
     const screenshotRegex = /!\[.*\]\(.*\.(png|jpg|jpeg|gif|mp4)\)/i;
     const githubImageRegex = /https:\/\/github\.com\/user-attachments\/assets\/[^\s)]+/i;
-
     const githubActionsRegex = /https:\/\/github\.com\/.*\/runs\//i;
 
-    return testLogRegex.test(body) || looseTestKeywordRegex.test(body) || screenshotRegex.test(body) || githubImageRegex.test(body) || githubActionsRegex.test(body);
+    // 新規追加: パフォーマンステスト関連パターン
+    const performanceTestRegex = /Performance\s+(Test|Benchmark|Comparison)/i;
+    const benchmarkRegex = /\b\d+(\.\d+)?\s*(ms|μs|ns|seconds?)\b/i;
+    const speedImprovementRegex = /\b\d+x\s+faster\b/i;
+
+    // 新規追加: Evidence セクション関連パターン
+    const evidenceSectionRegex = /##\s*Evidence/i;
+    const testResultsRegex = /##\s*(Test\s*Results?|Testing|Tests?)/i;
+
+    // 既存パターンのチェック
+    const hasExistingEvidence = testLogRegex.test(body) || 
+                               looseTestKeywordRegex.test(body) || 
+                               screenshotRegex.test(body) || 
+                               githubImageRegex.test(body) || 
+                               githubActionsRegex.test(body);
+
+    // 新規パターンのチェック
+    const hasPerformanceEvidence = performanceTestRegex.test(body) || 
+                                  benchmarkRegex.test(body) || 
+                                  speedImprovementRegex.test(body);
+
+    const hasEvidenceSection = evidenceSectionRegex.test(body) || 
+                              testResultsRegex.test(body);
+
+    return hasExistingEvidence || hasPerformanceEvidence || hasEvidenceSection;
   }
 
   static hasAIReviewComment(comments: string[]): boolean {
