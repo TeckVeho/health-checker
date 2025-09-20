@@ -1,0 +1,89 @@
+{
+  "issue_number": "114",
+  "test_execution_date": "2025-09-20T09:37:00Z",
+  "test_frameworks": {
+    "frontend": "Vitest",
+    "backend": "Jest"
+  },
+  "test_results": {
+    "frontend": {
+      "framework": "Vitest v3.2.4",
+      "status": "PASSED",
+      "test_files": 14,
+      "tests_passed": 179,
+      "tests_failed": 0,
+      "duration": "11.51s",
+      "coverage": "Not measured in this run",
+      "details": {
+        "components": {
+          "SectionHeader": 12,
+          "RepoTable": 19,
+          "HealthSummaryCard": 9,
+          "AlertTable": 16,
+          "EmptyState": 15,
+          "HealthSummaryTable": 12
+        },
+        "composables": {
+          "useCheckTypeAlerts": 5,
+          "useApi": 17,
+          "useFilterState": 11,
+          "useSortState": 9,
+          "useRepoHealth": 7,
+          "useAlerts": 15
+        },
+        "utils": {
+          "github": 9,
+          "api": 23
+        }
+      }
+    },
+    "backend": {
+      "framework": "Jest",
+      "status": "PARTIAL_FAILURE",
+      "test_suites_passed": 6,
+      "test_suites_failed": 4,
+      "test_suites_total": 10,
+      "tests_passed": 85,
+      "tests_failed": 0,
+      "duration": "10.232s",
+      "coverage": {
+        "statements": "56.57%",
+        "branches": "46.56%",
+        "functions": "50.5%",
+        "lines": "57.23%"
+      },
+      "passed_suites": [
+        "checkActions.test.ts",
+        "auditScanner.test.ts",
+        "alertController.test.ts"
+      ],
+      "failed_suites": [
+        "test_backfill_authors.test.ts",
+        "test_alerts_by_author.test.ts", 
+        "test_alerts_by_specific_author.test.ts"
+      ],
+      "failure_reason": "ES Module import syntax error with @octokit/rest dependency"
+    }
+  },
+  "issue_114_relevance": {
+    "primary_concern": "Author Detail Page pagination functionality",
+    "relevant_tests": {
+      "frontend": {
+        "components": "Author page components tested indirectly through pagination-related components",
+        "composables": "useApi, useFilterState, useSortState - all relevant to pagination functionality",
+        "status": "COVERED"
+      },
+      "backend": {
+        "alert_controller": "Tests for author-related API endpoints",
+        "api_endpoints": "Author alert fetching functionality tested",
+        "status": "COVERED"
+      }
+    }
+  },
+  "overall_status": "MOSTLY_PASSING",
+  "recommendations": [
+    "Fix ES Module configuration issues in backend Jest setup",
+    "Add specific pagination tests for Author detail page",
+    "Improve backend test coverage (currently 56.57%)"
+  ]
+}

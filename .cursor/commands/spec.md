@@ -1,0 +1,80 @@
+# Spec Command
+
+Generate specification document for issue with AI Agent
+
+## Parameters
+
+- `issue_number` (optional): GitHub issue number. If omitted, uses the most recently processed issue from previous `/issue` command
+- `output_path` (optional): Output file path (defaults to docs/issues/{issue_number}/spec.md)
+
+## Instructions
+
+Generate a detailed specification document for the specified issue through interactive AI Agent collaboration.
+
+**Instructions for AI Agent:**
+
+1. **Determine Issue Number**: 
+   - If `issue_number` is provided: Use the specified issue number
+   - If `issue_number` is omitted: Look for the most recently created issue document in `docs/issues/*/issue.md` to determine the issue number
+   - Check for existing `docs/issues/{issue_number}/issue.md` file to ensure issue data is available
+2. **Fetch Issue Information**: Use GitHub CLI to retrieve issue #{issue_number} details
+3. **Interactive Analysis**: Analyze the issue content and discuss requirements with the user
+4. **Generate Specification**: Create a comprehensive specification document using the integrated template structure
+5. **Save Document**: Save the specification to {output_path} (default: docs/issues/{issue_number}/spec.md)
+
+**Specification Document Structure:**
+```markdown
+# Issue #{issue_number}: {title}
+
+## Overview
+{overview_description}
+
+## Purpose
+{purpose_and_goals}
+
+## Functional Requirements
+{detailed_functional_requirements}
+
+## Specification
+
+### Features
+{functionality_description}
+
+### System Requirements
+
+#### Required External Tools
+{required_tools_and_dependencies}
+
+#### Operating Environment
+{environment_specifications}
+
+#### Quality Requirements
+{quality_and_performance_requirements}
+
+## Success Criteria
+
+### Functional Criteria
+{functional_success_criteria}
+
+### Non-Functional Criteria
+{non_functional_success_criteria}
+
+## References
+{related_links_and_resources}
+```
+
+**Auto-Detection Process:**
+- Search `docs/issues/*/issue.md` files for the most recently modified file
+- Extract issue number from the directory structure
+- Verify the issue exists and is accessible via GitHub CLI
+
+**Content Generation Process:**
+- Determine issue number (from parameter or most recent `/issue` command)
+- Retrieve issue data from GitHub
+- Analyze issue requirements and generate appropriate content for each section
+- Generate structured specification in English
+- Create output directory if needed
+- Save to specified file path
+
+**Issue**: {issue_number or auto-detected}
+**Output**: {output_path}
