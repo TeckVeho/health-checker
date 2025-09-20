@@ -16,9 +16,12 @@ export const environmentCheck = async (req: Request, res: Response, next: NextFu
     
     const validation = await EnvironmentValidator.validateEnvironment();
     
+    // 詳細な検証結果をログ出力
+    EnvironmentValidator.logValidationResult(validation);
+    
     // 環境変数が無効な場合の処理
     if (!validation.isValid) {
-      console.error(`[EnvironmentCheck] Environment validation failed:`, validation);
+      console.error(`[EnvironmentCheck] Environment validation failed`);
       
       // 警告のみで続行（フォールバック処理に委ねる）
       if (validation.warnings.length > 0) {
@@ -35,11 +38,12 @@ export const environmentCheck = async (req: Request, res: Response, next: NextFu
           message: 'Environment configuration error',
           error: {
             code: 'ENVIRONMENT_ERROR',
-            message: `Missing required environment variables: ${missingVars}`,
+            message: `Environment validation failed:\nMissing required variables: ${missingVars}\n\nPlease check your environment configuration and try again.`,
             details: {
               missingVariables: validation.missingVars,
               warnings: validation.warnings,
-              fallbackPaths: validation.fallbackPaths
+              fallbackPaths: validation.fallbackPaths,
+              environmentDetails: validation.details
             }
           }
         });
