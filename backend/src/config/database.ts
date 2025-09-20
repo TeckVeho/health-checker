@@ -1,9 +1,7 @@
 import { Sequelize } from 'sequelize';
 import path from 'path';
-import dotenv from 'dotenv';
 
-const envFile = process.env.NODE_ENV === 'test' ? '../../.env.test' : '../../.env';
-dotenv.config({ path: path.resolve(__dirname, envFile) });
+// 環境変数はEnvironmentConfigで初期化済み
 
 const DB_NAME = process.env.DB_NAME as string;
 const DB_USER = process.env.DB_USER as string;

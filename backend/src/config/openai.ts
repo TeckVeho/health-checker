@@ -1,8 +1,4 @@
-import dotenv from 'dotenv';
-import path from 'path';
-
-const envFile = process.env.NODE_ENV === 'test' ? '../../.env.test' : '../../.env';
-dotenv.config({ path: path.resolve(__dirname, envFile) });
+// 環境変数はEnvironmentConfigで初期化済み
 
 export const OPENAI_CONFIG = {
   API_KEY: process.env.OPENAI_API_KEY as string,

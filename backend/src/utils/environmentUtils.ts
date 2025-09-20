@@ -257,5 +257,16 @@ export class EnvironmentValidator {
       console.log('   Fallback Paths:');
       result.fallbackPaths.forEach(path => console.log(`     - ${path}`));
     }
+
+    // 詳細な環境変数情報を出力
+    console.log('   Environment Variables Details:');
+    Object.entries(result.details).forEach(([varName, details]) => {
+      const status = details.exists ? (details.isValid ? '✅' : '⚠️') : '❌';
+      const value = details.value || 'NOT SET';
+      console.log(`     ${status} ${varName}: ${value}`);
+      if (details.error) {
+        console.log(`        Error: ${details.error}`);
+      }
+    });
   }
 }
