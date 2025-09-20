@@ -7,7 +7,7 @@ const execAsync = promisify(exec);
 
 /**
  * 指定された GitHub リポジトリをローカルに clone または pull する
- * GITHUB_LOCAL_WORKSPACE に直接 clone される（サブディレクトリは作られない）
+ * GITHUB_LOCAL_WORKSPACE 配下に owner/repo のディレクトリ構造で保存
  *
  * @param owner GitHub アカウント名
  * @param repo リポジトリ名
@@ -19,31 +19,63 @@ export async function cloneRepo(owner: string, repo: string): Promise<string> {
     throw new Error('GITHUB_LOCAL_WORKSPACE is required');
   }
 
-  const targetPath = workspace; // サブディレクトリは作らない
+  // owner/repo のディレクトリ構造を作成
+  const targetPath = path.join(workspace, owner, repo);
   const gitUrl = `https://github.com/${owner}/${repo}.git`;
 
   try {
+    // .gitディレクトリの存在確認
     await fs.access(path.join(targetPath, '.git'));
 
+    // 既存のリポジトリの設定を確認
     const configPath = path.join(targetPath, '.git', 'config');
     const configText = await fs.readFile(configPath, 'utf-8');
 
     if (configText.includes(gitUrl)) {
+      // 同じリポジトリなら pull を実行
       console.log(`🔄 Repository exists and matches. Pulling: ${targetPath}`);
-      await execAsync(`git -C "${targetPath}" pull`);
+      try {
+        await execAsync(`git -C "${targetPath}" pull`);
+      } catch (pullError) {
+        console.warn(`⚠️ Pull failed, attempting to reset and pull: ${pullError}`);
+        // pull が失敗した場合、変更を破棄して再度 pull
+        await execAsync(`git -C "${targetPath}" reset --hard`);
+        await execAsync(`git -C "${targetPath}" clean -fd`);
+        await execAsync(`git -C "${targetPath}" pull`);
+      }
       return targetPath;
     } else {
+      // 異なるリポジトリの場合は削除
       console.log(`🗑 Removing mismatched repository at: ${targetPath}`);
       await fs.rm(targetPath, { recursive: true, force: true });
     }
-  } catch {
-    // .git が存在しない or 読み取り不可 → clone へ
+  } catch (error) {
+    // .git が存在しない場合の処理
+    console.log(`📝 No existing repository found at: ${targetPath}`);
   }
 
-  await fs.mkdir(targetPath, { recursive: true });
+  // ディレクトリが存在する場合（.gitがない場合）は削除
+  try {
+    await fs.access(targetPath);
+    console.log(`🗑 Removing existing non-git directory at: ${targetPath}`);
+    await fs.rm(targetPath, { recursive: true, force: true });
+  } catch {
+    // ディレクトリが存在しない場合は何もしない
+  }
+
+  // 親ディレクトリを作成
+  await fs.mkdir(path.dirname(targetPath), { recursive: true });
+
   console.log(`📥 Cloning ${gitUrl} to ${targetPath}`);
-  await execAsync(`git clone ${gitUrl} "${targetPath}"`);
-  console.log(`✅ Cloned to: ${targetPath}`);
+
+  // git clone を実行
+  try {
+    await execAsync(`git clone ${gitUrl} "${targetPath}"`);
+    console.log(`✅ Successfully cloned to: ${targetPath}`);
+  } catch (cloneError) {
+    console.error(`❌ Failed to clone repository: ${cloneError}`);
+    throw new Error(`Failed to clone ${owner}/${repo}: ${cloneError}`);
+  }
 
   return targetPath;
 }
