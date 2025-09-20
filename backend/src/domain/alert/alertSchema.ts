@@ -172,7 +172,6 @@ export const alertModelOptions = {
         { name: 'title', length: 50 },
         { name: 'file_path', length: 255 },
         { name: 'line_number' },
-        { name: 'code_snippet', length: 255 },
         { name: 'branch', length: 50 },
       ],
     },
