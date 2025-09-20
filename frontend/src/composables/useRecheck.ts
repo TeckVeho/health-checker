@@ -8,10 +8,11 @@ export interface RecheckOptions {
   checks?: string[]
   autoRefresh?: boolean
   refreshInterval?: number
+  isGlobal?: boolean
 }
 
 export function useRecheck(options: RecheckOptions) {
-  const { owner, repo, checks = ['branch', 'clone', 'gitleaks', 'issue'], autoRefresh = true, refreshInterval = 2000 } = options
+  const { owner, repo, checks = ['branch', 'clone', 'gitleaks', 'issue'], autoRefresh = true, refreshInterval = 2000, isGlobal = false } = options
   
   const { loading, error, callApi } = useApi()
   
@@ -125,7 +126,9 @@ export function useRecheck(options: RecheckOptions) {
     }
     
     const result = await callApi(
-      () => apiService.executeRecheck(owner, repo, customChecks || checks),
+      () => isGlobal 
+        ? apiService.executeGlobalRecheck(customChecks || checks)
+        : apiService.executeRecheck(owner, repo, customChecks || checks),
       {
         showLoading: true,
         errorMessage: 'Failed to execute ReCheck'
