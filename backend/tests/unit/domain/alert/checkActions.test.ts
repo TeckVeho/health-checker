@@ -218,10 +218,10 @@ describe('checkActions', () => {
     });
 
     it('should detect missing release-labeling workflow files', async () => {
-      // Mock .git/HEAD
+      // Mock .git/HEAD (will fail to read, resulting in 'unknown' branch)
       mockFs.readFile.mockImplementation((filePath: any) => {
         if (filePath.includes('.git/HEAD')) {
-          return Promise.resolve('ref: refs/heads/main\n');
+          return Promise.reject(new Error('File not found'));
         }
         return Promise.resolve('');
       });
@@ -253,7 +253,7 @@ describe('checkActions', () => {
         filePath: '.github/workflows/release-labeling.yml',
         lineNumber: -1,
         codeSnippet: '',
-        branch: 'main'
+        branch: 'unknown'
       });
     });
 
