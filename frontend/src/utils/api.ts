@@ -122,7 +122,7 @@ class ApiClient {
 
   constructor(config: Partial<ApiConfig> = {}, apiBaseUrl?: string) {
     this.config = {
-      baseURL: config.baseURL || 'http://localhost:3000',
+      baseURL: config.baseURL || 'http://localhost:23000',
       timeout: config.timeout || 10000,
       retryAttempts: config.retryAttempts || 3,
       retryDelay: config.retryDelay || 1000,
