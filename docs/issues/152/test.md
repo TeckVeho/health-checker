@@ -209,5 +209,7 @@
 - `docs/issues/152/evidence/test_output.log` - 完全なテスト出力ログ
 - `docs/issues/152/evidence/coverage.json` - 詳細なカバレッジデータ（JSON形式）
 
+**IMPORTANT**: Evidence files are saved to `docs/issues/152/evidence/` (root level), NOT `backend/docs/issues/152/evidence/`
+
 ## Conclusion
 **Issue #152のテスト実装は成功**し、堅実で保守しやすいテスト基盤が構築されました。全395個のテストが安定して実行され、カバレッジレートも大幅に向上しています。目標の80%以上への到達に向けて、堅実な基盤が整いました。

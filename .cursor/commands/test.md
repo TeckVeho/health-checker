@@ -41,6 +41,7 @@ Execute tests and record results with AI Agent
 4. **Record Results**
    - Save raw outputs to `docs/issues/{issue_number}/evidence/`  
      (e.g., `test_output.log`, `coverage.json`)
+     - **IMPORTANT**: Save to `docs/issues/{issue_number}/evidence/` (root level), NOT `backend/docs/issues/{issue_number}/evidence/`
    - Create final structured report in `docs/issues/{issue_number}/test.md`
 
 5. **Generate Report**
@@ -76,6 +77,8 @@ docs/
         │   └── screenshot.png
         └── test.md
 ```
+
+**IMPORTANT**: Evidence files must be saved to `docs/issues/{issue_number}/evidence/` (root level), NOT `backend/docs/issues/{issue_number}/evidence/`
 
 ## `test.md` Template
 
