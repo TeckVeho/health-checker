@@ -3,9 +3,7 @@
 Generate implementation plan document for issue with AI Agent
 
 ## Parameters
-
 - `issue_number` (optional): GitHub issue number. If omitted, uses the most recently processed issue from previous `/issue` command
-- `output_path` (optional): Output file path (defaults to docs/issues/{issue_number}/plan.md)
 
 ## Instructions
 
@@ -18,16 +16,6 @@ Generate a detailed implementation plan document for the specified issue through
 - NEVER run `git add . && git commit`
 - NEVER suggest or execute commit operations
 - Planning phase MUST end with uncommitted changes
-
-**📁 FILE CREATION RESTRICTIONS:**
-- **ALL verification scripts, test data, and temporary files MUST be created in `.cursor/workspace/{issue_number}/` only**
-- **PROHIBITED locations for verification files:**
-  - `docs/issues/{issue_number}/evidence/` (except for final reports)
-  - Project root directory
-  - `backend/` or `frontend/` directories
-  - Any other project directories
-- **Only final, polished reports should be saved to `docs/issues/{issue_number}/evidence/`**
-- **All intermediate files and raw data must remain in `.cursor/workspace/{issue_number}/`**
 
 1. **Determine Issue Number**: 
    - If `issue_number` is provided: Use the specified issue number
@@ -64,23 +52,8 @@ Generate a detailed implementation plan document for the specified issue through
 
 ## Implementation Tasks
 
-### Task 1.1: {task_1_1_name}
-{task_1_1_description}
-
-### Task 1.2: {task_1_2_name}
-{task_1_2_description}
-
-### Task 1.3: {task_1_3_name}
-{task_1_3_description}
-
-### Task 2.1: {task_2_1_name}
-{task_2_1_description}
-
-### Task 2.2: {task_2_2_name}
-{task_2_2_description}
-
-### Task 2.3: {task_2_3_name}
-{task_2_3_description}
+### Task 1: {task_1_name}
+{task_1_description}
 ```
 
 **Auto-Detection Process:**

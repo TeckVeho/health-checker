@@ -34,10 +34,10 @@ frontend/
 ## Commands
 ```bash
 # Backend
-npm run dev        # Start development server
-npm test          # Run tests
-npm run migrate   # Run database migrations
-
+yarn dev        # Start development server
+yarn test:unit          # Run tests
+yarn db:migrate   # Run database migrations
+yarn build  # Build for production
 # Frontend
 yarn dev          # Start development server
 yarn test         # Run tests

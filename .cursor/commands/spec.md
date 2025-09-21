@@ -3,9 +3,7 @@
 Generate specification document for issue with AI Agent
 
 ## Parameters
-
 - `issue_number` (optional): GitHub issue number. If omitted, uses the most recently processed issue from previous `/issue` command
-- `output_path` (optional): Output file path (defaults to docs/issues/{issue_number}/spec.md)
 
 ## Instructions
 
@@ -18,16 +16,6 @@ Generate a detailed specification document for the specified issue through inter
 - NEVER run `git add . && git commit`
 - NEVER suggest or execute commit operations
 - Specification phase MUST end with uncommitted changes
-
-**📁 FILE CREATION RESTRICTIONS:**
-- **ALL verification scripts, test data, and temporary files MUST be created in `.cursor/workspace/{issue_number}/` only**
-- **PROHIBITED locations for verification files:**
-  - `docs/issues/{issue_number}/evidence/` (except for final reports)
-  - Project root directory
-  - `backend/` or `frontend/` directories
-  - Any other project directories
-- **Only final, polished reports should be saved to `docs/issues/{issue_number}/evidence/`**
-- **All intermediate files and raw data must remain in `.cursor/workspace/{issue_number}/`**
 
 1. **Determine Issue Number**: 
    - If `issue_number` is provided: Use the specified issue number

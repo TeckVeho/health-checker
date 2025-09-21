@@ -24,16 +24,6 @@ Create Pull Request through interactive AI Agent collaboration with streamlined 
 - **GitHub Only**: Only create the GitHub Pull Request, do not save PR content to local files
 - **No Documentation Files**: Avoid creating any local documentation files related to the PR
 
-**📁 FILE CREATION RESTRICTIONS:**
-- **ALL verification scripts, test data, and temporary files MUST be created in `.cursor/workspace/{issue_number}/` only**
-- **PROHIBITED locations for verification files:**
-  - `docs/issues/{issue_number}/evidence/` (except for final reports)
-  - Project root directory
-  - `backend/` or `frontend/` directories
-  - Any other project directories
-- **Only final, polished reports should be saved to `docs/issues/{issue_number}/evidence/`**
-- **All intermediate files and raw data must remain in `.cursor/workspace/{issue_number}/`**
-
 **Streamlined Workflow**: This command handles committing changes and creating PR with automatic issue linking. Development should be done with `/dev` (no commits), tested with `/test`, then committed and PR created with `/pr`.
 
 ## Step 0: Issue Number Determination

@@ -29,40 +29,48 @@ Available commands:
 ## File Creation Restrictions
 
 ### Verification and Data Files
-- **ALL verification scripts, test data, and temporary files MUST be created in `.cursor/workspace/` only**
 - **PROHIBITED locations for verification files:**
   - `docs/issues/{issue_number}/evidence/` (except for final reports)
   - Project root directory
   - `backend/` or `frontend/` directories
   - Any other project directories
 
-### Allowed File Types in `.cursor/workspace/`:
-- Test execution scripts
-- Verification data files
-- Temporary analysis files
-- Debug output files
-- Validation scripts
-- Any other non-production files
-
-### Final Reports Only
-- Only final, polished reports should be saved to `docs/issues/{issue_number}/evidence/`
-- All intermediate files and raw data must remain in `.cursor/workspace/`
-
-### Standard Directory Structure
+## Project Structure
 ```
-.cursor/workspace/
-├── {issue_number}/
-│   ├── verification/
-│   │   ├── test-scripts/     # Test execution scripts
-│   │   ├── data-files/       # Raw test data and debug files
-│   │   ├── temp-files/       # Temporary analysis files
-│   │   └── debug-output/     # Debug logs and output files
-│   └── final-reports/        # Final reports (moved to docs/issues/{issue_number}/evidence/)
-```
+backend/
+├── src/
+│   ├── domain/
+│   │   └── alert/
+│   │       ├── alertSchema.ts
+│   │       ├── alertModel.ts
+│   │       └── alertService.ts
+│   └── api/
+│       └── alertRoutes.ts
+└── tests/
 
+frontend/
+├── src/
+│   ├── components/
+│   │   └── AuthorGroupedTable.vue
+│   └── pages/
+│       └── index.vue
+└── tests/
+```
 ## Project Context
 
 - Language: Japanese responses preferred
 - Tech Stack: Node.js, TypeScript, Nuxt.js, PostgreSQL, Jest
 - Follow existing project conventions and patterns
 
+## Commands
+```bash
+# Backend
+yarn dev        # Start development server
+yarn test:unit          # Run tests
+yarn db:migrate   # Run database migrations
+yarn build  # Build for production
+# Frontend
+yarn dev          # Start development server
+yarn test         # Run tests
+yarn build        # Build for production
+```
