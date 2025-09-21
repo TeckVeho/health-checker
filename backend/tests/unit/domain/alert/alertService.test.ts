@@ -1,4 +1,13 @@
-// Mock tất cả dependencies trước khi import
+/**
+ * AlertService Unit Tests
+ * 
+ * This file tests the AlertService functionality including:
+ * - Alert creation and management
+ * - Integration with various scanning utilities
+ * - Error handling and edge cases
+ */
+
+// Mock all external dependencies before importing
 jest.mock('../../../../src/domain/alert/util/checkActions', () => ({
   checkActions: jest.fn(),
 }));
@@ -23,7 +32,7 @@ jest.mock('../../../../src/domain/alert/util/auditScanner', () => ({
   auditScanner: jest.fn(),
 }));
 
-// Mock AI SDK
+// Mock AI SDK dependencies
 jest.mock('ai', () => ({
   generateText: jest.fn(),
 }));
@@ -32,6 +41,7 @@ jest.mock('@ai-sdk/openai', () => ({
   openai: jest.fn(() => 'mock-model'),
 }));
 
+// Mock database configuration
 jest.mock('../../../../src/config/database', () => ({
   __esModule: true,
   default: {
@@ -39,6 +49,7 @@ jest.mock('../../../../src/config/database', () => ({
   },
 }));
 
+// Mock alert schema
 jest.mock('../../../../src/domain/alert/alertSchema', () => ({
   alertAttributes: {},
   alertModelOptions: {},
