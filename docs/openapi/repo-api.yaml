@@ -1,0 +1,399 @@
+openapi: 3.0.3
+info:
+  title: Health Checker Repository API
+  description: |
+    Health Checker system Repository management API specification
+    
+    ## Overview
+    This API provides functionality to manage repositories in the Health Checker system.
+    
+    ## Authentication
+    Currently accessible without authentication.
+    
+    ## Rate Limiting
+    - Standard rate limiting applies
+    - Repository sync operations may have additional limits
+    
+    ## Error Responses
+    All error responses are returned in the following format:
+    ```json
+    {
+      "success": false,
+      "error": {
+        "code": "ERROR_CODE",
+        "message": "Error message"
+      }
+    }
+    ```
+  version: 1.0.0
+  contact:
+    name: Health Checker Team
+    email: support@health-checker.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3001/api
+    description: Development environment
+  - url: https://api.health-checker.com/api
+    description: Production environment
+
+paths:
+  /repos:
+    get:
+      tags:
+        - Repository
+      summary: Get all repositories
+      description: |
+        Retrieve a paginated list of all repositories in the system.
+        
+        ## Pagination
+        Results are paginated with configurable page size and sorting options.
+      operationId: getAllRepos
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: Page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          required: false
+          description: Number of repositories per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          example: 10
+        - name: sort
+          in: query
+          required: false
+          description: Sort field
+          schema:
+            type: string
+            default: "createdAt"
+          example: "createdAt"
+      responses:
+        '200':
+          description: Repositories retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepositoryList'
+              examples:
+                success:
+                  summary: Successful response
+                  value:
+                    success: true
+                    data:
+                      repositories:
+                        - id: 1
+                          owner: "octocat"
+                          repo: "Hello-World"
+                          url: "https://github.com/octocat/Hello-World"
+                          createdAt: "2023-09-19T12:34:56.789Z"
+                          updatedAt: "2023-09-19T12:34:56.789Z"
+                    pagination:
+                      total: 50
+                      page: 1
+                      limit: 10
+                      totalPages: 5
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /repos/{id}:
+    get:
+      tags:
+        - Repository
+      summary: Get repository by ID
+      description: |
+        Retrieve detailed information about a specific repository.
+      operationId: getRepoById
+      parameters:
+        - $ref: '#/components/parameters/RepositoryId'
+      responses:
+        '200':
+          description: Repository retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Repository'
+              examples:
+                success:
+                  summary: Successful response
+                  value:
+                    success: true
+                    data:
+                      id: 1
+                      owner: "octocat"
+                      repo: "Hello-World"
+                      url: "https://github.com/octocat/Hello-World"
+                      description: "My first repository"
+                      createdAt: "2023-09-19T12:34:56.789Z"
+                      updatedAt: "2023-09-19T12:34:56.789Z"
+        '404':
+          description: Repository not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  summary: Repository not found
+                  value:
+                    success: false
+                    error:
+                      code: "REPOSITORY_NOT_FOUND"
+                      message: "Repository with ID 1 not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /repos/sync/{owner}:
+    post:
+      tags:
+        - Repository
+      summary: Sync repositories from GitHub
+      description: |
+        Synchronize repositories from GitHub for the specified owner.
+        
+        ## Process
+        1. Fetches all repositories from GitHub API for the owner
+        2. Compares with existing repositories in database
+        3. Creates new repositories and updates existing ones
+        4. Returns list of synchronized repositories
+        
+        ## Rate Limiting
+        GitHub API rate limits apply. Large organizations may require multiple requests.
+      operationId: syncRepos
+      parameters:
+        - $ref: '#/components/parameters/Owner'
+      responses:
+        '201':
+          description: Repositories synchronized successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Repositories synchronized successfully"
+                  count:
+                    type: integer
+                    description: Number of repositories synchronized
+                    example: 5
+                  repositories:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Repository'
+              examples:
+                success:
+                  summary: Successful sync
+                  value:
+                    message: "Repositories synchronized successfully"
+                    count: 3
+                    repositories:
+                      - id: 1
+                        owner: "octocat"
+                        repo: "Hello-World"
+                        url: "https://github.com/octocat/Hello-World"
+                        createdAt: "2023-09-19T12:34:56.789Z"
+                        updatedAt: "2023-09-19T12:34:56.789Z"
+                      - id: 2
+                        owner: "octocat"
+                        repo: "Spoon-Knife"
+                        url: "https://github.com/octocat/Spoon-Knife"
+                        createdAt: "2023-09-19T12:34:56.789Z"
+                        updatedAt: "2023-09-19T12:34:56.789Z"
+        '400':
+          description: Invalid owner parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_owner:
+                  summary: Invalid owner
+                  value:
+                    success: false
+                    error:
+                      code: "INVALID_OWNER"
+                      message: "Owner parameter is required"
+        '404':
+          description: Owner not found on GitHub
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                owner_not_found:
+                  summary: Owner not found
+                  value:
+                    success: false
+                    error:
+                      code: "OWNER_NOT_FOUND"
+                      message: "GitHub user or organization 'invalid-owner' not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    Repository:
+      type: object
+      required:
+        - id
+        - owner
+        - repo
+        - url
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          description: Unique repository identifier
+          example: 1
+        owner:
+          type: string
+          description: GitHub repository owner (user or organization)
+          example: "octocat"
+        repo:
+          type: string
+          description: Repository name
+          example: "Hello-World"
+        url:
+          type: string
+          format: uri
+          description: Repository URL
+          example: "https://github.com/octocat/Hello-World"
+        description:
+          type: string
+          description: Repository description
+          example: "My first repository"
+        createdAt:
+          type: string
+          format: date-time
+          description: Repository creation timestamp
+          example: "2023-09-19T12:34:56.789Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: "2023-09-19T12:34:56.789Z"
+
+    RepositoryList:
+      type: object
+      required:
+        - success
+        - data
+        - pagination
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            repositories:
+              type: array
+              items:
+                $ref: '#/components/schemas/Repository'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    Pagination:
+      type: object
+      required:
+        - total
+        - page
+        - limit
+        - totalPages
+      properties:
+        total:
+          type: integer
+          description: Total number of repositories
+          example: 50
+        page:
+          type: integer
+          description: Current page number
+          example: 1
+        limit:
+          type: integer
+          description: Number of items per page
+          example: 10
+        totalPages:
+          type: integer
+          description: Total number of pages
+          example: 5
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: Error code
+              example: "REPOSITORY_NOT_FOUND"
+            message:
+              type: string
+              description: Human-readable error message
+              example: "Repository with ID 1 not found"
+
+  parameters:
+    RepositoryId:
+      name: id
+      in: path
+      required: true
+      description: Repository ID
+      schema:
+        type: integer
+        minimum: 1
+      example: 1
+
+    Owner:
+      name: owner
+      in: path
+      required: true
+      description: GitHub repository owner name (user or organization)
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9-_]+$'
+      example: "octocat"
+
+tags:
+  - name: Repository
+    description: Repository management operations
