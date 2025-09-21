@@ -36,31 +36,39 @@ Execute tests and record results with AI Agent
    - Detect test file locations
 
 3. **Execute Test Suite**
-   - Run appropriate test commands based on the framework
+   - **If testable code exists**: Run appropriate test commands based on the framework
+   - **If no testable code (documentation, configuration, etc.)**: Skip test execution and proceed to manual review
 
 4. **Record Results**
-   - Save raw outputs to `docs/issues/{issue_number}/evidence/`  
-     (e.g., `test_output.log`, `coverage.json`)
+   - **If tests were executed**: Save raw outputs to `docs/issues/{issue_number}/evidence/`  
+     (e.g., `test_output.log`, `coverage.json`, `test-results.json`)
      - **IMPORTANT**: Save to `docs/issues/{issue_number}/evidence/` (root level), NOT `backend/docs/issues/{issue_number}/evidence/`
+   - **If no tests were executed**: Document "No automated tests available" with manual review results
    - Create final structured report in `docs/issues/{issue_number}/test.md`
+   - **CRITICAL: NO TEST RESULT FALSIFICATION**: Record actual test results only - NEVER create fake or simulated test results
 
 5. **Generate Report**
-   - Summarize total tests, passed, failed, and coverage
-   - List failed tests with error details
-   - **Compare Issue Requirements vs Implementation vs Test Results**
+   - **If tests were executed**: Summarize total tests, passed, failed, and coverage
+   - **If tests were executed**: List failed tests with error details
+   - **If no tests were executed**: Conduct manual review of deliverables and document findings
+   - **Compare Issue Requirements vs Implementation vs Test Results (or Manual Review)**
    - Provide comprehensive **review notes** with improvement suggestions
+   - **If tests fail to run or produce no results**: Explicitly document "Tests failed to execute" or "No test results generated" - DO NOT create fake results
 
 6. **Cross-Reference Analysis**
    - Read `docs/issues/{issue_number}/issue.md` to understand requirements
    - Read `docs/issues/{issue_number}/spec.md` to understand specifications
    - Read `docs/issues/{issue_number}/plan.md` to understand planned tasks
    - Read `docs/issues/{issue_number}/dev.md` to understand implementation progress
-   - Compare actual test results against planned coverage goals
+   - **If tests were executed**: Compare actual test results against planned coverage goals
+   - **If no tests were executed**: Compare deliverables against issue requirements through manual review
 
 7. **Handle Failures**
    - Do NOT commit or fix here
    - Document failure causes and suspected issues in `test.md`
-   - Identify gaps between issue requirements and test coverage
+   - **If tests were executed**: Identify gaps between issue requirements and test coverage
+   - **If no tests were executed**: Identify gaps between issue requirements and deliverables through manual review
+   - **If test execution fails completely**: Document "Test execution failed" with error details - NEVER create fake test results
 
 ---
 
@@ -82,6 +90,7 @@ docs/
 
 ## `test.md` Template
 
+**For Issues with Testable Code:**
 ```markdown
 # Test Report for Issue #{issue_number}
 
@@ -90,6 +99,22 @@ docs/
 - Passed: 125
 - Failed: 3
 - Coverage: 87%
+```
+
+**For Issues without Testable Code (Documentation, Configuration, etc.):**
+```markdown
+# Review Report for Issue #{issue_number}
+
+## Summary
+- **Test Type**: Manual Review (No automated tests available)
+- **Deliverables Reviewed**: [List of deliverables created]
+- **Requirements Compliance**: [Assessment of compliance with issue requirements]
+
+### Manual Review Results
+- **Files Created/Modified**: [List of files created or modified]
+- **Content Quality**: [Assessment of content quality and completeness]
+- **Format Compliance**: [Assessment of format and structure compliance]
+- **Requirements Coverage**: [Assessment of how well deliverables meet requirements]
 
 ## Requirements vs Implementation Analysis
 
@@ -105,10 +130,11 @@ docs/
 
 ### Actual Implementation (from dev.md)
 - **Completed Tasks**: [List of completed tasks]
-- **Coverage Achieved**: [Actual coverage numbers]
-- **Test Files Created**: [Number and types of test files]
+- **Coverage Achieved**: [Actual coverage numbers] (if applicable)
+- **Deliverables Created**: [List of deliverables created]
 
-## Failures
+## Failures (if applicable)
+**For Testable Code:**
 1. `tests/services/userService.test.js` - "should create user with valid data"  
    Error: ValidationError: email must be unique
 
@@ -117,6 +143,11 @@ docs/
 
 3. `tests/utils/dateHelper.test.js` - "formatDate handles null input"  
    Error: TypeError: Cannot read property 'toISOString' of null
+
+**For Non-Testable Code:**
+- **Missing Requirements**: [List any requirements not met]
+- **Quality Issues**: [List any quality or format issues found]
+- **Incomplete Deliverables**: [List any incomplete deliverables]
 
 ## Cross-Reference Analysis
 
@@ -132,9 +163,15 @@ docs/
 - **Gap**: [Difference between plan and implementation]
 
 ### 📊 Coverage Analysis
+**For Testable Code:**
 - **Target Coverage**: [Coverage goals from issue/spec]
 - **Achieved Coverage**: [Actual coverage from test results]
 - **Gap**: [Coverage shortfall and areas needing attention]
+
+**For Non-Testable Code:**
+- **Requirements Coverage**: [How well deliverables cover the issue requirements]
+- **Quality Assessment**: [Assessment of deliverable quality and completeness]
+- **Gap**: [Areas where requirements are not fully met]
 
 ## Review Notes
 
@@ -142,14 +179,28 @@ docs/
 - [List successful implementations and test achievements]
 
 ### 🔍 Areas for Improvement
+**For Testable Code:**
 - [ ] **Requirement Gap**: [Specific requirement not met]
 - [ ] **Coverage Gap**: [Areas with low coverage and why]
 - [ ] **Implementation Gap**: [Planned vs actual implementation differences]
 - [ ] **Test Quality**: [Test quality issues or missing test scenarios]
 
+**For Non-Testable Code:**
+- [ ] **Requirement Gap**: [Specific requirement not met in deliverables]
+- [ ] **Quality Gap**: [Areas where deliverable quality can be improved]
+- [ ] **Implementation Gap**: [Planned vs actual implementation differences]
+- [ ] **Content Quality**: [Content quality issues or missing information]
+
 ### 📋 Recommendations for PR
+**For Testable Code:**
 1. **Requirements Compliance**: [How well the implementation meets the original issue requirements]
 2. **Test Coverage**: [Coverage analysis and recommendations]
 3. **Code Quality**: [Code quality observations from test results]
 4. **Future Improvements**: [Suggestions for future iterations]
+
+**For Non-Testable Code:**
+1. **Requirements Compliance**: [How well the deliverables meet the original issue requirements]
+2. **Deliverable Quality**: [Quality assessment and recommendations]
+3. **Content Completeness**: [Assessment of content completeness and accuracy]
+4. **Future Improvements**: [Suggestions for future iterations or enhancements]
 ```
