@@ -125,28 +125,29 @@ Step 3: GitHub PR Creation with Issue Linking
 
 **Evidence Section Implementation Details:**
 
-1. **Test Results Loading**:
+1. **Command-Result Pairing**:
+   - Each command must be paired with its specific result
+   - Use numbered sections (1, 2, 3, 4) for clear organization
+   - **Command format**: Use code blocks with bash syntax highlighting
+   - **Result format**: Use bullet points with key metrics and status
+
+2. **Test Results Loading**:
    - Read `docs/issues/{issue_number}/evidence/test-results.json`
    - Parse backend and frontend test results
    - Extract test counts, pass/fail status, coverage data
    - **CRITICAL: NO TEST RESULT FALSIFICATION**: If test results are missing or unavailable, explicitly state "No test results available" - NEVER create fake or simulated test results
 
-2. **Test Summary Generation**:
-   - **If test results exist**: Format backend test results: "X tests passed, Y tests failed (Z.Xs)"
-   - **If test results exist**: Format frontend test results: "X tests passed, Y tests failed (Z.Xs)"
-   - **If test results exist**: Calculate total execution time
-   - **If test results exist**: Determine overall status (PASSED/FAILED/PARTIAL)
-   - **If NO test results**: Display "⚠️ No test results available - Tests have not been executed or results are not accessible"
+3. **Command Execution Documentation**:
+   - **Backend Testing**: Document `yarn test:unit` command and results
+   - **Build Verification**: Document `yarn build` command and results
+   - **Type Checking**: Document `npx tsc --noEmit --strict` command and results
+   - **Code Linting**: Document `npx eslint src` command and results
 
-3. **Failed Test Details**:
-   - If any tests failed, include detailed failure information
-   - Show failed test names and error messages
-   - Include stack traces for debugging
-
-4. **Coverage Information**:
-   - Display coverage percentages for statements, branches, functions, lines
-   - Include coverage trends if available
-   - Highlight low coverage areas
+4. **Result Formatting**:
+   - Include key metrics: test counts, coverage percentages, error counts
+   - Show execution time for performance-critical commands
+   - Display status (SUCCESS/FAILED) clearly
+   - **CRITICAL: NO TEST RESULT FALSIFICATION**: If test results are missing or unavailable, explicitly state "No test results available" - NEVER create fake or simulated test results
 
 **Required Commands:**
 - `git --no-pager status` - Check repository state (with pager disabled)
@@ -163,29 +164,48 @@ Step 3: GitHub PR Creation with Issue Linking
 ```markdown
 ## Evidence
 
-### Test Execution Summary
-{test_execution_summary}
-
-### Test Results Details
-{test_results_details}
-
-### Failed Tests (if any)
-{failed_test_details}
-
-### Coverage Information
-{coverage_information}
+### 1. Backend Testing
+**Command:**
+```bash
+{backend_test_command}
 ```
 
-**Test Execution Summary Templates:**
+**Result:**
+{backend_test_results}
 
-**When test results are available:**
-```markdown
-### Test Execution Summary
-- **Backend Tests**: {backend_test_summary}
-- **Frontend Tests**: {frontend_test_summary}
-- **Total Execution Time**: {total_duration}
-- **Overall Status**: {overall_status}
+### 2. Build Verification
+**Command:**
+```bash
+{build_command}
 ```
+
+**Result:**
+{build_results}
+
+### 3. Type Checking
+**Command:**
+```bash
+{type_check_command}
+```
+
+**Result:**
+{type_check_results}
+
+### 4. Code Linting
+**Command:**
+```bash
+{lint_command}
+```
+
+**Result:**
+{lint_results}
+```
+
+**Command-Result Mapping:**
+- **Backend Testing**: `cd backend && yarn test:unit` → Test results with coverage
+- **Build Verification**: `yarn build` → Build status and error count
+- **Type Checking**: `npx tsc --noEmit --strict` → Type check status and error count
+- **Code Linting**: `npx eslint src` → Lint status and error/warning count
 
 **When NO test results are available:**
 ```markdown
@@ -198,13 +218,15 @@ Step 3: GitHub PR Creation with Issue Linking
 
 **Key Features:**
 - **PR Body Saving**: Creates pr.md files in docs/issues/{issue_number}/ **BEFORE** committing
-- **Evidence Section**: Includes comprehensive test results and execution details
+- **Evidence Section**: Includes comprehensive test results and execution details in command-result format
+- **Command-Result Pairing**: Each command is paired with its specific result for clear traceability
 - **Test Integration**: Automatically loads and formats test results from evidence files
 - **No Test Falsification**: NEVER creates fake test results - explicitly states when tests are not available
 - **Automatic Issue Linking**: Every PR automatically links to its corresponding issue
 - **Consistent Formatting**: Standardized PR titles and commit messages
 - **Error Handling**: Robust error handling for Git and GitHub operations
 - **Pre-commit Documentation**: PR body is generated and saved before any git operations
+- **Clear Organization**: Numbered sections (1, 2, 3, 4) for easy navigation and verification
 
 **Issue**: {issue_number or auto-detected}
 **Auto Link**: {auto_link (defaults to true)}
