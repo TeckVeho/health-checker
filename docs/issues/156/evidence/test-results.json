@@ -1,0 +1,41 @@
+{
+  "testResults": {
+    "backend": {
+      "timestamp": "2025-01-21T11:40:00.000Z",
+      "testSuites": 25,
+      "tests": 395,
+      "passed": 395,
+      "failed": 0,
+      "coverage": {
+        "statements": "50.64%",
+        "branches": "37.32%",
+        "functions": "35.95%",
+        "lines": "50.92%"
+      },
+      "status": "PASSED",
+      "duration": "2.068s"
+    },
+    "frontend": {
+      "timestamp": "2025-01-21T11:40:00.000Z",
+      "testFiles": 16,
+      "tests": 200,
+      "passed": 200,
+      "failed": 0,
+      "status": "PASSED",
+      "duration": "1.77s"
+    }
+  },
+  "implementation": {
+    "filesModified": [
+      ".cursor/commands/pr.md"
+    ],
+    "featuresAdded": [
+      "Evidenceセクションの追加",
+      "テスト結果の取得とフォーマット機能",
+      "pr.mdファイル保存機能",
+      "テスト実行コマンドと結果の詳細表示",
+      "失敗したテストの詳細情報表示"
+    ],
+    "status": "COMPLETED"
+  }
+}
