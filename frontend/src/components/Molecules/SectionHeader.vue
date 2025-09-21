@@ -8,54 +8,54 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed } from 'vue';
 
 const props = defineProps({
   title: {
     type: String,
-    required: true
+    required: true,
   },
   count: {
     type: Number,
-    required: true
+    required: true,
   },
   description: {
     type: String,
-    required: true
+    required: true,
   },
   variant: {
     type: String,
     default: 'active',
-    validator: (value) => ['active', 'resolved', 'health'].includes(value)
-  }
-})
+    validator: value => ['active', 'resolved', 'health'].includes(value),
+  },
+});
 
 // Computed properties for dynamic styling
 const titleColor = computed(() => {
   switch (props.variant) {
     case 'active':
-      return 'text-red-800'
+      return 'text-red-800';
     case 'resolved':
-      return 'text-green-800'
+      return 'text-green-800';
     case 'health':
-      return 'text-gray-900'
+      return 'text-gray-900';
     default:
-      return 'text-gray-900'
+      return 'text-gray-900';
   }
-})
+});
 
 const descriptionColor = computed(() => {
   switch (props.variant) {
     case 'active':
-      return 'text-red-600'
+      return 'text-red-600';
     case 'resolved':
-      return 'text-green-600'
+      return 'text-green-600';
     case 'health':
-      return 'text-gray-600'
+      return 'text-gray-600';
     default:
-      return 'text-gray-600'
+      return 'text-gray-600';
   }
-})
+});
 </script>
 
 <style scoped>
@@ -99,4 +99,4 @@ p.text-gray-600 {
   font-size: 0.875rem !important;
   line-height: 1.25rem !important;
 }
-</style> 
+</style>

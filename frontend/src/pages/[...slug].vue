@@ -1,8 +1,16 @@
 <template>
   <div class="p-6 space-y-8">
-    <HealthTitle title="GitHub Health Checker" />
+    <BaseText text="GitHub Health Checker" />
 
-    <BackToDashboardLink />
+    <BaseButton
+      action="back"
+      text="Back to Dashboard"
+      icon="pi pi-angle-left"
+      href="/"
+      variant="primary"
+      customClass="group inline-flex items-center gap-3 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 active:scale-95 transition-transform duration-200 no-underline"
+      aria-label="Navigate back to dashboard"
+    />
 
     <RepoAlertTitle :owner="owner" :repo="repo">
       <template #recheck v-if="hasValidParams">
@@ -14,7 +22,7 @@
             :retry-after-seconds="recheckRetryAfterSeconds"
             @click="handleRecheck"
           />
-          
+
           <!-- ReCheck Status (compact inline version) -->
           <div v-if="recheckStatus" class="recheck-status-inline">
             <RecheckStatus
@@ -29,19 +37,24 @@
         </div>
       </template>
     </RepoAlertTitle>
-    
-    <LoadingText v-if="loading" text="Loading alerts..." aria-label="Loading alert data" />
+
+    <BaseText
+      v-if="loading"
+      text="Loading alerts..."
+      :loading="true"
+      aria-label="Loading alert data"
+    />
 
     <!-- Alerts Section -->
     <div v-else-if="hasAlerts" class="alerts-section">
-      <SectionHeader 
+      <SectionHeader
         title="Active Alerts"
         :count="visibleAlerts.length"
         description="Issues that require immediate attention"
         variant="active"
       />
-      
-      <AlertTable 
+
+      <AlertTable
         :alerts="visibleAlerts"
         :checkTypeLabels="checkTypeLabels"
         :owner="owner"
@@ -52,7 +65,7 @@
         custom-class="shadow-lg"
       />
     </div>
-    
+
     <!-- ReCheck History Modal -->
     <Dialog
       v-if="hasValidParams"
@@ -73,14 +86,14 @@
 
     <!-- Resolved Alerts Section -->
     <div v-if="!loading && hasResolvedAlerts" class="space-y-4">
-      <SectionHeader 
+      <SectionHeader
         title="Resolved Alerts"
         :count="resolvedAlerts.length"
         description="Issues that have been automatically resolved"
         variant="resolved"
       />
-      
-      <AlertTable 
+
+      <AlertTable
         :alerts="resolvedAlerts"
         :checkTypeLabels="checkTypeLabels"
         :owner="owner"
@@ -93,8 +106,9 @@
     </div>
 
     <!-- No Alerts Message -->
-    <EmptyState 
+    <BaseState
       v-if="!loading && !hasAlerts && !hasResolvedAlerts"
+      type="empty"
       title="No Alerts Found"
       description="This repository appears to be healthy with no active or resolved alerts."
     />
@@ -102,28 +116,27 @@
 </template>
 
 <script setup>
-import { onMounted, watch, ref, computed } from 'vue'
-import { useCustomToast } from '~/composables/useCustomToast'
-import HealthTitle from '~/components/Atoms/HealthTitle.vue'
-import AlertTable from '~/components/Molecules/AlertTable.vue'
-import BackToDashboardLink from '~/components/Atoms/BackToDashboardLink.vue'
-import LoadingText from '~/components/Atoms/LoadingText.vue'
-import RepoAlertTitle from '~/components/Atoms/RepoAlertTitle.vue'
-import SectionHeader from '~/components/Molecules/SectionHeader.vue'
-import EmptyState from '~/components/Atoms/EmptyState.vue'
-import RecheckButton from '~/components/Atoms/RecheckButton.vue'
-import RecheckStatus from '~/components/Molecules/RecheckStatus.vue'
-import RecheckHistory from '~/components/Molecules/RecheckHistory.vue'
-import Dialog from 'primevue/dialog'
-import { useRouteParams } from '~/composables/useRouteParams'
-import { useAlerts } from '~/composables/useAlerts'
-import { useRecheck } from '~/composables/useRecheck'
+import { onMounted, watch, ref, computed } from 'vue';
+import { useCustomToast } from '~/composables/useCustomToast';
+import AlertTable from '~/components/Molecules/AlertTable.vue';
+import BaseText from '~/components/Atoms/text/BaseText.vue';
+import BaseButton from '~/components/Atoms/buttons/BaseButton.vue';
+import RepoAlertTitle from '~/components/Atoms/RepoAlertTitle.vue';
+import SectionHeader from '~/components/Molecules/SectionHeader.vue';
+import BaseState from '~/components/Atoms/states/BaseState.vue';
+import RecheckButton from '~/components/Atoms/RecheckButton.vue';
+import RecheckStatus from '~/components/Molecules/RecheckStatus.vue';
+import RecheckHistory from '~/components/Molecules/RecheckHistory.vue';
+import Dialog from 'primevue/dialog';
+import { useRouteParams } from '~/composables/useRouteParams';
+import { useAlerts } from '~/composables/useAlerts';
+import { useRecheck } from '~/composables/useRecheck';
 
 // Use toast for additional error handling
-const toast = useCustomToast()
+const toast = useCustomToast();
 
 // Use route params composable
-const { owner, repo, hasValidParams } = useRouteParams()
+const { owner, repo, hasValidParams } = useRouteParams();
 
 // Use the alerts composable
 const {
@@ -137,16 +150,16 @@ const {
   hasResolvedAlerts,
   startTemporaryPolling,
   isTemporaryPolling,
-} = useAlerts(owner, repo)
+} = useAlerts(owner, repo);
 
 // ReCheck functionality
-const showHistory = ref(false)
-const recheckHistoryLoading = ref(false)
-const recheckHasMore = ref(false)
+const showHistory = ref(false);
+const recheckHistoryLoading = ref(false);
+const recheckHasMore = ref(false);
 
 // Use ReCheck composable
 const recheck = computed(() => {
-  if (!owner.value || !repo.value) return null
+  if (!owner.value || !repo.value) return null;
   return useRecheck({
     owner: owner.value,
     repo: repo.value,
@@ -154,127 +167,141 @@ const recheck = computed(() => {
     refreshInterval: 3000,
     onRecheckComplete: async () => {
       // ReCheck完了後にアラートデータを更新
-      console.log('ReCheck completed, refreshing alerts...')
-      await fetchAlerts()
-      
+      console.log('ReCheck completed, refreshing alerts...');
+      await fetchAlerts();
+
       // 一時的なポーリングを開始（1秒後に1回だけ）
-      startTemporaryPolling(1000)
-      
+      startTemporaryPolling(1000);
+
       // 成功通知を表示
-      toast.success('ReCheck完了', 'アラート情報を更新しました')
-    }
-  })
-})
+      toast.success('ReCheck完了', 'アラート情報を更新しました');
+    },
+  });
+});
 
 // ReCheck state
-const recheckLoading = computed(() => recheck.value?.loading.value || false)
-const recheckStatus = computed(() => recheck.value?.status.value || null)
-const recheckCanExecute = computed(() => recheck.value?.canExecute.value || false)
-const recheckRetryAfterSeconds = computed(() => recheck.value?.retryAfterSeconds.value || 0)
-const recheckHistory = computed(() => recheck.value?.executionHistory.value || [])
+const recheckLoading = computed(() => recheck.value?.loading.value || false);
+const recheckStatus = computed(() => recheck.value?.status.value || null);
+const recheckCanExecute = computed(
+  () => recheck.value?.canExecute.value || false
+);
+const recheckRetryAfterSeconds = computed(
+  () => recheck.value?.retryAfterSeconds.value || 0
+);
+const recheckHistory = computed(
+  () => recheck.value?.executionHistory.value || []
+);
 
 // ReCheck methods
 async function handleRecheck() {
-  if (!recheck.value) return
-  
+  if (!recheck.value) return;
+
   try {
-    const result = await recheck.value.executeRecheck()
-    
+    const result = await recheck.value.executeRecheck();
+
     if (result?.success) {
-      toast.success('ReCheck Started', result.message)
+      toast.success('ReCheck Started', result.message);
       // Refresh alerts after successful ReCheck
-      await fetchAlerts()
+      await fetchAlerts();
     } else if (result?.error) {
       if (result.error.code === 'RATE_LIMITED') {
-        const retryAfter = result.error.retryAfter || 0
-        const minutes = Math.ceil(retryAfter / 60)
-        const seconds = retryAfter % 60
-        let timeMessage = ''
-        
+        const retryAfter = result.error.retryAfter || 0;
+        const minutes = Math.ceil(retryAfter / 60);
+        const seconds = retryAfter % 60;
+        let timeMessage = '';
+
         if (minutes > 0) {
-          timeMessage = seconds > 0 ? `${minutes}分${seconds}秒` : `${minutes}分`
+          timeMessage =
+            seconds > 0 ? `${minutes}分${seconds}秒` : `${minutes}分`;
         } else {
-          timeMessage = `${seconds}秒`
+          timeMessage = `${seconds}秒`;
         }
-        
+
         toast.warn(
-          '時間制限によりReCheckできません', 
+          '時間制限によりReCheckできません',
           `前回の実行から3分経過していません。あと${timeMessage}お待ちください。`
-        )
+        );
       } else if (result.error.code === 'CONCURRENT_LIMIT_EXCEEDED') {
         toast.warn(
-          '同時実行制限に達しています', 
+          '同時実行制限に達しています',
           '他のReCheckが実行中です。完了するまでお待ちください。'
-        )
+        );
       } else if (result.error.code === 'RECHECK_DISABLED') {
         toast.error(
-          'ReCheckが無効です', 
+          'ReCheckが無効です',
           'このリポジトリではReCheck機能が無効化されています。'
-        )
+        );
       } else if (result.error.code === 'INVALID_CHECK_TYPES') {
         toast.error(
-          '無効なチェックタイプ', 
+          '無効なチェックタイプ',
           '指定されたチェックタイプが無効です。'
-        )
+        );
       } else {
-        toast.error('ReCheck Failed', result.error.message || 'ReCheckの実行に失敗しました')
+        toast.error(
+          'ReCheck Failed',
+          result.error.message || 'ReCheckの実行に失敗しました'
+        );
       }
     }
   } catch (error) {
-    console.error('ReCheck execution error:', error)
-    toast.error('ReCheck Error', 'ReCheckの実行中にエラーが発生しました')
+    console.error('ReCheck execution error:', error);
+    toast.error('ReCheck Error', 'ReCheckの実行中にエラーが発生しました');
   }
 }
 
 async function refreshRecheckStatus() {
-  if (!recheck.value) return
-  await recheck.value.refreshStatus()
+  if (!recheck.value) return;
+  await recheck.value.refreshStatus();
 }
 
 async function refreshRecheckHistory() {
-  if (!recheck.value) return
-  
-  recheckHistoryLoading.value = true
+  if (!recheck.value) return;
+
+  recheckHistoryLoading.value = true;
   try {
-    await recheck.value.refreshHistory()
+    await recheck.value.refreshHistory();
   } finally {
-    recheckHistoryLoading.value = false
+    recheckHistoryLoading.value = false;
   }
 }
 
 async function loadMoreHistory() {
-  if (!recheck.value) return
-  
-  recheckHistoryLoading.value = true
+  if (!recheck.value) return;
+
+  recheckHistoryLoading.value = true;
   try {
     // Load more history (implement pagination logic here)
-    const currentCount = recheckHistory.value.length
-    await recheck.value.refreshHistory(10, currentCount)
+    const currentCount = recheckHistory.value.length;
+    await recheck.value.refreshHistory(10, currentCount);
   } finally {
-    recheckHistoryLoading.value = false
+    recheckHistoryLoading.value = false;
   }
 }
 // Watch for route changes and refetch alerts
-watch([owner, repo], async ([newOwner, newRepo]) => {
-  if (newOwner && newRepo) {
-    try {
-      await Promise.all([
-        fetchAlerts(),
-        recheck.value?.initialize()
-      ])
-    } catch (err) {
-      console.error('Error fetching data on route change:', err)
-      toast.error('Navigation Error', 'Failed to load data for the new repository')
+watch(
+  [owner, repo],
+  async ([newOwner, newRepo]) => {
+    if (newOwner && newRepo) {
+      try {
+        await Promise.all([fetchAlerts(), recheck.value?.initialize()]);
+      } catch (err) {
+        console.error('Error fetching data on route change:', err);
+        toast.error(
+          'Navigation Error',
+          'Failed to load data for the new repository'
+        );
+      }
     }
-  }
-}, { immediate: true })
+  },
+  { immediate: true }
+);
 
 onMounted(() => {
   // Only show warning for invalid routes, fetchAlerts is already called by watch with immediate: true
   if (!hasValidParams.value) {
-    toast.warn('Invalid Route', 'Owner and repository parameters are required')
+    toast.warn('Invalid Route', 'Owner and repository parameters are required');
   }
-})
+});
 </script>
 
 <style scoped>
@@ -306,14 +333,13 @@ onMounted(() => {
     justify-content: flex-start;
     width: 100%;
   }
-  
+
   .recheck-status-inline {
     margin-top: 0.75rem;
   }
-  
+
   .alerts-section {
     margin-top: 1.5rem;
   }
 }
 </style>
-  

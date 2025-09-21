@@ -1,14 +1,11 @@
 <template>
   <div class="repo-alert-title-container">
-    <h2 
-      :id="id"
-      :class="['text-2xl font-semibold text-white', customClass]"
-    >
+    <h2 :id="id" :class="['text-2xl font-semibold text-white', customClass]">
       {{ title }}
-      <a 
+      <a
         v-if="owner && repo"
         :href="getRepositoryUrl(owner, repo)"
-        class="text-white underline hover:text-blue-400 transition-colors" 
+        class="text-white underline hover:text-blue-400 transition-colors"
         target="_blank"
         rel="noopener noreferrer"
         :aria-label="`View ${owner}/${repo} on GitHub`"
@@ -19,7 +16,7 @@
         {{ fallbackText }}
       </span>
     </h2>
-    
+
     <!-- ReCheck UI Slot -->
     <div v-if="$slots.recheck" class="recheck-inline">
       <slot name="recheck" />
@@ -28,7 +25,7 @@
 </template>
 
 <script setup>
-import { getRepositoryUrl } from '~/utils/github'
+import { getRepositoryUrl } from '~/utils/github';
 
 const props = defineProps({
   owner: {
@@ -61,7 +58,7 @@ const props = defineProps({
     required: false,
     default: '',
   },
-})
+});
 </script>
 
 <style scoped>
@@ -88,7 +85,7 @@ const props = defineProps({
     align-items: flex-start;
     gap: 0.75rem;
   }
-  
+
   .recheck-inline {
     align-self: stretch;
     justify-content: flex-start;

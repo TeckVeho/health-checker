@@ -4,7 +4,7 @@
       <h3 class="text-lg font-semibold text-gray-900">{{ title }}</h3>
       <p class="text-sm text-gray-600 mt-1">{{ description }}</p>
     </div>
-    
+
     <div class="p-4">
       <slot />
     </div>
@@ -15,11 +15,11 @@
 defineProps({
   title: {
     type: String,
-    required: true
+    required: true,
   },
   description: {
     type: String,
-    required: true
-  }
-})
-</script> 
+    required: true,
+  },
+});
+</script>

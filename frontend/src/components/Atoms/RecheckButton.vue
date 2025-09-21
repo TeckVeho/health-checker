@@ -10,7 +10,7 @@
       @click="handleClick"
       class="recheck-button"
     />
-    
+
     <!-- Status indicator -->
     <div v-if="showStatus && status" class="status-indicator">
       <Tag
@@ -20,7 +20,7 @@
         class="status-tag"
       />
     </div>
-    
+
     <!-- Retry countdown -->
     <div v-if="retryAfterSeconds > 0" class="retry-countdown">
       <small class="text-muted">
@@ -31,17 +31,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import Button from 'primevue/button'
-import Tag from 'primevue/tag'
+import { computed } from 'vue';
+import Button from 'primevue/button';
+import Tag from 'primevue/tag';
 
 export interface RecheckButtonProps {
-  loading?: boolean
-  canExecute?: boolean
-  status?: 'idle' | 'running' | 'completed' | 'error'
-  retryAfterSeconds?: number
-  showStatus?: boolean
-  size?: 'small' | 'normal' | 'large'
+  loading?: boolean;
+  canExecute?: boolean;
+  status?: 'idle' | 'running' | 'completed' | 'error';
+  retryAfterSeconds?: number;
+  showStatus?: boolean;
+  size?: 'small' | 'normal' | 'large';
 }
 
 const props = withDefaults(defineProps<RecheckButtonProps>(), {
@@ -50,102 +50,105 @@ const props = withDefaults(defineProps<RecheckButtonProps>(), {
   status: 'idle',
   retryAfterSeconds: 0,
   showStatus: true,
-  size: 'normal'
-})
+  size: 'normal',
+});
 
 const emit = defineEmits<{
-  click: []
-}>()
+  click: [];
+}>();
 
 // Computed properties
 const buttonLabel = computed(() => {
-  if (props.loading) return 'Running...'
-  if (props.status === 'running') return 'Running...'
-  if (props.status === 'completed') return 'ReCheck'
-  if (props.status === 'error') return 'Retry'
+  if (props.loading) return 'Running...';
+  if (props.status === 'running') return 'Running...';
+  if (props.status === 'completed') return 'ReCheck';
+  if (props.status === 'error') return 'Retry';
   if (!props.canExecute && props.retryAfterSeconds > 0) {
-    return `Wait ${formatCountdown(props.retryAfterSeconds)}`
+    return `Wait ${formatCountdown(props.retryAfterSeconds)}`;
   }
-  return 'ReCheck'
-})
+  return 'ReCheck';
+});
 
 const buttonIcon = computed(() => {
-  if (props.loading || props.status === 'running') return 'pi pi-spin pi-spinner'
-  if (props.status === 'completed') return 'pi pi-refresh'
-  if (props.status === 'error') return 'pi pi-replay'
-  if (!props.canExecute && props.retryAfterSeconds > 0) return 'pi pi-clock'
-  return 'pi pi-refresh'
-})
+  if (props.loading || props.status === 'running')
+    return 'pi pi-spin pi-spinner';
+  if (props.status === 'completed') return 'pi pi-refresh';
+  if (props.status === 'error') return 'pi pi-replay';
+  if (!props.canExecute && props.retryAfterSeconds > 0) return 'pi pi-clock';
+  return 'pi pi-refresh';
+});
 
 const buttonSeverity = computed(() => {
-  if (props.loading || props.status === 'running') return 'info'
-  if (props.status === 'error') return 'warn'
-  if (!props.canExecute && props.retryAfterSeconds > 0) return 'warning'
-  return 'secondary'
-})
+  if (props.loading || props.status === 'running') return 'info';
+  if (props.status === 'error') return 'warn';
+  if (!props.canExecute && props.retryAfterSeconds > 0) return 'warning';
+  return 'secondary';
+});
 
 const statusText = computed(() => {
   switch (props.status) {
     case 'running':
-      return 'Running'
+      return 'Running';
     case 'completed':
-      return 'Completed'
+      return 'Completed';
     case 'error':
-      return 'Error'
+      return 'Error';
     default:
-      return 'Ready'
+      return 'Ready';
   }
-})
+});
 
 const statusSeverity = computed(() => {
   switch (props.status) {
     case 'running':
-      return 'info'
+      return 'info';
     case 'completed':
-      return 'success'
+      return 'success';
     case 'error':
-      return 'danger'
+      return 'danger';
     default:
-      return 'secondary'
+      return 'secondary';
   }
-})
+});
 
 const statusIcon = computed(() => {
   switch (props.status) {
     case 'running':
-      return 'pi pi-spin pi-spinner'
+      return 'pi pi-spin pi-spinner';
     case 'completed':
-      return 'pi pi-check'
+      return 'pi pi-check';
     case 'error':
-      return 'pi pi-times'
+      return 'pi pi-times';
     default:
-      return 'pi pi-clock'
+      return 'pi pi-clock';
   }
-})
+});
 
 // Methods
 function handleClick() {
   if (props.canExecute && !props.loading) {
-    emit('click')
+    emit('click');
   }
 }
 
 function formatCountdown(seconds: number): string {
   if (seconds < 60) {
-    return `${seconds}s`
+    return `${seconds}s`;
   }
-  
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = seconds % 60
-  
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
   if (minutes < 60) {
-    return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`
+    return remainingSeconds > 0
+      ? `${minutes}m ${remainingSeconds}s`
+      : `${minutes}m`;
   }
-  
-  const hours = Math.floor(minutes / 60)
-  const remainingMinutes = minutes % 60
-  
-  return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
 }
 </script>
 

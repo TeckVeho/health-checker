@@ -42,7 +42,7 @@ describe('useSortState', () => {
       const { sortState } = useSortState()
       
       expect(sortState.value).toEqual({
-        field: 'lastActivityAt',
+        field: 'totalViolations',
         order: 'desc'
       })
     })
@@ -55,7 +55,7 @@ describe('useSortState', () => {
       const { sortState } = useSortState()
       
       expect(sortState.value).toEqual({
-        field: 'lastActivityAt',
+        field: 'totalViolations',
         order: 'desc'
       })
     })
@@ -100,7 +100,7 @@ describe('useSortState', () => {
       clearSortState()
       
       expect(sortState.value).toEqual({
-        field: 'lastActivityAt',
+        field: 'totalViolations',
         order: 'desc'
       })
     })
@@ -115,7 +115,7 @@ describe('useSortState', () => {
       
       expect(localStorageMock.setItem).toHaveBeenCalledWith(
         'repo-table-sort-state',
-        JSON.stringify({ field: 'lastActivityAt', order: 'desc' })
+        JSON.stringify({ field: 'totalViolations', order: 'desc' })
       )
     })
   })

@@ -1,5 +1,6 @@
 import typescriptParser from '@typescript-eslint/parser';
 import typescriptPlugin from '@typescript-eslint/eslint-plugin';
+import unusedImportsPlugin from 'eslint-plugin-unused-imports';
 
 export default [
   {
@@ -13,12 +14,14 @@ export default [
     },
     plugins: {
       '@typescript-eslint': typescriptPlugin,
+      'unused-imports': unusedImportsPlugin,
     },
     rules: {
       'no-unused-vars': 'off',
-      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'unused-imports/no-unused-imports': 'error',
       '@typescript-eslint/naming-convention': [
         'error',
         { 

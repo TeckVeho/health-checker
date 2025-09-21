@@ -1,6 +1,19 @@
 import { ref, computed } from 'vue';
 import axios from 'axios';
 
+// Mock useRuntimeConfig for testing
+const useRuntimeConfig = () => {
+  if (typeof window !== 'undefined' && window.__NUXT__?.config) {
+    return window.__NUXT__.config;
+  }
+  return {
+    public: {
+      apiBaseUrl:
+        process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:3000',
+    },
+  };
+};
+
 interface AuthorAggregation {
   author: string;
   displayName: string | null;
@@ -38,17 +51,17 @@ export const useAuthorAlerts = () => {
   const data = ref<AuthorAggregation[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
-  
+
   // Pagination
   const currentPage = ref(1);
   const totalItems = ref(0);
   const totalPages = ref(0);
   const limit = ref(50);
-  
+
   // Sorting
   const sortBy = ref<'totalAlerts' | 'author' | 'lastActivity'>('totalAlerts');
   const sortOrder = ref<'asc' | 'desc'>('desc');
-  
+
   // Filters
   const owner = ref<string>('');
   const repo = ref<string>('');
@@ -61,30 +74,31 @@ export const useAuthorAlerts = () => {
   const fetchData = async () => {
     loading.value = true;
     error.value = null;
-    
+
     try {
       const params = new URLSearchParams({
         sortBy: sortBy.value,
         sortOrder: sortOrder.value,
         page: currentPage.value.toString(),
-        limit: limit.value.toString()
+        limit: limit.value.toString(),
       });
-      
+
       if (owner.value) params.append('owner', owner.value);
       if (repo.value) params.append('repo', repo.value);
-      
+
       const response = await axios.get<AuthorAlertsResponse>(
         `${apiBaseUrl}/api/alerts/by-author?${params}`
       );
-      
+
       data.value = response.data.data;
       totalItems.value = response.data.pagination.total;
       totalPages.value = response.data.pagination.totalPages;
       currentPage.value = response.data.pagination.page;
-      
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching author alerts:', err);
-      error.value = err.response?.data?.message || 'Failed to load author data';
+      error.value =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || 'Failed to load author data';
       data.value = [];
       totalItems.value = 0;
       totalPages.value = 0;
@@ -105,7 +119,10 @@ export const useAuthorAlerts = () => {
     fetchData();
   };
 
-  const setSorting = (field: 'totalAlerts' | 'author' | 'lastActivity', order: 'asc' | 'desc' = 'desc') => {
+  const setSorting = (
+    field: 'totalAlerts' | 'author' | 'lastActivity',
+    order: 'asc' | 'desc' = 'desc'
+  ) => {
     sortBy.value = field;
     sortOrder.value = order;
     currentPage.value = 1;
@@ -121,15 +138,17 @@ export const useAuthorAlerts = () => {
 
   // Computed properties
   const hasData = computed(() => data.value.length > 0);
-  const isEmpty = computed(() => !loading.value && !hasData.value && !error.value);
+  const isEmpty = computed(
+    () => !loading.value && !hasData.value && !error.value
+  );
   const hasError = computed(() => !!error.value);
-  
+
   const paginationInfo = computed(() => ({
     current: currentPage.value,
     total: totalPages.value,
     items: totalItems.value,
-    from: totalItems.value > 0 ? ((currentPage.value - 1) * limit.value) + 1 : 0,
-    to: Math.min(currentPage.value * limit.value, totalItems.value)
+    from: totalItems.value > 0 ? (currentPage.value - 1) * limit.value + 1 : 0,
+    to: Math.min(currentPage.value * limit.value, totalItems.value),
   }));
 
   return {
@@ -137,32 +156,32 @@ export const useAuthorAlerts = () => {
     data,
     loading,
     error,
-    
+
     // Pagination
     currentPage,
     totalItems,
     totalPages,
     limit,
-    
+
     // Sorting
     sortBy,
     sortOrder,
-    
+
     // Filters
     owner,
     repo,
-    
+
     // Methods
     fetchData,
     refresh,
     setFilters,
     setSorting,
     goToPage,
-    
+
     // Computed
     hasData,
     isEmpty,
     hasError,
-    paginationInfo
+    paginationInfo,
   };
 };
