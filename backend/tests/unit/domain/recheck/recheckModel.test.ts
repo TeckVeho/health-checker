@@ -23,7 +23,7 @@ describe('RecheckExecution Model', () => {
     it('should find all recheck executions', async () => {
       // Arrange
       const mockExecutions = mockRecheckExecutions;
-      mockExecutionModel.findAll.mockResolvedValue(mockExecutions);
+      mockExecutionModel.findAll.mockResolvedValue(mockExecutions as any);
 
       // Act
       const result = await RecheckExecution.findAll();
@@ -39,7 +39,7 @@ describe('RecheckExecution Model', () => {
       const mockExecutions = mockRecheckExecutions.filter(
         exec => exec.owner === 'test-owner' && exec.repo === 'test-repo'
       );
-      mockExecutionModel.findAll.mockResolvedValue(mockExecutions);
+      mockExecutionModel.findAll.mockResolvedValue(mockExecutions as any);
 
       // Act
       const result = await RecheckExecution.findAll({ where: whereClause });
@@ -57,7 +57,7 @@ describe('RecheckExecution Model', () => {
         offset: 0,
       };
       const mockExecutions = mockRecheckExecutions.slice(0, 10);
-      mockExecutionModel.findAll.mockResolvedValue(mockExecutions);
+      mockExecutionModel.findAll.mockResolvedValue(mockExecutions as any);
 
       // Act
       const result = await RecheckExecution.findAll(options);
@@ -72,7 +72,7 @@ describe('RecheckExecution Model', () => {
     it('should find one recheck execution', async () => {
       // Arrange
       const mockExecution = mockRecheckExecutions[0];
-      mockExecutionModel.findOne.mockResolvedValue(mockExecution);
+      mockExecutionModel.findOne.mockResolvedValue(mockExecution as any);
 
       // Act
       const result = await RecheckExecution.findOne();
@@ -86,7 +86,7 @@ describe('RecheckExecution Model', () => {
       // Arrange
       const executionId = 1;
       const mockExecution = mockRecheckExecutions.find(exec => exec.id === executionId);
-      mockExecutionModel.findOne.mockResolvedValue(mockExecution);
+      mockExecutionModel.findOne.mockResolvedValue(mockExecution as any);
 
       // Act
       const result = await RecheckExecution.findOne({ where: { id: executionId } });
@@ -98,7 +98,7 @@ describe('RecheckExecution Model', () => {
 
     it('should return null when execution not found', async () => {
       // Arrange
-      mockExecutionModel.findOne.mockResolvedValue(null);
+      mockExecutionModel.findOne.mockResolvedValue(null as any);
 
       // Act
       const result = await RecheckExecution.findOne({ where: { id: 999 } });
@@ -120,7 +120,7 @@ describe('RecheckExecution Model', () => {
         checkTypes: ['security'],
       };
       const createdExecution = { id: 4, ...newExecutionData, createdAt: new Date(), updatedAt: new Date() };
-      mockExecutionModel.create.mockResolvedValue(createdExecution);
+      mockExecutionModel.create.mockResolvedValue(createdExecution as any);
 
       // Act
       const result = await RecheckExecution.create(newExecutionData);
@@ -134,10 +134,10 @@ describe('RecheckExecution Model', () => {
       // Arrange
       const invalidData = { owner: '', repo: '', executionId: '', status: 'invalid' };
       const creationError = new Error('Validation error');
-      mockExecutionModel.create.mockRejectedValue(creationError);
+      mockExecutionModel.create.mockRejectedValue(creationError as any);
 
       // Act & Assert
-      await expect(RecheckExecution.create(invalidData)).rejects.toThrow('Validation error');
+      await expect(RecheckExecution.create(invalidData as any)).rejects.toThrow('Validation error');
       expect(mockExecutionModel.create).toHaveBeenCalledWith(invalidData);
     });
   });
@@ -147,7 +147,7 @@ describe('RecheckExecution Model', () => {
       // Arrange
       const updateData = { status: 'completed', completedAt: new Date() };
       const updateResult = [1]; // Number of affected rows
-      mockExecutionModel.update.mockResolvedValue(updateResult);
+      mockExecutionModel.update.mockResolvedValue(updateResult as any);
 
       // Act
       const result = await RecheckExecution.update(updateData, { where: { id: 1 } });
@@ -161,10 +161,10 @@ describe('RecheckExecution Model', () => {
       // Arrange
       const invalidUpdateData = { status: 'invalid_status' };
       const updateError = new Error('Invalid status value');
-      mockExecutionModel.update.mockRejectedValue(updateError);
+      mockExecutionModel.update.mockRejectedValue(updateError as any);
 
       // Act & Assert
-      await expect(RecheckExecution.update(invalidUpdateData, { where: { id: 1 } })).rejects.toThrow('Invalid status value');
+      await expect(RecheckExecution.update(invalidUpdateData as any, { where: { id: 1 } })).rejects.toThrow('Invalid status value');
       expect(mockExecutionModel.update).toHaveBeenCalledWith(invalidUpdateData, { where: { id: 1 } });
     });
   });
@@ -274,7 +274,7 @@ describe('RecheckExecution Model', () => {
         checkTypes: ['security'],
       };
       const upsertResult = [{ id: 1, ...upsertData }, true]; // [instance, wasCreated]
-      mockExecutionModel.upsert.mockResolvedValue(upsertResult);
+      mockExecutionModel.upsert.mockResolvedValue(upsertResult as any);
 
       // Act
       const result = await RecheckExecution.upsert(upsertData);
@@ -288,7 +288,7 @@ describe('RecheckExecution Model', () => {
       // Arrange
       const invalidUpsertData = { owner: '', repo: '', executionId: '' };
       const upsertError = new Error('Invalid data');
-      mockExecutionModel.upsert.mockRejectedValue(upsertError);
+      mockExecutionModel.upsert.mockRejectedValue(upsertError as any);
 
       // Act & Assert
       await expect(RecheckExecution.upsert(invalidUpsertData)).rejects.toThrow('Invalid data');
@@ -364,7 +364,7 @@ describe('RecheckSettings Model', () => {
 
     it('should return null when setting not found', async () => {
       // Arrange
-      mockExecutionModel.findOne.mockResolvedValue(null);
+      mockExecutionModel.findOne.mockResolvedValue(null as any);
 
       // Act
       const result = await RecheckSettings.findOne({ where: { owner: 'nonexistent', repo: 'repo' } });
@@ -402,7 +402,7 @@ describe('RecheckSettings Model', () => {
       // Arrange
       const invalidData = { owner: '', repo: '', rateLimitMinutes: -1 };
       const creationError = new Error('Validation error');
-      mockExecutionModel.create.mockRejectedValue(creationError);
+      mockExecutionModel.create.mockRejectedValue(creationError as any);
 
       // Act & Assert
       await expect(RecheckSettings.create(invalidData)).rejects.toThrow('Validation error');
@@ -415,7 +415,7 @@ describe('RecheckSettings Model', () => {
       // Arrange
       const updateData = { rateLimitMinutes: 10, isEnabled: false };
       const updateResult = [1]; // Number of affected rows
-      mockExecutionModel.update.mockResolvedValue(updateResult);
+      mockExecutionModel.update.mockResolvedValue(updateResult as any);
 
       // Act
       const result = await RecheckSettings.update(updateData, { where: { id: 1 } });
@@ -429,7 +429,7 @@ describe('RecheckSettings Model', () => {
       // Arrange
       const invalidUpdateData = { rateLimitMinutes: -1 };
       const updateError = new Error('Invalid rate limit');
-      mockExecutionModel.update.mockRejectedValue(updateError);
+      mockExecutionModel.update.mockRejectedValue(updateError as any);
 
       // Act & Assert
       await expect(RecheckSettings.update(invalidUpdateData, { where: { id: 1 } })).rejects.toThrow('Invalid rate limit');
@@ -504,7 +504,7 @@ describe('RecheckSettings Model', () => {
         isEnabled: true,
       };
       const upsertResult = [{ id: 1, ...upsertData }, true]; // [instance, wasCreated]
-      mockExecutionModel.upsert.mockResolvedValue(upsertResult);
+      mockExecutionModel.upsert.mockResolvedValue(upsertResult as any);
 
       // Act
       const result = await RecheckSettings.upsert(upsertData);
@@ -518,10 +518,10 @@ describe('RecheckSettings Model', () => {
       // Arrange
       const invalidUpsertData = { owner: '', repo: '', rateLimitMinutes: -1 };
       const upsertError = new Error('Invalid data');
-      mockExecutionModel.upsert.mockRejectedValue(upsertError);
+      mockExecutionModel.upsert.mockRejectedValue(upsertError as any);
 
       // Act & Assert
-      await expect(RecheckSettings.upsert(invalidUpsertData)).rejects.toThrow('Invalid data');
+      await expect(RecheckSettings.upsert(invalidUpsertData as any)).rejects.toThrow('Invalid data');
       expect(mockExecutionModel.upsert).toHaveBeenCalledWith(invalidUpsertData);
     });
   });

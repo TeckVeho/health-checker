@@ -58,7 +58,7 @@ describe('RepoController', () => {
         },
       };
 
-      mockRepoService.getAllRepos.mockResolvedValue(mockResult);
+      mockRepoService.getAllRepos.mockResolvedValue(mockResult as any);
 
       // Act
       await RepoController.getAllRepos(mockReq, mockRes, mockNext);
@@ -91,7 +91,7 @@ describe('RepoController', () => {
         },
       };
 
-      mockRepoService.getAllRepos.mockResolvedValue(mockResult);
+      mockRepoService.getAllRepos.mockResolvedValue(mockResult as any);
 
       // Act
       await RepoController.getAllRepos(mockReq, mockRes, mockNext);
@@ -141,7 +141,7 @@ describe('RepoController', () => {
         updatedAt: new Date('2024-01-01T00:00:00Z'),
       };
 
-      mockRepoService.getRepoById.mockResolvedValue(mockRepo);
+      mockRepoService.getRepoById.mockResolvedValue(mockRepo as any);
 
       // Act
       await RepoController.getRepoById(mockReq, mockRes, mockNext);
@@ -303,7 +303,7 @@ describe('RepoController', () => {
       };
 
       mockRepoService.updateRepo.mockResolvedValue(true);
-      mockRepoService.getRepoById.mockResolvedValue(mockUpdatedRepo);
+      mockRepoService.getRepoById.mockResolvedValue(mockUpdatedRepo as any);
 
       // Act
       await RepoController.updateRepo(mockReq, mockRes, mockNext);

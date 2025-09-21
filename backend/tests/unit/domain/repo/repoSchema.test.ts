@@ -106,9 +106,9 @@ describe('repoSchema', () => {
         idx.unique === true
       );
       expect(uniqueIndex).toBeDefined();
-      expect(uniqueIndex.fields).toHaveLength(2);
-      expect(uniqueIndex.fields[0].name).toBe('owner');
-      expect(uniqueIndex.fields[1].name).toBe('name');
+      expect(uniqueIndex!.fields).toHaveLength(2);
+      expect(uniqueIndex!.fields[0].name).toBe('owner');
+      expect(uniqueIndex!.fields[1].name).toBe('name');
     });
   });
 });

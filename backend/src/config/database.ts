@@ -1,7 +1,7 @@
 import { Sequelize } from 'sequelize';
 import path from 'path';
 
-// 環境変数はEnvironmentConfigで初期化済み
+// Environment variables are initialized by EnvironmentConfig
 
 const DB_NAME = process.env.DB_NAME as string;
 const DB_USER = process.env.DB_USER as string;

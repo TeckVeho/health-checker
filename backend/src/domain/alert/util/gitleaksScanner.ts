@@ -2,7 +2,7 @@ import { exec } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import { randomUUID } from 'crypto';
-import { format } from 'date-fns';
+// import { format } from 'date-fns';
 import { Model } from 'sequelize';
 import sequelize from '../../../config/database';
 import { alertAttributes, alertModelOptions } from '../alertSchema';
@@ -21,7 +21,7 @@ export async function gitleaksScanner(owner: string, repo: string, processStartT
     throw new Error('GITHUB_LOCAL_WORKSPACE is required');
   }
 
-  // ▼ 現在のブランチ名を .git/HEAD から取得
+  // Get current branch name from .git/HEAD
   const headPath = path.join(workspace, '.git', 'HEAD');
   let branch = 'unknown';
   try {
@@ -33,7 +33,7 @@ export async function gitleaksScanner(owner: string, repo: string, processStartT
   }
 
   const findings = await runGitleaks(workspace);
-  const timestamp = format(new Date(), 'yyyyMMddHHmmss');
+  // const timestamp = format(new Date(), 'yyyyMMddHHmmss');
 
   const issues = await Promise.all(
     findings.map(async (item: any) => {
@@ -47,7 +47,7 @@ export async function gitleaksScanner(owner: string, repo: string, processStartT
           const lines = content.split(/\r?\n/);
           matchedLine = (lines[lineNumber - 1] ?? '').trim();
         } catch {
-          // 読み込み失敗は無視
+          // Ignore read failures
         }
       }
 

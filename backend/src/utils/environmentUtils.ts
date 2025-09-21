@@ -23,7 +23,7 @@ export interface EnvironmentValidationResult {
  * 環境変数検証クラス
  */
 export class EnvironmentValidator {
-  private static readonly REQUIRED_VARS = [
+  private static readonly requiredVars = [
     'GITHUB_API_KEY',
     'GITHUB_LOCAL_WORKSPACE',
     'DB_HOST',
@@ -32,7 +32,7 @@ export class EnvironmentValidator {
     'DB_PASSWORD'
   ];
 
-  private static readonly OPTIONAL_VARS = [
+  private static readonly optionalVars = [
     'NODE_ENV',
     'PORT',
     'TZ',
@@ -52,8 +52,8 @@ export class EnvironmentValidator {
       details: {}
     };
 
-    // 必須環境変数の検証
-    for (const varName of this.REQUIRED_VARS) {
+    // Validate required environment variables
+    for (const varName of this.requiredVars) {
       const value = process.env[varName];
       const validation = await this.validateVariable(varName, value, true);
       result.details[varName] = validation;
@@ -67,8 +67,8 @@ export class EnvironmentValidator {
       }
     }
 
-    // オプション環境変数の検証
-    for (const varName of this.OPTIONAL_VARS) {
+    // Validate optional environment variables
+    for (const varName of this.optionalVars) {
       const value = process.env[varName];
       const validation = await this.validateVariable(varName, value, false);
       result.details[varName] = validation;
@@ -78,7 +78,7 @@ export class EnvironmentValidator {
       }
     }
 
-    // GITHUB_LOCAL_WORKSPACEの特別な検証
+    // Special validation for GITHUB_LOCAL_WORKSPACE
     if (process.env.GITHUB_LOCAL_WORKSPACE) {
       const workspaceValidation = await this.validateWorkspacePath(process.env.GITHUB_LOCAL_WORKSPACE);
       if (!workspaceValidation.isValid) {
@@ -106,7 +106,7 @@ export class EnvironmentValidator {
       };
     }
 
-    // 値の妥当性チェック
+    // Value validity check
     switch (varName) {
       case 'GITHUB_API_KEY':
         if (!value.startsWith('ghp_') && !value.startsWith('gho_') && !value.startsWith('ghu_')) {
@@ -159,14 +159,14 @@ export class EnvironmentValidator {
   }
 
   /**
-   * ワークスペースパスの検証
+   * Validate workspace path
    */
   private static async validateWorkspacePath(workspacePath: string): Promise<{ isValid: boolean; error?: string }> {
     try {
-      // パスの存在確認
+      // Check path existence
       await fs.access(workspacePath);
       
-      // ディレクトリかどうか確認
+      // Check if it's a directory
       const stats = await fs.stat(workspacePath);
       if (!stats.isDirectory()) {
         return {
@@ -175,7 +175,7 @@ export class EnvironmentValidator {
         };
       }
 
-      // 書き込み権限の確認
+      // Check write permissions
       try {
         await fs.access(workspacePath, fs.constants.W_OK);
       } catch {
@@ -195,20 +195,20 @@ export class EnvironmentValidator {
   }
 
   /**
-   * フォールバックパスの生成
+   * Generate fallback paths
    */
   private static async generateFallbackPaths(): Promise<string[]> {
     const fallbackPaths: string[] = [];
     
-    // システム一時ディレクトリ
+    // System temporary directory
     const tmpDir = process.env.TMPDIR || process.env.TMP || '/tmp';
     fallbackPaths.push(path.join(tmpDir, 'github-workspace'));
     
-    // プロジェクトルートの一時ディレクトリ
+    // Project root temporary directory
     const projectRoot = process.cwd();
     fallbackPaths.push(path.join(projectRoot, 'tmp', 'github-workspace'));
     
-    // ホームディレクトリの一時ディレクトリ
+    // Home directory temporary directory
     const homeDir = process.env.HOME || process.env.USERPROFILE;
     if (homeDir) {
       fallbackPaths.push(path.join(homeDir, 'tmp', 'github-workspace'));
@@ -218,7 +218,7 @@ export class EnvironmentValidator {
   }
 
   /**
-   * フォールバックパスの作成
+   * Create fallback path
    */
   static async createFallbackWorkspace(): Promise<string> {
     const fallbackPaths = await this.generateFallbackPaths();
@@ -238,7 +238,7 @@ export class EnvironmentValidator {
   }
 
   /**
-   * 環境変数検証のログ出力
+   * Log environment variable validation results
    */
   static logValidationResult(result: EnvironmentValidationResult): void {
     console.log('🔍 Environment Validation Results:');
@@ -258,7 +258,7 @@ export class EnvironmentValidator {
       result.fallbackPaths.forEach(path => console.log(`     - ${path}`));
     }
 
-    // 詳細な環境変数情報を出力
+    // Output detailed environment variable information
     console.log('   Environment Variables Details:');
     Object.entries(result.details).forEach(([varName, details]) => {
       const status = details.exists ? (details.isValid ? '✅' : '⚠️') : '❌';

@@ -96,13 +96,13 @@ describe('Alert Schema', () => {
         index.name === 'unique_health_issue' && index.unique === true
       );
       expect(uniqueIndex).toBeDefined();
-      expect(uniqueIndex.fields).toContainEqual({ name: 'owner', length: 100 });
-      expect(uniqueIndex.fields).toContainEqual({ name: 'repo', length: 100 });
-      expect(uniqueIndex.fields).toContainEqual({ name: 'check_type', length: 50 });
-      expect(uniqueIndex.fields).toContainEqual({ name: 'title', length: 50 });
-      expect(uniqueIndex.fields).toContainEqual({ name: 'file_path', length: 255 });
-      expect(uniqueIndex.fields).toContainEqual({ name: 'line_number' });
-      expect(uniqueIndex.fields).toContainEqual({ name: 'branch', length: 50 });
+      expect(uniqueIndex!.fields).toContainEqual({ name: 'owner', length: 100 });
+      expect(uniqueIndex!.fields).toContainEqual({ name: 'repo', length: 100 });
+      expect(uniqueIndex!.fields).toContainEqual({ name: 'check_type', length: 50 });
+      expect(uniqueIndex!.fields).toContainEqual({ name: 'title', length: 50 });
+      expect(uniqueIndex!.fields).toContainEqual({ name: 'file_path', length: 255 });
+      expect(uniqueIndex!.fields).toContainEqual({ name: 'line_number' });
+      expect(uniqueIndex!.fields).toContainEqual({ name: 'branch', length: 50 });
     });
   });
 

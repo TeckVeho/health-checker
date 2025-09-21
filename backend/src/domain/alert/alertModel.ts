@@ -9,7 +9,7 @@ import {
   alertModelOptions 
 } from './alertSchema';
 
-// モデル定義
+// Model definition
 class Alert extends Model<AlertAttributes, AlertCreationAttributes> implements AlertAttributes {
   public id!: number;
   public owner!: string;

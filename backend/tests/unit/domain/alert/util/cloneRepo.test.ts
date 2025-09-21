@@ -157,7 +157,7 @@ describe('cloneRepo', () => {
     it('should handle existing non-git directory', async () => {
       // .git access fails, directory clearing succeeds
       mockFs.access.mockRejectedValue(new Error('Not found')); // .git doesn't exist
-      mockFs.readdir.mockResolvedValue(['file1.txt', 'file2.txt']); // directory has files
+      mockFs.readdir.mockResolvedValue(['file1.txt', 'file2.txt'] as any); // directory has files
       mockFs.rm.mockResolvedValue(undefined);
       mockExecAsync.mockResolvedValue({ stdout: '', stderr: '' });
 

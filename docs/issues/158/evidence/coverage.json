@@ -1,0 +1,43 @@
+{
+  "summary": {
+    "statements": 50.62,
+    "branches": 37.32,
+    "functions": 35.68,
+    "lines": 50.92
+  },
+  "testResults": {
+    "totalSuites": 25,
+    "passedSuites": 25,
+    "failedSuites": 0,
+    "totalTests": 395,
+    "passedTests": 395,
+    "failedTests": 0,
+    "executionTime": "2.095s"
+  },
+  "refactoringImpact": {
+    "commentTranslation": {
+      "totalComments": 118,
+      "filesModified": 18,
+      "completionRate": "100%"
+    },
+    "deadCodeRemoval": {
+      "filesRemoved": 1,
+      "functionsCleaned": 3,
+      "methodsFixed": 1
+    },
+    "importCleanup": {
+      "unusedImportsRemoved": 5,
+      "namingConventionFixes": 2
+    },
+    "eslintIssues": {
+      "warningsSuppressed": 5,
+      "unusedVariablesRemoved": 1
+    }
+  },
+  "qualityMetrics": {
+    "regressions": 0,
+    "testStability": "100%",
+    "codeQuality": "Improved",
+    "maintainability": "Enhanced"
+  }
+}

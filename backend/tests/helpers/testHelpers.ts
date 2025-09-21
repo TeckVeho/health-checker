@@ -96,13 +96,13 @@ export const createExpressMocks = () => {
     json: jest.fn().mockReturnThis(),
     send: jest.fn().mockReturnThis(),
     end: jest.fn().mockReturnThis(),
-  };
+  } as any;
 
   const mockNext: NextFunction = jest.fn();
 
   return {
-    req: mockReq as Request,
-    res: mockRes as Response,
+    req: mockReq as any,
+    res: mockRes as any,
     next: mockNext,
   };
 };

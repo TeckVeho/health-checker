@@ -33,30 +33,30 @@ export class PRCheck {
     return trimmed.length >= 30;
   }
   static hasTestEvidence(body: string): boolean {
-    // 既存のテスト証拠パターン
+    // Existing test evidence patterns
     const testLogRegex = /\b(yarn|npm|php\s+artisan)\b.*test/i;
     const looseTestKeywordRegex = /\b(yarn|npm|php\s+artisan)\b/i;
     const screenshotRegex = /!\[.*\]\(.*\.(png|jpg|jpeg|gif|mp4)\)/i;
     const githubImageRegex = /https:\/\/github\.com\/user-attachments\/assets\/[^\s)]+/i;
     const githubActionsRegex = /https:\/\/github\.com\/.*\/runs\//i;
 
-    // 新規追加: パフォーマンステスト関連パターン
+    // Newly added: Performance test related patterns
     const performanceTestRegex = /Performance\s+(Test|Benchmark|Comparison)/i;
     const benchmarkRegex = /\b\d+(\.\d+)?\s*(ms|μs|ns|seconds?)\b/i;
     const speedImprovementRegex = /\b\d+x\s+faster\b/i;
 
-    // 新規追加: Evidence セクション関連パターン
+    // Newly added: Evidence section related patterns
     const evidenceSectionRegex = /##\s*Evidence/i;
     const testResultsRegex = /##\s*(Test\s*Results?|Testing|Tests?)/i;
 
-    // 既存パターンのチェック
+    // Check existing patterns
     const hasExistingEvidence = testLogRegex.test(body) || 
                                looseTestKeywordRegex.test(body) || 
                                screenshotRegex.test(body) || 
                                githubImageRegex.test(body) || 
                                githubActionsRegex.test(body);
 
-    // 新規パターンのチェック
+    // Check new patterns
     const hasPerformanceEvidence = performanceTestRegex.test(body) || 
                                   benchmarkRegex.test(body) || 
                                   speedImprovementRegex.test(body);
