@@ -1,0 +1,488 @@
+openapi: 3.0.3
+info:
+  title: Health Checker GitHub Action API
+  description: |
+    Health Checker system GitHub Actions integration API specification
+    
+    ## Overview
+    This API provides functionality to integrate with GitHub Actions for automated pull request reviews and health checks.
+    
+    ## Authentication
+    Currently accessible without authentication.
+    
+    ## Rate Limiting
+    - GitHub API rate limits apply
+    - GitHub Actions API rate limits may apply for repository operations
+    
+    ## Error Responses
+    All error responses are returned in the following format:
+    ```json
+    {
+      "success": false,
+      "error": {
+        "code": "ERROR_CODE",
+        "message": "Error message"
+      }
+    }
+    ```
+  version: 1.0.0
+  contact:
+    name: Health Checker Team
+    email: support@health-checker.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3001/api
+    description: Development environment
+  - url: https://api.health-checker.com/api
+    description: Production environment
+
+paths:
+  /github-action/prreview:
+    post:
+      tags:
+        - GitHub Action
+      summary: Review pull request
+      description: |
+        Execute automated pull request review triggered by GitHub Actions.
+        
+        ## Process
+        1. Receives pull request information from GitHub Actions
+        2. Analyzes the pull request for potential issues
+        3. Performs health checks on the changes
+        4. Returns review results and recommendations
+        
+        ## Integration
+        This endpoint is typically called by GitHub Actions workflows to automate code reviews and health checks.
+        
+        ## Security Checks
+        - Code quality analysis
+        - Security vulnerability scanning
+        - Dependency audit
+        - Configuration validation
+      operationId: reviewPullRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PullRequestReviewRequest'
+            examples:
+              basic_review:
+                summary: Basic pull request review
+                value:
+                  owner: "octocat"
+                  repo: "Hello-World"
+                  pullNumber: 123
+              with_options:
+                summary: Review with additional options
+                value:
+                  owner: "octocat"
+                  repo: "Hello-World"
+                  pullNumber: 123
+                  options:
+                    skipSecurityScan: false
+                    includeDependencyCheck: true
+                    checkType: "full"
+      responses:
+        '200':
+          description: Pull request review completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Pull request review completed successfully"
+                  data:
+                    $ref: '#/components/schemas/PullRequestReviewResult'
+              examples:
+                success:
+                  summary: Successful review
+                  value:
+                    success: true
+                    message: "Pull request review completed successfully"
+                    data:
+                      owner: "octocat"
+                      repo: "Hello-World"
+                      pullNumber: 123
+                      reviewId: "review_20230919_123456"
+                      status: "completed"
+                      checks:
+                        - checkType: "code_quality"
+                          status: "passed"
+                          score: 85
+                          message: "Code quality is good with minor suggestions"
+                        - checkType: "security"
+                          status: "warning"
+                          score: 70
+                          message: "Some security considerations found"
+                        - checkType: "dependencies"
+                          status: "passed"
+                          score: 95
+                          message: "All dependencies are up to date"
+                      recommendations:
+                        - type: "improvement"
+                          priority: "medium"
+                          message: "Consider adding more unit tests"
+                          file: "src/utils/helper.js"
+                          line: 45
+                      overallScore: 83
+                      reviewCompletedAt: "2023-09-19T12:34:56.789Z"
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missing_params:
+                  summary: Missing required parameters
+                  value:
+                    success: false
+                    error:
+                      code: "MISSING_PARAMS"
+                      message: "Missing required parameters: owner, repo, pullNumber"
+                invalid_pull_number:
+                  summary: Invalid pull request number
+                  value:
+                    success: false
+                    error:
+                      code: "INVALID_PULL_NUMBER"
+                      message: "Pull request number must be a positive integer"
+        '404':
+          description: Pull request not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                pr_not_found:
+                  summary: Pull request not found
+                  value:
+                    success: false
+                    error:
+                      code: "PULL_REQUEST_NOT_FOUND"
+                      message: "Pull request #123 not found in repository octocat/Hello-World"
+                repo_not_found:
+                  summary: Repository not found
+                  value:
+                    success: false
+                    error:
+                      code: "REPOSITORY_NOT_FOUND"
+                      message: "Repository octocat/Hello-World not found"
+        '422':
+          description: Unprocessable entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                review_failed:
+                  summary: Review process failed
+                  value:
+                    success: false
+                    error:
+                      code: "REVIEW_FAILED"
+                      message: "Failed to complete pull request review due to repository access issues"
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                rate_limited:
+                  summary: Rate limited
+                  value:
+                    success: false
+                    error:
+                      code: "RATE_LIMITED"
+                      message: "GitHub API rate limit exceeded. Please try again later."
+                      retryAfter: 3600
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internal_error:
+                  summary: Internal server error
+                  value:
+                    success: false
+                    error:
+                      code: "INTERNAL_SERVER_ERROR"
+                      message: "An internal server error occurred during review process"
+
+components:
+  schemas:
+    PullRequestReviewRequest:
+      type: object
+      required:
+        - owner
+        - repo
+        - pullNumber
+      properties:
+        owner:
+          type: string
+          description: GitHub repository owner (user or organization)
+          pattern: '^[a-zA-Z0-9-_]+$'
+          example: "octocat"
+        repo:
+          type: string
+          description: Repository name
+          pattern: '^[a-zA-Z0-9-_]+$'
+          example: "Hello-World"
+        pullNumber:
+          type: integer
+          description: Pull request number
+          minimum: 1
+          example: 123
+        options:
+          type: object
+          description: Additional review options
+          properties:
+            skipSecurityScan:
+              type: boolean
+              description: Skip security vulnerability scanning
+              default: false
+            includeDependencyCheck:
+              type: boolean
+              description: Include dependency audit
+              default: true
+            checkType:
+              type: string
+              enum:
+                - quick
+                - standard
+                - full
+              description: Type of review to perform
+              default: "standard"
+            customRules:
+              type: array
+              description: Custom review rules to apply
+              items:
+                type: string
+              example: ["no-console-logs", "require-tests"]
+          example:
+            skipSecurityScan: false
+            includeDependencyCheck: true
+            checkType: "full"
+            customRules: ["no-console-logs", "require-tests"]
+
+    PullRequestReviewResult:
+      type: object
+      required:
+        - owner
+        - repo
+        - pullNumber
+        - reviewId
+        - status
+        - checks
+        - overallScore
+        - reviewCompletedAt
+      properties:
+        owner:
+          type: string
+          description: Repository owner
+          example: "octocat"
+        repo:
+          type: string
+          description: Repository name
+          example: "Hello-World"
+        pullNumber:
+          type: integer
+          description: Pull request number
+          example: 123
+        reviewId:
+          type: string
+          description: Unique review identifier
+          example: "review_20230919_123456"
+        status:
+          type: string
+          enum:
+            - completed
+            - failed
+            - partial
+          description: Review completion status
+          example: "completed"
+        checks:
+          type: array
+          description: Individual check results
+          items:
+            $ref: '#/components/schemas/ReviewCheck'
+          example:
+            - checkType: "code_quality"
+              status: "passed"
+              score: 85
+              message: "Code quality is good with minor suggestions"
+            - checkType: "security"
+              status: "warning"
+              score: 70
+              message: "Some security considerations found"
+        recommendations:
+          type: array
+          description: Review recommendations
+          items:
+            $ref: '#/components/schemas/ReviewRecommendation'
+        overallScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Overall review score (0-100)
+          example: 83
+        reviewCompletedAt:
+          type: string
+          format: date-time
+          description: Review completion timestamp
+          example: "2023-09-19T12:34:56.789Z"
+        summary:
+          type: string
+          description: Brief summary of the review
+          example: "Pull request looks good with minor improvements suggested"
+
+    ReviewCheck:
+      type: object
+      required:
+        - checkType
+        - status
+        - score
+        - message
+      properties:
+        checkType:
+          type: string
+          enum:
+            - code_quality
+            - security
+            - dependencies
+            - performance
+            - documentation
+            - testing
+            - style
+          description: Type of check performed
+          example: "code_quality"
+        status:
+          type: string
+          enum:
+            - passed
+            - warning
+            - failed
+            - skipped
+          description: Check result status
+          example: "passed"
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Check score (0-100)
+          example: 85
+        message:
+          type: string
+          description: Check result message
+          example: "Code quality is good with minor suggestions"
+        details:
+          type: object
+          description: Additional check details
+          properties:
+            issuesFound:
+              type: integer
+              example: 3
+            suggestionsCount:
+              type: integer
+              example: 2
+            criticalIssues:
+              type: integer
+              example: 0
+
+    ReviewRecommendation:
+      type: object
+      required:
+        - type
+        - priority
+        - message
+      properties:
+        type:
+          type: string
+          enum:
+            - improvement
+            - security
+            - performance
+            - style
+            - documentation
+            - testing
+          description: Type of recommendation
+          example: "improvement"
+        priority:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+          description: Recommendation priority
+          example: "medium"
+        message:
+          type: string
+          description: Recommendation message
+          example: "Consider adding more unit tests"
+        file:
+          type: string
+          description: File path (if applicable)
+          example: "src/utils/helper.js"
+        line:
+          type: integer
+          description: Line number (if applicable)
+          example: 45
+        suggestion:
+          type: string
+          description: Specific suggestion or fix
+          example: "Add unit tests for edge cases in the helper function"
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: Error code
+              example: "PULL_REQUEST_NOT_FOUND"
+            message:
+              type: string
+              description: Human-readable error message
+              example: "Pull request #123 not found in repository octocat/Hello-World"
+            retryAfter:
+              type: integer
+              description: Retry time in seconds (for rate limit errors)
+              example: 3600
+            details:
+              type: object
+              description: Additional error details
+              properties:
+                githubErrorCode:
+                  type: string
+                  example: "NOT_FOUND"
+                suggestedAction:
+                  type: string
+                  example: "Verify the pull request number and repository access"
+
+tags:
+  - name: GitHub Action
+    description: GitHub Actions integration and pull request review operations

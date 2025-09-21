@@ -1,0 +1,52 @@
+{
+  "testResults": {
+    "backend": {
+      "timestamp": "2025-01-21T11:16:31.000Z",
+      "testSuites": 25,
+      "tests": 395,
+      "passed": 395,
+      "failed": 0,
+      "coverage": {
+        "statements": "50.64%",
+        "branches": "37.32%",
+        "functions": "35.95%",
+        "lines": "50.92%"
+      },
+      "status": "PASSED",
+      "duration": "2.068s"
+    },
+    "frontend": {
+      "timestamp": "2025-01-21T11:16:31.000Z",
+      "testFiles": 16,
+      "tests": 200,
+      "passed": 200,
+      "failed": 0,
+      "status": "PASSED",
+      "duration": "1.77s"
+    }
+  },
+  "openApiFiles": {
+    "created": [
+      "docs/openapi/repo-api.yaml",
+      "docs/openapi/alert-api.yaml", 
+      "docs/openapi/github-action-api.yaml"
+    ],
+    "existing": [
+      "docs/openapi/recheck-api.yaml"
+    ],
+    "total": 4,
+    "status": "COMPLETED"
+  },
+  "validation": {
+    "openApiSpec": "3.0.3",
+    "endpointsCovered": {
+      "repo": 3,
+      "alert": 8,
+      "githubAction": 1,
+      "recheck": "existing"
+    },
+    "schemasDefined": "COMPLETE",
+    "examplesProvided": "COMPLETE",
+    "errorResponses": "STANDARDIZED"
+  }
+}
