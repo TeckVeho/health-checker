@@ -16,7 +16,6 @@ const useRuntimeConfig = () => {
 
 interface AuthorAggregation {
   author: string;
-  displayName: string | null;
   totalAlerts: number;
   severityCounts: {
     high: number;

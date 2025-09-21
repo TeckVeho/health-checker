@@ -32,6 +32,7 @@ Get GitHub issue information, create development branch first, then save issue.m
    - Extract issue number (from `issue_url` or `issue_number`)
 
 2. **Fetch Issue Information**
+   - Do not attempt to open a browser.Always use GitHub CLI (gh command)
    - Use `gh issue view {issue_number} --json title,body,labels,assignees,state,createdAt,updatedAt,url`
 
 3. **Branch Creation**

@@ -11,17 +11,8 @@
           size="small"
         />
         <div class="flex items-center gap-3">
-          <Avatar
-            :label="author.charAt(0).toUpperCase()"
-            size="large"
-            shape="circle"
-            :style="{ backgroundColor: getAuthorColor(author) }"
-          />
           <div>
             <h1 class="text-2xl font-bold">{{ author }}</h1>
-            <p v-if="authorDisplayName" class="text-gray-600">
-              {{ authorDisplayName }}
-            </p>
           </div>
         </div>
       </div>
@@ -210,7 +201,6 @@ const author = route.params.author as string;
 const issues = ref<Issue[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
-const authorDisplayName = ref<string | null>(null);
 
 // Sorting state
 const sortField = ref<string>('lastDetectedAt');
@@ -238,7 +228,6 @@ const fetchData = async () => {
       `${apiBaseUrl}/api/alerts/authors/${encodeURIComponent(author)}`
     );
     issues.value = response.data.issues || [];
-    authorDisplayName.value = response.data.authorDisplayName;
   } catch (err: any) {
     console.error('Error fetching author details:', err);
     error.value =
@@ -289,25 +278,6 @@ const getSeverityColor = (severity: string): string => {
   return severityMap[severity] || 'secondary';
 };
 
-const getAuthorColor = (author: string): string => {
-  const colors = [
-    '#3B82F6',
-    '#10B981',
-    '#F59E0B',
-    '#EF4444',
-    '#8B5CF6',
-    '#06B6D4',
-    '#84CC16',
-    '#F97316',
-  ];
-
-  let hash = 0;
-  for (let i = 0; i < author.length; i++) {
-    hash = author.charCodeAt(i) + ((hash << 5) - hash);
-  }
-
-  return colors[Math.abs(hash) % colors.length];
-};
 
 const extractIssueNumber = (issueUrl: string): string | null => {
   if (!issueUrl) return null;

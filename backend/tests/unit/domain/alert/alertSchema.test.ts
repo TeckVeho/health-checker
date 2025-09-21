@@ -44,7 +44,6 @@ describe('Alert Schema', () => {
       expect(alertAttributes.description.allowNull).toBe(true);
       expect(alertAttributes.severity.allowNull).toBe(true);
       expect(alertAttributes.author.allowNull).toBe(true);
-      expect(alertAttributes.authorDisplayName.allowNull).toBe(true);
       expect(alertAttributes.filePath.allowNull).toBe(true);
       expect(alertAttributes.lineNumber.allowNull).toBe(true);
       expect(alertAttributes.codeSnippet.allowNull).toBe(true);
@@ -117,7 +116,6 @@ describe('Alert Schema', () => {
         description: 'Test description',
         severity: 'high',
         author: 'test-author',
-        authorDisplayName: 'Test Author',
         filePath: '/src/test.js',
         lineNumber: 10,
         codeSnippet: 'console.log("test");',

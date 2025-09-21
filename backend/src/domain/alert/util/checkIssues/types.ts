@@ -11,7 +11,6 @@ export interface IssueAlertCandidate {
   description: string;
   severity: string;
   author?: string | null;
-  authorDisplayName?: string | null;
   filePath: string;
   lineNumber: number;
   codeSnippet: string;

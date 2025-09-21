@@ -26,7 +26,6 @@ function createAlert(
     description,
     severity,
     author: authorInfo.author,
-    authorDisplayName: authorInfo.authorDisplayName,
     filePath: '',
     lineNumber: -1,
     codeSnippet: '',

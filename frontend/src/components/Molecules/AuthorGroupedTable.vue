@@ -59,25 +59,14 @@
         >
           <template #body="{ data: row }">
             <div class="flex items-center gap-2">
-              <Avatar
-                :label="row.author.charAt(0).toUpperCase()"
-                size="small"
-                shape="circle"
-                :style="{ backgroundColor: getAuthorColor(row.author) }"
-              />
-              <div class="flex-1">
-                <div class="font-medium">{{ row.author }}</div>
-                <div v-if="row.displayName" class="text-sm text-gray-500">
-                  {{ row.displayName }}
-                </div>
-              </div>
+              <span class="font-medium">{{ row.author }}</span>
               <Button
                 @click="navigateToAuthor(row.author)"
                 icon="pi pi-external-link"
                 severity="secondary"
                 text
                 size="small"
-                class="ml-2"
+                class="inline-flex"
                 v-tooltip="'View author details'"
               />
             </div>
@@ -280,26 +269,6 @@ const handlePageChange = (event: any) => {
   fetchData();
 };
 
-const getAuthorColor = (author: string): string => {
-  // Generate consistent colors for authors
-  const colors = [
-    '#3B82F6',
-    '#10B981',
-    '#F59E0B',
-    '#EF4444',
-    '#8B5CF6',
-    '#06B6D4',
-    '#84CC16',
-    '#F97316',
-  ];
-
-  let hash = 0;
-  for (let i = 0; i < author.length; i++) {
-    hash = author.charCodeAt(i) + ((hash << 5) - hash);
-  }
-
-  return colors[Math.abs(hash) % colors.length];
-};
 
 const navigateToAuthor = (author: string) => {
   router.push(`/authors/${encodeURIComponent(author)}`);
