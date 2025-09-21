@@ -3,7 +3,6 @@ import { GitHubIssue } from './types';
 
 export interface AuthorInfo {
   author: string | null;
-  authorDisplayName: string | null;
 }
 
 /**
@@ -12,14 +11,12 @@ export interface AuthorInfo {
 export function extractAuthorInfo(issue: GitHubIssue): AuthorInfo {
   if (!issue.user) {
     return {
-      author: null,
-      authorDisplayName: null
+      author: null
     };
   }
 
   return {
-    author: issue.user.login,
-    authorDisplayName: issue.user.login // Use login as display name since name is not available in basic API response
+    author: issue.user.login
   };
 }
 
@@ -45,22 +42,19 @@ export async function extractAuthorFromIssue(
     // Handle deleted user case
     if (!issue.user) {
       return {
-        author: null,
-        authorDisplayName: null
+        author: null
       };
     }
 
     return {
-      author: issue.user.login,
-      authorDisplayName: issue.user.name || null
+      author: issue.user.login
     };
   } catch (error: any) {
     // Log error but don't throw - return null for missing data
     console.warn(`Failed to fetch author for issue ${owner}/${repo}#${issueNumber}:`, error.message);
     
     return {
-      author: null,
-      authorDisplayName: null
+      author: null
     };
   }
 }

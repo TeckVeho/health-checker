@@ -77,7 +77,6 @@ class AlertService {
         description: alert.description,
         severity: alert.severity,
         author: 'author' in alert ? alert.author || null : null,
-        authorDisplayName: 'authorDisplayName' in alert ? alert.authorDisplayName || null : null,
         detectCount: 1,
         lastDetectedAt: timestamp,
         isIgnored: false,
@@ -737,7 +736,6 @@ class AlertService {
     const dataQuery = `
       SELECT 
         COALESCE(author, 'Unknown Author') as author,
-        MAX(author_display_name) as display_name,
         COUNT(*) as total_alerts,
         COUNT(CASE WHEN severity = 'high' THEN 1 END) as high_severity_count,
         COUNT(CASE WHEN severity = 'middle' THEN 1 END) as middle_severity_count,
@@ -858,7 +856,6 @@ class AlertService {
 
     return {
       author: author,
-      authorDisplayName: alerts.length > 0 ? (alerts[0] as any).authorDisplayName : null,
       issues: alerts.map(alert => ({
         id: (alert as any).id,
         owner: (alert as any).owner,
@@ -965,8 +962,7 @@ class AlertService {
               // In real implementation, would fetch from GitHub API
               // For now, we'll set a placeholder
               await alert.update({
-                author: `backfilled-user-${issueNumber}`,
-                authorDisplayName: `Backfilled User ${issueNumber}`
+                author: `backfilled-user-${issueNumber}`
               });
               
               processed++;

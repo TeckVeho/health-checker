@@ -121,7 +121,6 @@ describe.skip('AuthorGroupedTable', () => {
       const mockData = [
         {
           author: 'test-author-1',
-          displayName: 'Test Author 1',
           totalAlerts: 10,
           issueTypeCounts: {
             gitleaks: 5,

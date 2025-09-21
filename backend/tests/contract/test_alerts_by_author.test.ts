@@ -81,7 +81,6 @@ describe('GET /api/alerts/by-author', () => {
       );
       
       if (unknownAuthor) {
-        expect(unknownAuthor.displayName).toBeNull();
         expect(unknownAuthor.totalAlerts).toBeGreaterThanOrEqual(0);
       }
     });
