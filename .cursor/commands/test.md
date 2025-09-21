@@ -40,15 +40,17 @@ Execute tests and record results with AI Agent
 
 4. **Record Results**
    - Save raw outputs to `docs/issues/{issue_number}/evidence/`  
-     (e.g., `test_output.log`, `coverage.json`)
+     (e.g., `test_output.log`, `coverage.json`, `test-results.json`)
      - **IMPORTANT**: Save to `docs/issues/{issue_number}/evidence/` (root level), NOT `backend/docs/issues/{issue_number}/evidence/`
    - Create final structured report in `docs/issues/{issue_number}/test.md`
+   - **CRITICAL: NO TEST RESULT FALSIFICATION**: Record actual test results only - NEVER create fake or simulated test results
 
 5. **Generate Report**
    - Summarize total tests, passed, failed, and coverage
    - List failed tests with error details
    - **Compare Issue Requirements vs Implementation vs Test Results**
    - Provide comprehensive **review notes** with improvement suggestions
+   - **If tests fail to run or produce no results**: Explicitly document "Tests failed to execute" or "No test results generated" - DO NOT create fake results
 
 6. **Cross-Reference Analysis**
    - Read `docs/issues/{issue_number}/issue.md` to understand requirements
@@ -61,6 +63,7 @@ Execute tests and record results with AI Agent
    - Do NOT commit or fix here
    - Document failure causes and suspected issues in `test.md`
    - Identify gaps between issue requirements and test coverage
+   - **If test execution fails completely**: Document "Test execution failed" with error details - NEVER create fake test results
 
 ---
 

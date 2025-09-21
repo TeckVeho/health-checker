@@ -139,13 +139,14 @@ Step 4: GitHub PR Creation with Issue Linking
    - Read `docs/issues/{issue_number}/evidence/test-results.json`
    - Parse backend and frontend test results
    - Extract test counts, pass/fail status, coverage data
-   - Handle missing or malformed test result files gracefully
+   - **CRITICAL: NO TEST RESULT FALSIFICATION**: If test results are missing or unavailable, explicitly state "No test results available" - NEVER create fake or simulated test results
 
 2. **Test Summary Generation**:
-   - Format backend test results: "X tests passed, Y tests failed (Z.Xs)"
-   - Format frontend test results: "X tests passed, Y tests failed (Z.Xs)"
-   - Calculate total execution time
-   - Determine overall status (PASSED/FAILED/PARTIAL)
+   - **If test results exist**: Format backend test results: "X tests passed, Y tests failed (Z.Xs)"
+   - **If test results exist**: Format frontend test results: "X tests passed, Y tests failed (Z.Xs)"
+   - **If test results exist**: Calculate total execution time
+   - **If test results exist**: Determine overall status (PASSED/FAILED/PARTIAL)
+   - **If NO test results**: Display "⚠️ No test results available - Tests have not been executed or results are not accessible"
 
 3. **Failed Test Details**:
    - If any tests failed, include detailed failure information
@@ -173,10 +174,7 @@ Step 4: GitHub PR Creation with Issue Linking
 ## Evidence
 
 ### Test Execution Summary
-- **Backend Tests**: {backend_test_summary}
-- **Frontend Tests**: {frontend_test_summary}
-- **Total Execution Time**: {total_duration}
-- **Overall Status**: {overall_status}
+{test_execution_summary}
 
 ### Test Results Details
 {test_results_details}
@@ -188,10 +186,31 @@ Step 4: GitHub PR Creation with Issue Linking
 {coverage_information}
 ```
 
+**Test Execution Summary Templates:**
+
+**When test results are available:**
+```markdown
+### Test Execution Summary
+- **Backend Tests**: {backend_test_summary}
+- **Frontend Tests**: {frontend_test_summary}
+- **Total Execution Time**: {total_duration}
+- **Overall Status**: {overall_status}
+```
+
+**When NO test results are available:**
+```markdown
+### Test Execution Summary
+⚠️ **No test results available**
+- Tests have not been executed or results are not accessible
+- Please run `/test` command to execute tests before creating PR
+- Test results file: `docs/issues/{issue_number}/evidence/test-results.json` not found
+```
+
 **Key Features:**
 - **PR Body Saving**: Creates pr.md files in docs/issues/{issue_number}/ before committing
 - **Evidence Section**: Includes comprehensive test results and execution details
 - **Test Integration**: Automatically loads and formats test results from evidence files
+- **No Test Falsification**: NEVER creates fake test results - explicitly states when tests are not available
 - **Automatic Issue Linking**: Every PR automatically links to its corresponding issue
 - **Consistent Formatting**: Standardized PR titles and commit messages
 - **Error Handling**: Robust error handling for Git and GitHub operations
