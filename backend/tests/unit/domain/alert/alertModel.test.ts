@@ -106,7 +106,7 @@ describe('Alert Model', () => {
       const error = new Error('Validation error: missing required fields');
       (Alert.create as jest.Mock).mockRejectedValue(error);
 
-      await expect(Alert.create(invalidAlert)).rejects.toThrow('Validation error: missing required fields');
+      await expect(Alert.create(invalidAlert as any)).rejects.toThrow('Validation error: missing required fields');
     });
 
     it('should handle database constraint errors', async () => {
@@ -261,7 +261,7 @@ describe('Alert Model', () => {
       const error = new Error('Bulk create validation failed');
       (Alert.bulkCreate as jest.Mock).mockRejectedValue(error);
 
-      await expect(Alert.bulkCreate(invalidAlerts)).rejects.toThrow('Bulk create validation failed');
+      await expect(Alert.bulkCreate(invalidAlerts as any)).rejects.toThrow('Bulk create validation failed');
     });
   });
 

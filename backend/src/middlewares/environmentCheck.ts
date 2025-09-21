@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
-import { EnvironmentValidator, EnvironmentValidationResult } from '../utils/environmentUtils';
+import { EnvironmentValidator } from '../utils/environmentUtils';
 
 /**
- * 環境変数検証ミドルウェア
- * ReCheck関連のエンドポイントで環境変数の状態を確認
+ * Environment variable validation middleware
+ * Check environment variable status for ReCheck-related endpoints
  */
 export const environmentCheck = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  // ReCheck関連のエンドポイントのみで実行
+  // Only execute for ReCheck-related endpoints
   if (!req.path.includes('/recheck')) {
     return next();
   }
@@ -16,19 +16,19 @@ export const environmentCheck = async (req: Request, res: Response, next: NextFu
     
     const validation = await EnvironmentValidator.validateEnvironment();
     
-    // 詳細な検証結果をログ出力
+    // Log detailed validation results
     EnvironmentValidator.logValidationResult(validation);
     
-    // 環境変数が無効な場合の処理
+    // Handle invalid environment variables
     if (!validation.isValid) {
       console.error(`[EnvironmentCheck] Environment validation failed`);
       
-      // 警告のみで続行（フォールバック処理に委ねる）
+      // Continue with warnings only (delegate to fallback processing)
       if (validation.warnings.length > 0) {
         console.warn(`[EnvironmentCheck] Environment warnings:`, validation.warnings);
       }
       
-      // 致命的なエラーの場合は早期リターン
+      // Early return for fatal errors
       if (validation.missingVars.length > 0) {
         const missingVars = validation.missingVars.join(', ');
         console.error(`[EnvironmentCheck] Missing critical environment variables: ${missingVars}`);
@@ -51,7 +51,7 @@ export const environmentCheck = async (req: Request, res: Response, next: NextFu
       }
     }
     
-    // 環境変数の状態をリクエストオブジェクトに追加
+    // Add environment variable status to request object
     req.environmentStatus = {
       isValid: validation.isValid,
       warnings: validation.warnings,
@@ -62,7 +62,7 @@ export const environmentCheck = async (req: Request, res: Response, next: NextFu
   } catch (error) {
     console.error(`[EnvironmentCheck] Error during environment validation:`, error);
     
-    // 環境変数検証でエラーが発生した場合も続行（フォールバック処理に委ねる）
+    // Continue even if environment variable validation fails (delegate to fallback processing)
     req.environmentStatus = {
       isValid: false,
       warnings: [`Environment validation error: ${error instanceof Error ? error.message : 'Unknown error'}`],
@@ -73,7 +73,7 @@ export const environmentCheck = async (req: Request, res: Response, next: NextFu
   }
 };
 
-// 型定義の拡張
+// Type definition extension
 declare global {
   namespace Express {
     interface Request {

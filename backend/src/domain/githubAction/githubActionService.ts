@@ -35,7 +35,7 @@ export class GithubActionService {
     } else {
       const { type, prBodyResult, prBodyReason, diffResult, diffReason } = await PRCheck.runUnifiedLLMReview(pr, diffs);
 
-      // [Check] Test evidence（codeタイプのときのみ）
+      // [Check] Test evidence (only for code type)
       if (type === 'code') {
         pushCheck(PRCheck.hasTestEvidence(prBody), 'Test evidence is included');
       }

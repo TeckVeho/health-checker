@@ -27,7 +27,7 @@ export const repoAttributes = {
     allowNull: true,
   },
   topics: {
-    type: DataTypes.JSON, // MySQL では ARRAY の代わりに JSON
+    type: DataTypes.JSON, // Use JSON instead of ARRAY in MySQL
     allowNull: true,
   },
   isPrivate: {

@@ -1,16 +1,16 @@
 import 'dotenv/config';
-import { Octokit } from '@octokit/rest';
+// import { Octokit } from '@octokit/rest';
 import { graphql } from '@octokit/graphql';
 
 const githubToken = process.env.GITHUB_API_KEY;
 if (!githubToken) throw new Error('GITHUB_API_KEY is required');
 
-const octokit = new Octokit({
-  auth: githubToken,
-  request: {
-    headers: { accept: 'application/vnd.github+json' },
-  },
-});
+// const octokit = new Octokit({
+//   auth: githubToken,
+//   request: {
+//     headers: { accept: 'application/vnd.github+json' },
+//   },
+// });
 
 const graphqlWithAuth = graphql.defaults({
   headers: {

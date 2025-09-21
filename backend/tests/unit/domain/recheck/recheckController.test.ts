@@ -188,7 +188,7 @@ describe('ReCheckController', () => {
         startedAt: new Date('2024-01-01T00:00:00Z'),
       };
 
-      mockReCheckService.startRecheck.mockResolvedValue(mockExecution);
+      mockReCheckService.startRecheck.mockResolvedValue(mockExecution as any);
 
       // Act
       await ReCheckController.executeRecheck(mockReq, mockRes, mockNext);
@@ -358,7 +358,7 @@ describe('ReCheckController', () => {
         },
       };
 
-      mockReCheckService.getRecheckStatus.mockResolvedValue(mockStatus);
+      mockReCheckService.getRecheckStatus.mockResolvedValue(mockStatus as any);
 
       // Act
       await ReCheckController.getRecheckStatus(mockReq, mockRes, mockNext);
@@ -405,7 +405,7 @@ describe('ReCheckController', () => {
         count: 2,
       };
 
-      mockReCheckService.getExecutionHistory.mockResolvedValue(mockHistory);
+      mockReCheckService.getExecutionHistory.mockResolvedValue(mockHistory as any);
 
       // Act
       await ReCheckController.getExecutionHistory(mockReq, mockRes, mockNext);
@@ -434,7 +434,7 @@ describe('ReCheckController', () => {
         count: 1,
       };
 
-      mockReCheckService.getExecutionHistory.mockResolvedValue(mockHistory);
+      mockReCheckService.getExecutionHistory.mockResolvedValue(mockHistory as any);
 
       // Act
       await ReCheckController.getExecutionHistory(mockReq, mockRes, mockNext);
@@ -467,7 +467,7 @@ describe('ReCheckController', () => {
         lastExecution: new Date('2024-01-01T00:00:00Z'),
       };
 
-      mockReCheckService.getRepoStats.mockResolvedValue(mockStats);
+      mockReCheckService.getRepoStats.mockResolvedValue(mockStats as any);
 
       // Act
       await ReCheckController.getRepoStats(mockReq, mockRes, mockNext);
@@ -494,7 +494,7 @@ describe('ReCheckController', () => {
         timeoutMinutes: 10,
       };
 
-      mockReCheckService.getSettings.mockResolvedValue(mockSettings);
+      mockReCheckService.getSettings.mockResolvedValue(mockSettings as any);
 
       // Act
       await ReCheckController.getSettings(mockReq, mockRes, mockNext);
@@ -526,7 +526,7 @@ describe('ReCheckController', () => {
         timeoutMinutes: 15,
       };
 
-      mockReCheckService.updateSettings.mockResolvedValue(mockUpdatedSettings);
+      mockReCheckService.updateSettings.mockResolvedValue(mockUpdatedSettings as any);
 
       // Act
       await ReCheckController.updateSettings(mockReq, mockRes, mockNext);

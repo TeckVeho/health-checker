@@ -28,8 +28,12 @@
   },
 
   "include": [
-    "src/**/*.ts",
+    "src/**/*.ts"
+  ],
+  "exclude": [
     "tests/**/*.ts",
     "jest.config.ts",
+    "**/*.test.ts",
+    "**/*.spec.ts"
   ]
 }

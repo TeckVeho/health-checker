@@ -63,34 +63,34 @@ export const createMockGitHubIssue = (overrides: Partial<any> = {}) => ({
 
 // データベース操作のモック
 export const createMockModel = () => ({
-  findAll: jest.fn().mockResolvedValue([]),
-  findOne: jest.fn().mockResolvedValue(null),
-  create: jest.fn().mockResolvedValue({}),
-  update: jest.fn().mockResolvedValue([1]),
-  destroy: jest.fn().mockResolvedValue(1),
-  count: jest.fn().mockResolvedValue(0),
-  aggregate: jest.fn().mockResolvedValue(0),
-  sync: jest.fn().mockResolvedValue(undefined),
-  drop: jest.fn().mockResolvedValue(undefined),
-  bulkCreate: jest.fn().mockResolvedValue([]),
-  findOrCreate: jest.fn().mockResolvedValue([{}, true]),
-  findByPk: jest.fn().mockResolvedValue(null),
-  findAndCountAll: jest.fn().mockResolvedValue({ rows: [], count: 0 }),
-  upsert: jest.fn().mockResolvedValue([{}, true]),
+  findAll: jest.fn().mockResolvedValue([] as any),
+  findOne: jest.fn().mockResolvedValue(null as any),
+  create: jest.fn().mockResolvedValue({} as any),
+  update: jest.fn().mockResolvedValue([1] as any),
+  destroy: jest.fn().mockResolvedValue(1 as any),
+  count: jest.fn().mockResolvedValue(0 as any),
+  aggregate: jest.fn().mockResolvedValue(0 as any),
+  sync: jest.fn().mockResolvedValue(undefined as any),
+  drop: jest.fn().mockResolvedValue(undefined as any),
+  bulkCreate: jest.fn().mockResolvedValue([] as any),
+  findOrCreate: jest.fn().mockResolvedValue([{}, true] as any),
+  findByPk: jest.fn().mockResolvedValue(null as any),
+  findAndCountAll: jest.fn().mockResolvedValue({ rows: [], count: 0 } as any),
+  upsert: jest.fn().mockResolvedValue([{}, true] as any),
 });
 
 // GitHub API のモック
 export const createMockGitHubAPI = () => ({
   rest: {
     pulls: {
-      get: jest.fn().mockResolvedValue({ data: createMockGitHubPR() }),
-      list: jest.fn().mockResolvedValue({ data: [createMockGitHubPR()] }),
-      createReview: jest.fn().mockResolvedValue({ data: { id: 1 } }),
+      get: jest.fn().mockResolvedValue({ data: createMockGitHubPR() } as any),
+      list: jest.fn().mockResolvedValue({ data: [createMockGitHubPR()] } as any),
+      createReview: jest.fn().mockResolvedValue({ data: { id: 1 } } as any),
     },
     issues: {
-      get: jest.fn().mockResolvedValue({ data: createMockGitHubIssue() }),
-      list: jest.fn().mockResolvedValue({ data: [createMockGitHubIssue()] }),
-      createComment: jest.fn().mockResolvedValue({ data: { id: 1 } }),
+      get: jest.fn().mockResolvedValue({ data: createMockGitHubIssue() } as any),
+      list: jest.fn().mockResolvedValue({ data: [createMockGitHubIssue()] } as any),
+      createComment: jest.fn().mockResolvedValue({ data: { id: 1 } } as any),
     },
     repos: {
       get: jest.fn().mockResolvedValue({ 
@@ -99,8 +99,8 @@ export const createMockGitHubAPI = () => ({
           owner: { login: 'test-owner' },
           full_name: 'test-owner/test-repo'
         } 
-      }),
-      listCommits: jest.fn().mockResolvedValue({ data: [] }),
+      } as any),
+      listCommits: jest.fn().mockResolvedValue({ data: [] } as any),
     },
   },
 });
@@ -117,7 +117,7 @@ export const createMockOpenAI = () => ({
             },
           },
         ],
-      }),
+      } as any),
     },
   },
 });

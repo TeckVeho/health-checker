@@ -19,28 +19,28 @@ export async function cloneRepo(owner: string, repo: string): Promise<string> {
     throw new Error('GITHUB_LOCAL_WORKSPACE is required');
   }
 
-  // workspace直下にリポジトリを配置
+  // Place repository directly under workspace
   const targetPath = workspace;
   const gitUrl = `https://github.com/${owner}/${repo}.git`;
 
   try {
-    // .gitディレクトリの存在確認
+    // Check if .git directory exists
     await fs.access(path.join(targetPath, '.git'));
 
-    // 既存のリポジトリの設定を確認
+    // Check existing repository configuration
     const configPath = path.join(targetPath, '.git', 'config');
     const configText = await fs.readFile(configPath, 'utf-8');
 
     if (configText.includes(gitUrl)) {
-      // 同じリポジトリなら fetch して pull を実行
+      // If same repository, execute fetch and pull
       console.log(`🔄 Repository exists and matches. Fetching and pulling: ${targetPath}`);
       try {
-        // まずリモートの最新情報を取得
+        // First get latest information from remote
         await execAsync(`git -C "${targetPath}" fetch --all`);
         await execAsync(`git -C "${targetPath}" pull`);
       } catch (pullError) {
         console.warn(`⚠️ Pull failed, attempting to reset and pull: ${pullError}`);
-        // pull が失敗した場合、変更を破棄して再度 fetch & pull
+        // If pull fails, discard changes and fetch & pull again
         await execAsync(`git -C "${targetPath}" reset --hard`);
         await execAsync(`git -C "${targetPath}" clean -fd`);
         await execAsync(`git -C "${targetPath}" fetch --all`);
@@ -48,15 +48,15 @@ export async function cloneRepo(owner: string, repo: string): Promise<string> {
       }
       return targetPath;
     } else {
-      // 異なるリポジトリの場合は警告してスキップ
+      // If different repository, warn and skip
       console.warn(`⚠️ Different repository found at: ${targetPath}. Expected ${gitUrl}`);
       throw new Error(`Workspace contains different repository. Expected ${owner}/${repo} but found different repo.`);
     }
   } catch {
-    // .git が存在しない場合、新規クローンが必要
+    // If .git doesn't exist, new clone is needed
     console.log(`📝 No Git repository found. Initializing fresh clone...`);
 
-    // ワークスペースディレクトリ内容をクリア（gitのない場合のみ）
+    // Clear workspace directory contents (only when git is not present)
     try {
       const files = await fs.readdir(targetPath);
       for (const file of files) {
@@ -65,13 +65,13 @@ export async function cloneRepo(owner: string, repo: string): Promise<string> {
       }
       console.log(`🧹 Cleared workspace directory: ${targetPath}`);
     } catch {
-      // ディレクトリが存在しない場合は作成
+      // Create directory if it doesn't exist
       await fs.mkdir(targetPath, { recursive: true });
     }
 
     console.log(`📥 Cloning ${gitUrl} to ${targetPath}`);
 
-    // git clone を実行（. を使ってディレクトリ内にクローン）
+    // Execute git clone (using . to clone into directory)
     try {
       await execAsync(`git clone ${gitUrl} .`, { cwd: targetPath });
       console.log(`✅ Successfully cloned to: ${targetPath}`);

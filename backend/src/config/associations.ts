@@ -6,6 +6,6 @@ export default function setupAssociations() {
     return;
   }
 
-
+  // No associations to setup currently
   associationsInitialized = true;
 }

@@ -161,8 +161,8 @@ describe('Recheck Schema', () => {
         index.name === 'idx_recheck_execution_id'
       );
       expect(executionIdIndex).toBeDefined();
-      expect(executionIdIndex.unique).toBe(true);
-      expect(executionIdIndex.fields).toEqual([{ name: 'execution_id' }]);
+      expect(executionIdIndex!.unique).toBe(true);
+      expect(executionIdIndex!.fields).toEqual([{ name: 'execution_id' }]);
     });
 
     it('should have composite index for owner and repo', () => {
@@ -170,7 +170,7 @@ describe('Recheck Schema', () => {
         index.name === 'idx_recheck_owner_repo'
       );
       expect(ownerRepoIndex).toBeDefined();
-      expect(ownerRepoIndex.fields).toEqual([{ name: 'owner' }, { name: 'repo' }]);
+      expect(ownerRepoIndex!.fields).toEqual([{ name: 'owner' }, { name: 'repo' }]);
     });
   });
 
@@ -199,8 +199,8 @@ describe('Recheck Schema', () => {
         index.name === 'idx_recheck_settings_unique_repo'
       );
       expect(uniqueRepoIndex).toBeDefined();
-      expect(uniqueRepoIndex.unique).toBe(true);
-      expect(uniqueRepoIndex.fields).toEqual([{ name: 'owner' }, { name: 'repo' }]);
+      expect(uniqueRepoIndex!.unique).toBe(true);
+      expect(uniqueRepoIndex!.fields).toEqual([{ name: 'owner' }, { name: 'repo' }]);
     });
 
     it('should have index for enabled status', () => {
@@ -208,7 +208,7 @@ describe('Recheck Schema', () => {
         index.name === 'idx_recheck_settings_enabled'
       );
       expect(enabledIndex).toBeDefined();
-      expect(enabledIndex.fields).toEqual([{ name: 'is_enabled' }]);
+      expect(enabledIndex!.fields).toEqual([{ name: 'is_enabled' }]);
     });
   });
 
@@ -225,8 +225,8 @@ describe('Recheck Schema', () => {
         completedAt: new Date(),
         durationSeconds: 120,
         result: { alerts: [] },
-        errorMessage: null,
-        errorCode: null,
+        errorMessage: undefined,
+        errorCode: undefined,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -331,7 +331,7 @@ describe('Recheck Schema', () => {
       );
 
       expect(ownerRepoIndex).toBeDefined();
-      expect(ownerRepoIndex.name).toBe('idx_recheck_owner_repo');
+      expect(ownerRepoIndex!.name).toBe('idx_recheck_owner_repo');
     });
 
     it('should have index for started_at in execution', () => {
@@ -341,7 +341,7 @@ describe('Recheck Schema', () => {
       );
 
       expect(startedAtIndex).toBeDefined();
-      expect(startedAtIndex.name).toBe('idx_recheck_started_at');
+      expect(startedAtIndex!.name).toBe('idx_recheck_started_at');
     });
 
     it('should have index for status in execution', () => {
@@ -351,7 +351,7 @@ describe('Recheck Schema', () => {
       );
 
       expect(statusIndex).toBeDefined();
-      expect(statusIndex.name).toBe('idx_recheck_status');
+      expect(statusIndex!.name).toBe('idx_recheck_status');
     });
 
     it('should have unique index for execution_id', () => {
@@ -361,8 +361,8 @@ describe('Recheck Schema', () => {
       );
 
       expect(executionIdIndex).toBeDefined();
-      expect(executionIdIndex.name).toBe('idx_recheck_execution_id');
-      expect(executionIdIndex.unique).toBe(true);
+      expect(executionIdIndex!.name).toBe('idx_recheck_execution_id');
+      expect(executionIdIndex!.unique).toBe(true);
     });
 
     it('should have composite index for rate limiting', () => {
@@ -374,7 +374,7 @@ describe('Recheck Schema', () => {
       );
 
       expect(rateLimitIndex).toBeDefined();
-      expect(rateLimitIndex.name).toBe('idx_recheck_rate_limit');
+      expect(rateLimitIndex!.name).toBe('idx_recheck_rate_limit');
     });
 
     it('should have composite index for running tasks', () => {
@@ -386,7 +386,7 @@ describe('Recheck Schema', () => {
       );
 
       expect(runningTasksIndex).toBeDefined();
-      expect(runningTasksIndex.name).toBe('idx_recheck_running_tasks');
+      expect(runningTasksIndex!.name).toBe('idx_recheck_running_tasks');
     });
 
     it('should have unique index for settings owner/repo combination', () => {
@@ -398,8 +398,8 @@ describe('Recheck Schema', () => {
       );
 
       expect(uniqueRepoIndex).toBeDefined();
-      expect(uniqueRepoIndex.name).toBe('idx_recheck_settings_unique_repo');
-      expect(uniqueRepoIndex.unique).toBe(true);
+      expect(uniqueRepoIndex!.name).toBe('idx_recheck_settings_unique_repo');
+      expect(uniqueRepoIndex!.unique).toBe(true);
     });
 
     it('should have index for enabled status in settings', () => {
@@ -409,7 +409,7 @@ describe('Recheck Schema', () => {
       );
 
       expect(enabledIndex).toBeDefined();
-      expect(enabledIndex.name).toBe('idx_recheck_settings_enabled');
+      expect(enabledIndex!.name).toBe('idx_recheck_settings_enabled');
     });
   });
 });

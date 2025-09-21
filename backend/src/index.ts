@@ -1,7 +1,7 @@
 import app from './app';
 import { EnvironmentConfig } from './config/environment';
 
-// 環境変数の初期化
+// Initialize environment variables
 EnvironmentConfig.initialize();
 
 const PORT = process.env.PORT || 3000;
@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   
-  // 環境変数の状態をログ出力
+  // Log environment variable status
   const envStatus = EnvironmentConfig.getStatus();
   console.log('[Server] Environment status:', {
     initialized: envStatus.initialized,

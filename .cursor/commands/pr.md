@@ -33,16 +33,20 @@ Create Pull Request through interactive AI Agent collaboration with streamlined 
    - If `issue_number` is omitted: Look for the most recently created issue document in `docs/issues/*/issue.md` to determine the issue number
    - Check for existing `docs/issues/{issue_number}/issue.md` file to ensure issue data is available
 
-## Step 1: Git Status Validation, Commit, and User Confirmation
+## Step 1: Git Status Validation and PR Body Generation
 
 1. **Check Git Status**: Run `git --no-pager status` to show current repository state (with pager disabled)
 2. **Display Status Summary**: Show all modified, added, and deleted files with status indicators using `git --no-pager diff --name-status origin/develop..HEAD`
-3. **Commit Changes**: If there are uncommitted changes:
-   - Stage all changes with `git add .`
-   - Create commit with descriptive message based on issue and changes
-   - Use format: `feat/fix/docs: {description} - Closes #{issue_number}`
-4. **User Confirmation**: Ask user "Do you want to create a PR? (y/n)" and wait for confirmation
-5. **Proceed Only if Confirmed**: Continue to Step 2 only if user confirms with 'y' or 'yes'
+3. **Fetch Issue Data**: Get issue #{issue_number} information using optimized caching strategy (cached local file first, GitHub CLI fallback)
+4. **Load Test Results**: Read test results from `docs/issues/{issue_number}/evidence/test-results.json` if available
+5. **Generate PR Body**: Create comprehensive PR body including:
+   - Issue reference and "Closes #{issue_number}" for automatic linking
+   - Implementation summary and key changes
+   - **Evidence Section** with test results and execution details
+6. **Save PR Body**: Write PR body content to `docs/issues/{issue_number}/pr.md` **BEFORE** committing
+7. **Display PR Body Preview**: Show generated PR body content for user review
+8. **User Confirmation**: Ask user "Do you want to create a PR? (y/n)" and wait for confirmation
+9. **Proceed Only if Confirmed**: Continue to Step 2 only if user confirms with 'y' or 'yes'
 
 ## Step 2: Commit and Push Verification
 
@@ -59,18 +63,7 @@ Create Pull Request through interactive AI Agent collaboration with streamlined 
    - Run `git push origin {current_branch} --quiet --no-progress` to push commits
    - Ensure remote branch is up to date before PR creation
 
-## Step 3: PR Body Generation with Evidence Section
-
-1. **Fetch Issue Data**: Get issue #{issue_number} information using optimized caching strategy (cached local file first, GitHub CLI fallback)
-2. **Load Test Results**: Read test results from `docs/issues/{issue_number}/evidence/test-results.json` if available
-3. **Generate PR Body**: Create comprehensive PR body including:
-   - Issue reference and "Closes #{issue_number}" for automatic linking
-   - Implementation summary and key changes
-   - **Evidence Section** with test results and execution details
-4. **Save PR Body**: Write PR body content to `docs/issues/{issue_number}/pr.md` before committing
-5. **Display PR Body Preview**: Show generated PR body content for user review
-
-## Step 4: GitHub Pull Request Creation with Issue Linking
+## Step 3: GitHub Pull Request Creation with Issue Linking
 
 1. **Create GitHub PR**: Use `gh pr create` command to create pull request:
    - Title: `{type}: {issue_title}`
@@ -91,10 +84,14 @@ Step 0: Issue Number Determination
 ├── If not, auto-detect from docs/issues/*/issue.md
 └── Verify issue exists and is accessible
 
-Step 1: Git Status Check and Commit
+Step 1: Git Status Check and PR Body Generation
 ├── Run git --no-pager status (pager disabled)
 ├── Display file changes with git --no-pager diff --name-status origin/develop..HEAD
-├── Commit changes with "Closes #{issue_number}" message
+├── Fetch issue data for PR content generation
+├── Load test results from docs/issues/{issue_number}/evidence/test-results.json
+├── Generate PR body with Evidence section including test results
+├── Save PR body to docs/issues/{issue_number}/pr.md BEFORE committing
+├── Display PR body preview for user review
 └── Ask: "Do you want to create a PR? (y/n)"
 
 Step 2: Commit and Push Verification
@@ -103,14 +100,7 @@ Step 2: Commit and Push Verification
 ├── Push to remote: git push origin {current_branch} --quiet --no-progress
 └── Verify remote branch is up to date
 
-Step 3: PR Body Generation with Evidence Section
-├── Fetch issue data for PR content generation
-├── Load test results from docs/issues/{issue_number}/evidence/test-results.json
-├── Generate PR body with Evidence section including test results
-├── Save PR body to docs/issues/{issue_number}/pr.md
-└── Display PR body preview for user review
-
-Step 4: GitHub PR Creation with Issue Linking
+Step 3: GitHub PR Creation with Issue Linking
 ├── Run gh pr create --title "..." --body "..." --base develop
 ├── Handle errors: check commits between branches, retry if needed
 ├── Display PR URL and linked issue status
@@ -135,28 +125,29 @@ Step 4: GitHub PR Creation with Issue Linking
 
 **Evidence Section Implementation Details:**
 
-1. **Test Results Loading**:
+1. **Command-Result Pairing**:
+   - Each command must be paired with its specific result
+   - Use numbered sections (1, 2, 3, 4) for clear organization
+   - **Command format**: Use code blocks with bash syntax highlighting
+   - **Result format**: Use bullet points with key metrics and status
+
+2. **Test Results Loading**:
    - Read `docs/issues/{issue_number}/evidence/test-results.json`
    - Parse backend and frontend test results
    - Extract test counts, pass/fail status, coverage data
    - **CRITICAL: NO TEST RESULT FALSIFICATION**: If test results are missing or unavailable, explicitly state "No test results available" - NEVER create fake or simulated test results
 
-2. **Test Summary Generation**:
-   - **If test results exist**: Format backend test results: "X tests passed, Y tests failed (Z.Xs)"
-   - **If test results exist**: Format frontend test results: "X tests passed, Y tests failed (Z.Xs)"
-   - **If test results exist**: Calculate total execution time
-   - **If test results exist**: Determine overall status (PASSED/FAILED/PARTIAL)
-   - **If NO test results**: Display "⚠️ No test results available - Tests have not been executed or results are not accessible"
+3. **Command Execution Documentation**:
+   - **Backend Testing**: Document `yarn test:unit` command and results
+   - **Build Verification**: Document `yarn build` command and results
+   - **Type Checking**: Document `npx tsc --noEmit --strict` command and results
+   - **Code Linting**: Document `npx eslint src` command and results
 
-3. **Failed Test Details**:
-   - If any tests failed, include detailed failure information
-   - Show failed test names and error messages
-   - Include stack traces for debugging
-
-4. **Coverage Information**:
-   - Display coverage percentages for statements, branches, functions, lines
-   - Include coverage trends if available
-   - Highlight low coverage areas
+4. **Result Formatting**:
+   - Include key metrics: test counts, coverage percentages, error counts
+   - Show execution time for performance-critical commands
+   - Display status (SUCCESS/FAILED) clearly
+   - **CRITICAL: NO TEST RESULT FALSIFICATION**: If test results are missing or unavailable, explicitly state "No test results available" - NEVER create fake or simulated test results
 
 **Required Commands:**
 - `git --no-pager status` - Check repository state (with pager disabled)
@@ -173,29 +164,48 @@ Step 4: GitHub PR Creation with Issue Linking
 ```markdown
 ## Evidence
 
-### Test Execution Summary
-{test_execution_summary}
-
-### Test Results Details
-{test_results_details}
-
-### Failed Tests (if any)
-{failed_test_details}
-
-### Coverage Information
-{coverage_information}
+### 1. Backend Testing
+**Command:**
+```bash
+{backend_test_command}
 ```
 
-**Test Execution Summary Templates:**
+**Result:**
+{backend_test_results}
 
-**When test results are available:**
-```markdown
-### Test Execution Summary
-- **Backend Tests**: {backend_test_summary}
-- **Frontend Tests**: {frontend_test_summary}
-- **Total Execution Time**: {total_duration}
-- **Overall Status**: {overall_status}
+### 2. Build Verification
+**Command:**
+```bash
+{build_command}
 ```
+
+**Result:**
+{build_results}
+
+### 3. Type Checking
+**Command:**
+```bash
+{type_check_command}
+```
+
+**Result:**
+{type_check_results}
+
+### 4. Code Linting
+**Command:**
+```bash
+{lint_command}
+```
+
+**Result:**
+{lint_results}
+```
+
+**Command-Result Mapping:**
+- **Backend Testing**: `cd backend && yarn test:unit` → Test results with coverage
+- **Build Verification**: `yarn build` → Build status and error count
+- **Type Checking**: `npx tsc --noEmit --strict` → Type check status and error count
+- **Code Linting**: `npx eslint src` → Lint status and error/warning count
 
 **When NO test results are available:**
 ```markdown
@@ -207,13 +217,16 @@ Step 4: GitHub PR Creation with Issue Linking
 ```
 
 **Key Features:**
-- **PR Body Saving**: Creates pr.md files in docs/issues/{issue_number}/ before committing
-- **Evidence Section**: Includes comprehensive test results and execution details
+- **PR Body Saving**: Creates pr.md files in docs/issues/{issue_number}/ **BEFORE** committing
+- **Evidence Section**: Includes comprehensive test results and execution details in command-result format
+- **Command-Result Pairing**: Each command is paired with its specific result for clear traceability
 - **Test Integration**: Automatically loads and formats test results from evidence files
 - **No Test Falsification**: NEVER creates fake test results - explicitly states when tests are not available
 - **Automatic Issue Linking**: Every PR automatically links to its corresponding issue
 - **Consistent Formatting**: Standardized PR titles and commit messages
 - **Error Handling**: Robust error handling for Git and GitHub operations
+- **Pre-commit Documentation**: PR body is generated and saved before any git operations
+- **Clear Organization**: Numbered sections (1, 2, 3, 4) for easy navigation and verification
 
 **Issue**: {issue_number or auto-detected}
 **Auto Link**: {auto_link (defaults to true)}

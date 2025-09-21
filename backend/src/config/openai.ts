@@ -1,4 +1,4 @@
-// 環境変数はEnvironmentConfigで初期化済み
+// Environment variables are initialized by EnvironmentConfig
 
 export const OPENAI_CONFIG = {
   API_KEY: process.env.OPENAI_API_KEY as string,

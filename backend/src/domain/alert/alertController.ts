@@ -231,7 +231,7 @@ class AlertController {
    * POST /backfill-authors
    * Backfill author data for existing alerts
    */
-  static async backfillAuthors(req: Request, res: Response, next: NextFunction) {
+  static async backfillAuthors(req: Request, res: Response, _next: NextFunction) {
     try {
       const { owner, repo, batchSize } = req.body;
 

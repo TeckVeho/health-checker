@@ -36,6 +36,7 @@ export async function extractAuthorFromIssue(
     const response = await octokit.rest.issues.get({
       owner,
       repo,
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       issue_number: issueNumber
     });
 
@@ -116,7 +117,7 @@ export function parseIssueNumber(issueUrl: string): number | null {
     }
     
     return null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

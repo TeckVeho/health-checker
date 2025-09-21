@@ -34,7 +34,7 @@ describe('Repo Model', () => {
         count: mockRepos.length,
       };
 
-      mockModel.findAndCountAll.mockResolvedValue(mockResult);
+      mockModel.findAndCountAll.mockResolvedValue(mockResult as any);
 
       // Act
       const result = await Repo.findAndCountAll(options);
@@ -58,7 +58,7 @@ describe('Repo Model', () => {
         count: 12,
       };
 
-      mockModel.findAndCountAll.mockResolvedValue(mockResult);
+      mockModel.findAndCountAll.mockResolvedValue(mockResult as any);
 
       // Act
       const result = await Repo.findAndCountAll(options);
@@ -79,7 +79,7 @@ describe('Repo Model', () => {
       };
 
       const error = new Error('Database connection failed');
-      mockModel.findAndCountAll.mockRejectedValue(error);
+      mockModel.findAndCountAll.mockRejectedValue(error as any);
 
       // Act & Assert
       await expect(Repo.findAndCountAll(options)).rejects.toThrow(
@@ -95,7 +95,7 @@ describe('Repo Model', () => {
       const repoId = 1;
       const mockRepo = mockRepos[0];
 
-      mockModel.findByPk.mockResolvedValue(mockRepo);
+      mockModel.findByPk.mockResolvedValue(mockRepo as any);
 
       // Act
       const result = await Repo.findByPk(repoId, {
@@ -113,7 +113,7 @@ describe('Repo Model', () => {
       // Arrange
       const repoId = 999;
 
-      mockModel.findByPk.mockResolvedValue(null);
+      mockModel.findByPk.mockResolvedValue(null as any);
 
       // Act
       const result = await Repo.findByPk(repoId);
@@ -128,7 +128,7 @@ describe('Repo Model', () => {
       const repoId = 1;
       const error = new Error('Database error');
 
-      mockModel.findByPk.mockRejectedValue(error);
+      mockModel.findByPk.mockRejectedValue(error as any);
 
       // Act & Assert
       await expect(Repo.findByPk(repoId)).rejects.toThrow('Database error');
@@ -148,7 +148,7 @@ describe('Repo Model', () => {
       };
 
       const createdRepo = { id: 3, ...repoData, createdAt: new Date(), updatedAt: new Date() };
-      mockModel.create.mockResolvedValue(createdRepo);
+      mockModel.create.mockResolvedValue(createdRepo as any);
 
       // Act
       const result = await Repo.create(repoData);
@@ -169,7 +169,7 @@ describe('Repo Model', () => {
       };
 
       const creationError = new Error('Validation error');
-      mockModel.create.mockRejectedValue(creationError);
+      mockModel.create.mockRejectedValue(creationError as any);
 
       // Act & Assert
       await expect(Repo.create(repoData)).rejects.toThrow('Validation error');
@@ -187,7 +187,7 @@ describe('Repo Model', () => {
       };
 
       const updateResult = [1]; // Number of affected rows
-      mockModel.update.mockResolvedValue(updateResult);
+      mockModel.update.mockResolvedValue(updateResult as any);
 
       // Act
       const result = await Repo.update(updateData, { where: { id: 1 } });
@@ -201,7 +201,7 @@ describe('Repo Model', () => {
       // Arrange
       const updateData = { name: 'updated-repo' };
       const updateError = new Error('Update failed');
-      mockModel.update.mockRejectedValue(updateError);
+      mockModel.update.mockRejectedValue(updateError as any);
 
       // Act & Assert
       await expect(Repo.update(updateData, { where: { id: 1 } })).rejects.toThrow('Update failed');
@@ -213,7 +213,7 @@ describe('Repo Model', () => {
       const updateData = { name: 'updated-repo' };
       const updateResult = [0]; // No affected rows
 
-      mockModel.update.mockResolvedValue(updateResult);
+      mockModel.update.mockResolvedValue(updateResult as any);
 
       // Act
       const result = await Repo.update(updateData, { where: { id: 999 } });
@@ -228,7 +228,7 @@ describe('Repo Model', () => {
     it('should delete repository', async () => {
       // Arrange
       const deleteResult = 1; // Number of deleted rows
-      mockModel.destroy.mockResolvedValue(deleteResult);
+      mockModel.destroy.mockResolvedValue(deleteResult as any);
 
       // Act
       const result = await Repo.destroy({ where: { id: 1 } });
@@ -241,7 +241,7 @@ describe('Repo Model', () => {
     it('should handle delete errors', async () => {
       // Arrange
       const deleteError = new Error('Delete failed');
-      mockModel.destroy.mockRejectedValue(deleteError);
+      mockModel.destroy.mockRejectedValue(deleteError as any);
 
       // Act & Assert
       await expect(Repo.destroy({ where: { id: 1 } })).rejects.toThrow('Delete failed');
@@ -251,7 +251,7 @@ describe('Repo Model', () => {
     it('should return zero when no rows deleted', async () => {
       // Arrange
       const deleteResult = 0; // No deleted rows
-      mockModel.destroy.mockResolvedValue(deleteResult);
+      mockModel.destroy.mockResolvedValue(deleteResult as any);
 
       // Act
       const result = await Repo.destroy({ where: { id: 999 } });
@@ -271,7 +271,7 @@ describe('Repo Model', () => {
         { id: 2, name: 'repo2', owner: 'test-owner' },
       ];
 
-      mockModel.findAll.mockResolvedValue(mockRepos);
+      mockModel.findAll.mockResolvedValue(mockRepos as any);
 
       // Act
       const result = await Repo.findAll({ where: whereClause });
@@ -288,7 +288,7 @@ describe('Repo Model', () => {
         attributes: ['id', 'name', 'owner'],
       };
 
-      mockModel.findAll.mockResolvedValue(mockRepos);
+      mockModel.findAll.mockResolvedValue(mockRepos as any);
 
       // Act
       const result = await Repo.findAll(options);
@@ -303,7 +303,7 @@ describe('Repo Model', () => {
       const options = { where: { owner: 'test-owner' } };
       const error = new Error('Database error');
 
-      mockModel.findAll.mockRejectedValue(error);
+      mockModel.findAll.mockRejectedValue(error as any);
 
       // Act & Assert
       await expect(Repo.findAll(options)).rejects.toThrow('Database error');
@@ -317,7 +317,7 @@ describe('Repo Model', () => {
       const whereClause = { name: 'test-repo', owner: 'test-owner' };
       const mockRepo = mockRepos[0];
 
-      mockModel.findOne.mockResolvedValue(mockRepo);
+      mockModel.findOne.mockResolvedValue(mockRepo as any);
 
       // Act
       const result = await Repo.findOne({ where: whereClause });
@@ -331,7 +331,7 @@ describe('Repo Model', () => {
       // Arrange
       const whereClause = { name: 'nonexistent-repo' };
 
-      mockModel.findOne.mockResolvedValue(null);
+      mockModel.findOne.mockResolvedValue(null as any);
 
       // Act
       const result = await Repo.findOne({ where: whereClause });
@@ -346,7 +346,7 @@ describe('Repo Model', () => {
       const whereClause = { name: 'test-repo' };
       const error = new Error('Database error');
 
-      mockModel.findOne.mockRejectedValue(error);
+      mockModel.findOne.mockRejectedValue(error as any);
 
       // Act & Assert
       await expect(Repo.findOne({ where: whereClause })).rejects.toThrow('Database error');
@@ -358,7 +358,7 @@ describe('Repo Model', () => {
     it('should count repositories', async () => {
       // Arrange
       const countResult = 5;
-      mockModel.count.mockResolvedValue(countResult);
+      mockModel.count.mockResolvedValue(countResult as any);
 
       // Act
       const result = await Repo.count();
@@ -373,7 +373,7 @@ describe('Repo Model', () => {
       const whereClause = { owner: 'test-owner' };
       const countResult = 3;
 
-      mockModel.count.mockResolvedValue(countResult);
+      mockModel.count.mockResolvedValue(countResult as any);
 
       // Act
       const result = await Repo.count({ where: whereClause });
@@ -388,7 +388,7 @@ describe('Repo Model', () => {
       const whereClause = { owner: 'test-owner' };
       const error = new Error('Count error');
 
-      mockModel.count.mockRejectedValue(error);
+      mockModel.count.mockRejectedValue(error as any);
 
       // Act & Assert
       await expect(Repo.count({ where: whereClause })).rejects.toThrow('Count error');
@@ -409,7 +409,7 @@ describe('Repo Model', () => {
         { id: 2, ...reposData[1], createdAt: new Date(), updatedAt: new Date() },
       ];
 
-      mockModel.bulkCreate.mockResolvedValue(createdRepos);
+      mockModel.bulkCreate.mockResolvedValue(createdRepos as any);
 
       // Act
       const result = await Repo.bulkCreate(reposData);
@@ -427,7 +427,7 @@ describe('Repo Model', () => {
       ];
 
       const bulkCreateError = new Error('Bulk create failed');
-      mockModel.bulkCreate.mockRejectedValue(bulkCreateError);
+      mockModel.bulkCreate.mockRejectedValue(bulkCreateError as any);
 
       // Act & Assert
       await expect(Repo.bulkCreate(reposData)).rejects.toThrow('Bulk create failed');
@@ -449,7 +449,7 @@ describe('Repo Model', () => {
         true, // wasCreated
       ];
 
-      mockModel.findOrCreate.mockResolvedValue(findOrCreateResult);
+      mockModel.findOrCreate.mockResolvedValue(findOrCreateResult as any);
 
       // Act
       const result = await Repo.findOrCreate({
@@ -473,7 +473,7 @@ describe('Repo Model', () => {
       };
 
       const findOrCreateError = new Error('Find or create failed');
-      mockModel.findOrCreate.mockRejectedValue(findOrCreateError);
+      mockModel.findOrCreate.mockRejectedValue(findOrCreateError as any);
 
       // Act & Assert
       await expect(Repo.findOrCreate({

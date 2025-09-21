@@ -53,7 +53,7 @@ describe('GithubActionController', () => {
         suggestions: [],
       };
 
-      mockGithubActionService.reviewPullRequest.mockResolvedValue(mockReviewResult);
+      mockGithubActionService.reviewPullRequest.mockResolvedValue(mockReviewResult as any);
 
       // Act
       await GithubActionController.reviewPullRequest(mockReq, mockRes, mockNext);
@@ -251,7 +251,7 @@ describe('GithubActionController', () => {
         suggestions: [],
       };
 
-      mockGithubActionService.reviewPullRequest.mockResolvedValue(mockReviewResult);
+      mockGithubActionService.reviewPullRequest.mockResolvedValue(mockReviewResult as any);
 
       // Act
       await GithubActionController.reviewPullRequest(mockReq, mockRes, mockNext);
@@ -283,7 +283,7 @@ describe('GithubActionController', () => {
         suggestions: [],
       };
 
-      mockGithubActionService.reviewPullRequest.mockResolvedValue(mockReviewResult);
+      mockGithubActionService.reviewPullRequest.mockResolvedValue(mockReviewResult as any);
 
       // Act
       await GithubActionController.reviewPullRequest(mockReq, mockRes, mockNext);
@@ -334,7 +334,7 @@ describe('GithubActionController', () => {
         suggestions: [],
       };
 
-      mockGithubActionService.reviewPullRequest.mockResolvedValue(mockReviewResult);
+      mockGithubActionService.reviewPullRequest.mockResolvedValue(mockReviewResult as any);
 
       // Act
       await GithubActionController.reviewPullRequest(mockReq, mockRes, mockNext);

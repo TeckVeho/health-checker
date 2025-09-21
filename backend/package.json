@@ -13,7 +13,6 @@
     "test:all": "cross-env NODE_ENV=test jest",
     "test:feature": "cross-env NODE_ENV=test npx cucumber-js --require-module ts-node/register --require tsconfig-paths/register --require src/**/*steps.ts src/**/*.feature ",
     "db:migrate": "ts-node -r tsconfig-paths/register ./src/database/migrate-all.ts",
-    "db:seed": "ts-node -r tsconfig-paths/register ./src/database/seed-all.ts",
     "db:clear": "ts-node -r tsconfig-paths/register ./src/database/clear-all.ts",
     "db:drop": "ts-node -r tsconfig-paths/register ./src/database/drop-all.ts",
     "command": "ts-node ./src/commands",

@@ -33,7 +33,7 @@ import { exec } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import { randomUUID } from 'crypto';
-import { format } from 'date-fns';
+// import { format } from 'date-fns';
 import { Model } from 'sequelize';
 import sequelize from '../../../config/database';
 import { alertAttributes, alertModelOptions } from '../alertSchema';
@@ -98,7 +98,7 @@ export async function auditScanner(owner: string, repo: string, processStartTime
 
   console.log(`🚨 Found ${allFindings.length} high+ severity vulnerabilities`);
 
-  const timestamp = format(new Date(), 'yyyyMMddHHmmss');
+  // const timestamp = format(new Date(), 'yyyyMMddHHmmss');
   const detectedKeys = new Set<string>();
 
   // Process findings into alerts

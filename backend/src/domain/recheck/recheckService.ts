@@ -53,7 +53,7 @@ export class ReCheckService {
     
     console.log(`[ReCheckService] Starting global recheck: ${executionId}`);
     
-    // バックグラウンドで実行
+    // Execute in background
     setImmediate(async () => {
       try {
         await this.executeGlobalRecheck(executionId, checks);
@@ -70,12 +70,12 @@ export class ReCheckService {
    */
   private static async executeGlobalRecheck(executionId: string, checks: string[]): Promise<void> {
     try {
-      // 全リポジトリを取得
+      // Get all repositories
       const repos = await this.getAllRepositories();
       
       console.log(`[ReCheckService] Global recheck started for ${repos.length} repositories`);
       
-      // 各リポジトリに対してReCheckを実行
+      // Execute ReCheck for each repository
       for (const repo of repos) {
         try {
           console.log(`[ReCheckService] Processing ${repo.owner}/${repo.name}`);
@@ -86,7 +86,7 @@ export class ReCheckService {
           });
         } catch (error) {
           console.error(`[ReCheckService] Failed to process ${repo.owner}/${repo.name}:`, error);
-          // 個別のリポジトリエラーは続行
+          // Continue on individual repository errors
         }
       }
       
@@ -99,28 +99,45 @@ export class ReCheckService {
   }
   
   /**
-   * 全リポジトリを取得
+   * Get all repositories from database
    */
   private static async getAllRepositories(): Promise<{ owner: string; name: string }[]> {
-    // ここでリポジトリ一覧を取得する実装を追加
-    // 現在は仮実装
-    return [
-      { owner: 'TeckVeho', name: 'health-checker' },
-      // 他のリポジトリも追加
-    ];
+    try {
+      // Import Repo model dynamically to avoid circular dependencies
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      const { default: Repo } = await import('../repo/repoModel');
+      
+      const repos = await Repo.findAll({
+        attributes: ['owner', 'name'],
+        where: {
+          isActive: true // Only get active repositories
+        }
+      });
+      
+      return repos.map(repo => ({
+        owner: repo.owner,
+        name: repo.name
+      }));
+    } catch (error) {
+      console.warn('[ReCheckService] Failed to fetch repositories from database, using fallback:', error);
+      // Fallback to hardcoded list if database query fails
+      return [
+        { owner: 'TeckVeho', name: 'health-checker' },
+      ];
+    }
   }
   
   /**
    * レート制限チェック（終了時間から3分後に再実行可能）
    */
   static async checkRateLimit(owner: string, repo: string): Promise<RateLimitResult> {
-    // リポジトリ設定を取得
+    // Get repository settings
     const settings = await RecheckSettings.getSettingsForRepo(owner, repo);
     
     if (!settings.isEnabled) {
       return {
         allowed: false,
-        retryAfter: -1, // 無効化されている場合
+        retryAfter: -1, // If disabled
       };
     }
 
@@ -136,7 +153,7 @@ export class ReCheckService {
     checks: string[] = ['branch', 'clone', 'gitleaks', 'issue']
   ): Promise<RecheckExecution> {
     
-    // 環境変数検証
+    // Environment variable validation
     console.log(`[ReCheck] Validating environment for ${owner}/${repo}`);
     const envValidation = await EnvironmentValidator.validateEnvironment();
     EnvironmentValidator.logValidationResult(envValidation);
@@ -146,7 +163,7 @@ export class ReCheckService {
       throw new Error(errorMessage);
     }
     
-    // レート制限チェック
+    // Rate limit check
     const rateLimitResult = await this.checkRateLimit(owner, repo);
     if (!rateLimitResult.allowed) {
       if (rateLimitResult.retryAfter === -1) {
@@ -155,22 +172,22 @@ export class ReCheckService {
       throw new Error(`Rate limit exceeded. Retry after ${rateLimitResult.retryAfter} seconds.`);
     }
 
-    // リポジトリ設定を取得
+    // Get repository settings
     const settings = await RecheckSettings.getSettingsForRepo(owner, repo);
-
-    // 実行中のチェックがあるかチェック
+    
+    // Check if there's a running check
     const runningExecutions = await RecheckExecution.findRunningByRepo(owner, repo);
     if (runningExecutions.length >= settings.maxConcurrentExecutions) {
       throw new Error('Maximum concurrent executions reached for this repository.');
     }
 
-    // チェック種類の検証
+    // Validate check types
     const allowedChecks = checks.filter(check => settings.allowedCheckTypes.includes(check));
     if (allowedChecks.length === 0) {
       throw new Error('No valid check types specified.');
     }
 
-    // 新しい実行レコード作成
+    // Create new execution record
     const executionId = `recheck_${Date.now()}_${uuidv4().substring(0, 8)}`;
     
     const execution = await RecheckExecution.create({
@@ -184,7 +201,7 @@ export class ReCheckService {
 
     console.log(`[ReCheck] Started execution ${executionId} for ${owner}/${repo}`);
 
-    // バックグラウンドでヘルスチェック実行
+    // Execute health check in background
     this.executeHealthCheckBackground(execution, settings.timeoutMinutes);
 
     return execution;
@@ -199,7 +216,7 @@ export class ReCheckService {
   ): Promise<void> {
     const startTime = Date.now();
     
-    // タイムアウト設定
+    // Timeout configuration
     const timeoutId = setTimeout(async () => {
       try {
         const currentExecution = await RecheckExecution.findByPk(execution.id);
@@ -218,7 +235,7 @@ export class ReCheckService {
     try {
       console.log(`[ReCheck] Executing health check for ${execution.owner}/${execution.repo} (${execution.executionId})`);
       
-      // 実行前の環境変数再検証（フォールバック処理）
+      // Re-validate environment variables before execution (fallback processing)
       const envValidation = await EnvironmentValidator.validateEnvironment();
       if (!envValidation.isValid && !process.env.GITHUB_LOCAL_WORKSPACE) {
         console.warn(`[ReCheck] GITHUB_LOCAL_WORKSPACE not set, attempting to create fallback workspace`);
@@ -232,14 +249,14 @@ export class ReCheckService {
         }
       }
       
-      // 既存のAlertService.runAlertを使用（進捗管理付き）
+      // Use existing AlertService.runAlert (with progress management)
       const result = await AlertService.runAlert({
         owner: execution.owner,
         repo: execution.repo,
         checks: execution.checkTypes,
         onProgress: async (progress) => {
           try {
-            // 進捗情報をデータベースに保存
+            // Save progress information to database
             await execution.update({
               result: {
                 currentPhase: progress.currentPhase,
@@ -254,10 +271,10 @@ export class ReCheckService {
         }
       });
 
-      // タイムアウトをクリア
+      // Clear timeout
       clearTimeout(timeoutId);
 
-      // 成功時の更新
+      // Update on success
       await execution.markCompleted(result);
 
       const endTime = Date.now();
@@ -268,12 +285,9 @@ export class ReCheckService {
       // タイムアウトをクリア
       clearTimeout(timeoutId);
       
-      const endTime = Date.now();
-      const durationSeconds = Math.round((endTime - startTime) / 1000);
-      
       console.error(`[ReCheck] Failed health check for ${execution.owner}/${execution.repo}:`, error);
       
-      // エラー時の更新
+      // Update on error
       await execution.markError(
         error instanceof Error ? error.message : String(error),
         'EXECUTION_ERROR'
@@ -285,45 +299,45 @@ export class ReCheckService {
    * ReCheck状態取得
    */
   static async getRecheckStatus(owner: string, repo: string): Promise<RecheckStatusResponse> {
-    // 最新の実行レコード取得
+    // Get latest execution record
     const latestExecution = await RecheckExecution.findLatestByRepo(owner, repo);
     
     if (!latestExecution) {
       return { status: 'idle' };
     }
 
-    // 実行中の場合
+    // If running
     if (latestExecution.status === 'running') {
       const now = Date.now();
       const startTime = latestExecution.startedAt.getTime();
       const elapsedSeconds = Math.round((now - startTime) / 1000);
       
-      // データベースから進捗情報を取得
+      // Get progress information from database
       const result = latestExecution.result as any || {};
       const currentPhase = result.currentPhase || 'Initializing...';
       const totalPhases = result.totalPhases || 1;
       const phaseProgress = result.phaseProgress || 0;
       const phaseDetails = result.phaseDetails || {};
       
-      // 全体の進捗計算（issue checkフェーズが70%を占める）
+      // Calculate overall progress (issue check phase accounts for 70%)
       let overallProgress = 0;
       const currentPhaseName = result.currentPhase || 'Initializing...';
       const phaseProgressValue = result.phaseProgress || 0;
       
       if (currentPhaseName.toLowerCase().includes('issue')) {
-        // Issue checkフェーズ: 30% + (フェーズ進捗 * 70%)
+        // Issue check phase: 30% + (phase progress * 70%)
         overallProgress = Math.min(Math.round(30 + (phaseProgressValue * 0.7)), 95);
       } else if (currentPhaseName.toLowerCase().includes('branch')) {
-        // Branch checkフェーズ: フェーズ進捗 * 15%
+        // Branch check phase: phase progress * 15%
         overallProgress = Math.min(Math.round(phaseProgressValue * 0.15), 15);
       } else if (currentPhaseName.toLowerCase().includes('clone')) {
-        // Clone checkフェーズ: 15% + (フェーズ進捗 * 10%)
+        // Clone check phase: 15% + (phase progress * 10%)
         overallProgress = Math.min(Math.round(15 + (phaseProgressValue * 0.1)), 25);
       } else if (currentPhaseName.toLowerCase().includes('gitleaks')) {
-        // Gitleaks checkフェーズ: 25% + (フェーズ進捗 * 5%)
+        // Gitleaks check phase: 25% + (phase progress * 5%)
         overallProgress = Math.min(Math.round(25 + (phaseProgressValue * 0.05)), 30);
       } else {
-        // その他のフェーズ: 従来の計算
+        // Other phases: traditional calculation
         overallProgress = Math.min(Math.round((phaseProgressValue / totalPhases) * 100), 95);
       }
       
@@ -343,7 +357,7 @@ export class ReCheckService {
       };
     }
 
-    // レート制限情報の計算
+    // Calculate rate limit information
     const rateLimitResult = await this.checkRateLimit(owner, repo);
     
     return {
@@ -399,7 +413,7 @@ export class ReCheckService {
    * タイムアウト処理（定期実行用）
    */
   static async handleTimeouts(): Promise<number> {
-    return await RecheckExecution.handleTimeouts(10); // 10分でタイムアウト
+    return await RecheckExecution.handleTimeouts(10); // Timeout after 10 minutes
   }
 
   /**
@@ -451,6 +465,6 @@ export class ReCheckService {
   }
 }
 
-// 型定義のエクスポート
+// Export type definitions
 export type { RateLimitResult } from './recheckModel';
 export type { RecheckExecutionAttributes, RecheckSettingsAttributes } from './recheckSchema';

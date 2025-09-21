@@ -48,7 +48,7 @@ class AlertService {
   }
 
   /**
-   * Alert フィールドの正規化（NULL値と空文字列の統一処理）
+   * Normalize Alert fields (unified handling of NULL values and empty strings)
    */
   private static normalizeAlertFields(alert: AlertCandidate | IssueAlertCandidate) {
     return {
@@ -64,7 +64,7 @@ class AlertService {
   }
 
   /**
-   * Alert の重複チェック付き登録・更新
+   * Register/update Alert with duplicate checking
    */
   static async upsertAlert(alert: AlertCandidate | IssueAlertCandidate): Promise<{ record: Alert; created: boolean }> {
     const keyFields = this.normalizeAlertFields(alert);
@@ -100,12 +100,12 @@ class AlertService {
   }
 
   /**
-   * ReCheck時に検出されなかったalertを自動解決
-   * @param owner リポジトリオーナー
-   * @param repo リポジトリ名
-   * @param detectedKeys 今回検出されたalertのキーセット
-   * @param checkTypes 対象となるcheckTypeの配列
-   * @param processStartTime 処理開始時刻（この時刻より前のlastDetectedAtを持つalertは解決対象）
+   * Automatically resolve alerts that were not detected during ReCheck
+   * @param owner Repository owner
+   * @param repo Repository name
+   * @param detectedKeys Set of alert keys detected this time
+   * @param checkTypes Array of target checkTypes
+   * @param processStartTime Process start time (alerts with lastDetectedAt before this time are resolution targets)
    */
   static async resolveUndetectedAlerts(
     owner: string, 
@@ -128,7 +128,7 @@ class AlertService {
 
     if (existing && existing.length > 0) {
       for (const row of existing) {
-        // 解決処理でも正規化されたキーを使用（新規作成と同じロジック）
+        // Use normalized keys in resolution process (same logic as new creation)
         const key = [
           row.getDataValue('owner'), 
           row.getDataValue('repo'), 
@@ -166,14 +166,14 @@ class AlertService {
   }
 
   /**
-   * ReCheck完了後に全ての未解決alertを統合的に解決
-   * 各checkタイプで個別に解決処理が行われた後、漏れがないか最終チェック
-   * @param owner リポジトリオーナー
-   * @param repo リポジトリ名
-   * @param processStartTime 処理開始時刻（この時刻より前のlastDetectedAtを持つalertは解決対象）
+   * Comprehensively resolve all unresolved alerts after ReCheck completion
+   * Final check to ensure no alerts are missed after individual resolution processing for each check type
+   * @param owner Repository owner
+   * @param repo Repository name
+   * @param processStartTime Process start time (alerts with lastDetectedAt before this time are resolution targets)
    */
   static async resolveAllUndetectedAlerts(owner: string, repo: string, processStartTime: Date): Promise<void> {
-    // 全てのcheckTypeを対象とする
+    // Target all checkTypes
     const allCheckTypes = [
       'branch_name_violation', 
       'branch_protect_rule_violation', 
@@ -207,8 +207,8 @@ class AlertService {
       for (const row of existing) {
         const lastDetectedAt = row.getDataValue('lastDetectedAt');
         
-        // 処理開始時刻より前のlastDetectedAtを持つalertのみを解決対象とする
-        // これにより、今回のReCheckで検出されなかったalertのみを解決対象とする
+        // Only target alerts with lastDetectedAt before process start time
+        // This ensures only alerts not detected in this ReCheck are targeted for resolution
         if (!lastDetectedAt || lastDetectedAt < processStartTime) {
           const author = row.getDataValue('author');
           const authorInfo = author ? ` (by @${author})` : '';
@@ -328,7 +328,6 @@ class AlertService {
     return summary;
   }
   static async processBranchAlerts(owner: string, repo: string, processStartTime?: Date): Promise<{ owner: string; repo: string }> {
-    const timestamp = new Date();
     const result = await checkBranches(owner, repo);
     const detectedKeySet = new Set<string>();
 
@@ -361,7 +360,6 @@ class AlertService {
   }
 
   static async processIssueAlerts(owner: string, repo: string, processStartTime?: Date): Promise<{ owner: string; repo: string }> {
-    const timestamp = new Date();
     const result = await checkIssues(owner, repo);
     const detectedKeySet = new Set<string>();
 
@@ -399,7 +397,6 @@ class AlertService {
     onProgress?: (processed: number, total: number) => void,
     processStartTime?: Date
   ): Promise<{ owner: string; repo: string }> {
-    const timestamp = new Date();
 
     // Call checkIssues with progress callback for issue analysis phase
     const result = await checkIssues(owner, repo, (progress, total) => {
@@ -830,7 +827,9 @@ class AlertService {
     } = {}
   ) {
     const whereConditions: any = {
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       is_ignored: false,
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       system_resolved: false,
       checkType: {
         [Op.like]: 'issue_%'  // Only show issue-type alerts

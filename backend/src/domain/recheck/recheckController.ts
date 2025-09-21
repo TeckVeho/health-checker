@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ReCheckService, RecheckResponse, RecheckStatusResponse } from './recheckService';
+import { ReCheckService, RecheckResponse } from './recheckService';
 import getMessage from '../../utils/message';
 
 export class ReCheckController {
@@ -24,7 +24,7 @@ export class ReCheckController {
           repo: 'global',
           executionId: execution.executionId,
           startedAt: execution.startedAt.toISOString(),
-          estimatedDuration: 300, // 推定5分
+          estimatedDuration: 300, // Estimated 5 minutes
         },
       };
 
@@ -35,7 +35,7 @@ export class ReCheckController {
       
       const errorMessage = error instanceof Error ? error.message : String(error);
       
-      // レート制限エラー
+      // Rate limit error
       if (errorMessage.includes('Rate limit exceeded')) {
         const retryAfterMatch = errorMessage.match(/Retry after (\d+) seconds/);
         const retryAfter = retryAfterMatch ? parseInt(retryAfterMatch[1]) : undefined;
@@ -53,7 +53,7 @@ export class ReCheckController {
         return res.status(429).json(response);
       }
       
-      // 同時実行制限エラー
+      // Concurrent execution limit error
       if (errorMessage.includes('Maximum concurrent executions')) {
         const response: RecheckResponse = {
           success: false,
@@ -67,7 +67,7 @@ export class ReCheckController {
         return res.status(409).json(response);
       }
       
-      // その他のエラー
+      // Other errors
       next(error);
     }
   }
@@ -93,7 +93,7 @@ export class ReCheckController {
           repo,
           executionId: execution.executionId,
           startedAt: execution.startedAt.toISOString(),
-          estimatedDuration: 60, // 推定1分
+          estimatedDuration: 60, // Estimated 1 minute
         },
       };
 
@@ -104,7 +104,7 @@ export class ReCheckController {
       
       const errorMessage = error instanceof Error ? error.message : String(error);
       
-      // レート制限エラー
+      // Rate limit error
       if (errorMessage.includes('Rate limit exceeded')) {
         const retryAfterMatch = errorMessage.match(/Retry after (\d+) seconds/);
         const retryAfter = retryAfterMatch ? parseInt(retryAfterMatch[1]) : undefined;
@@ -122,7 +122,7 @@ export class ReCheckController {
         return res.status(429).json(response);
       }
       
-      // 同時実行制限エラー
+      // Concurrent execution limit error
       if (errorMessage.includes('Maximum concurrent executions')) {
         const response: RecheckResponse = {
           success: false,
@@ -136,7 +136,7 @@ export class ReCheckController {
         return res.status(409).json(response);
       }
       
-      // 無効化エラー
+      // Disabled error
       if (errorMessage.includes('ReCheck is disabled')) {
         const response: RecheckResponse = {
           success: false,
@@ -150,7 +150,7 @@ export class ReCheckController {
         return res.status(403).json(response);
       }
       
-      // バリデーションエラー
+      // Validation error
       if (errorMessage.includes('No valid check types')) {
         const response: RecheckResponse = {
           success: false,
@@ -164,7 +164,7 @@ export class ReCheckController {
         return res.status(400).json(response);
       }
       
-      // 環境変数エラー
+      // Environment variable error
       if (errorMessage.includes('Environment validation failed') || errorMessage.includes('GITHUB_LOCAL_WORKSPACE is required')) {
         const response: RecheckResponse = {
           success: false,
@@ -178,7 +178,7 @@ export class ReCheckController {
         return res.status(500).json(response);
       }
       
-      // その他のエラー
+      // Other errors
       next(error);
     }
   }
@@ -294,7 +294,7 @@ export class ReCheckController {
     try {
       console.log(`[ReCheckController] Updating settings for ${owner}/${repo}`, settings);
       
-      // バリデーション
+      // Validation
       if (settings.rateLimitMinutes !== undefined && (settings.rateLimitMinutes < 1 || settings.rateLimitMinutes > 60)) {
         return res.status(400).json({
           success: false,

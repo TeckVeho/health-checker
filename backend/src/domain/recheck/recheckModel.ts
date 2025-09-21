@@ -14,7 +14,7 @@ import {
 // Rate limit result interface
 export interface RateLimitResult {
   allowed: boolean;
-  retryAfter?: number; // 秒
+  retryAfter?: number; // seconds
   lastExecutedAt?: Date;
   nextAvailableAt?: Date;
 }
@@ -73,7 +73,7 @@ export class RecheckExecution extends Model<RecheckExecutionAttributes, RecheckE
     const cutoffTime = new Date();
     cutoffTime.setMinutes(cutoffTime.getMinutes() - rateLimitMinutes);
 
-    // 最近の完了した実行を取得（終了時間ベース）
+    // Get recent completed execution (based on end time)
     const recentExecution = await RecheckExecution.findOne({
       where: {
         owner,
@@ -93,7 +93,7 @@ export class RecheckExecution extends Model<RecheckExecutionAttributes, RecheckE
       return { allowed: true };
     }
 
-    // 終了時間から3分後を計算
+    // Calculate 3 minutes after end time
     const nextAvailable = new Date(recentExecution.completedAt);
     nextAvailable.setMinutes(nextAvailable.getMinutes() + rateLimitMinutes);
     
@@ -107,7 +107,7 @@ export class RecheckExecution extends Model<RecheckExecutionAttributes, RecheckE
     return {
       allowed: false,
       retryAfter,
-      lastExecutedAt: recentExecution.completedAt, // 終了時間を返す
+      lastExecutedAt: recentExecution.completedAt, // Return end time
       nextAvailableAt: nextAvailable,
     };
   }
@@ -259,7 +259,7 @@ export class RecheckSettings extends Model<RecheckSettingsAttributes, RecheckSet
       return settings.toJSON();
     }
 
-    // デフォルト設定を返す
+    // Return default settings
     return {
       owner,
       repo,
@@ -293,7 +293,7 @@ export class RecheckSettings extends Model<RecheckSettingsAttributes, RecheckSet
     });
 
     if (!created) {
-      // 既存レコードを更新
+      // Update existing record
       await instance.update({
         ...settings,
         updatedAt: new Date(),
@@ -315,4 +315,5 @@ RecheckSettings.init(recheckSettingsAttributes, {
   ...recheckSettingsModelOptions,
 });
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export default { RecheckExecution, RecheckSettings };

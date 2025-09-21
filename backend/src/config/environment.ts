@@ -18,17 +18,17 @@ export class EnvironmentConfig {
 
     console.log('[EnvironmentConfig] Initializing environment variables...');
 
-    // アプリケーションのルートディレクトリを取得
+    // Get application root directory
     const appRoot = process.cwd();
     console.log(`[EnvironmentConfig] Application root: ${appRoot}`);
 
-    // .envファイルのパスを決定
+    // Determine .env file path
     const envFile = process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
     const envPath = path.resolve(appRoot, envFile);
 
     console.log(`[EnvironmentConfig] Looking for .env file at: ${envPath}`);
 
-    // .envファイルの存在確認
+    // Check .env file existence
     try {
       fs.accessSync(envPath, fs.constants.F_OK);
       console.log(`[EnvironmentConfig] .env file found at: ${envPath}`);
@@ -38,7 +38,7 @@ export class EnvironmentConfig {
       return;
     }
 
-    // dotenv.config()を実行
+    // Execute dotenv.config()
     const result = dotenv.config({ path: envPath });
     
     if (result.error) {
@@ -47,7 +47,7 @@ export class EnvironmentConfig {
       console.log(`[EnvironmentConfig] Environment loaded successfully from: ${envPath}`);
     }
 
-    // 重要な環境変数の確認
+    // Check important environment variables
     this.validateCriticalVariables();
 
     this.initialized = true;
@@ -71,7 +71,7 @@ export class EnvironmentConfig {
     for (const varName of criticalVars) {
       const value = process.env[varName];
       if (value) {
-        // 機密情報は一部のみ表示
+        // Show only part of sensitive information
         const displayValue = varName.includes('PASSWORD') || varName.includes('KEY') 
           ? `${value.substring(0, 8)}...` 
           : value;
@@ -81,7 +81,7 @@ export class EnvironmentConfig {
       }
     }
 
-    // GITHUB_LOCAL_WORKSPACEの特別な検証
+    // Special validation for GITHUB_LOCAL_WORKSPACE
     const workspace = process.env.GITHUB_LOCAL_WORKSPACE;
     if (workspace) {
       try {
