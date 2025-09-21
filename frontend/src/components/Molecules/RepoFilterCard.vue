@@ -1,17 +1,23 @@
 <template>
-  <Card :class="['w-full shadow-sm border border-gray-200 mb-4 rounded-xl', customClass]">
+  <Card
+    :class="[
+      'w-full shadow-sm border border-gray-200 mb-4 rounded-xl',
+      customClass,
+    ]"
+  >
     <template #content>
       <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-        <HealthButton 
-          :label="showOnlyActive ? 'Only Active Repo: ON' : 'Only Active Repo: OFF'"
+        <BaseButton
+          :text="
+            showOnlyActive ? 'Only Active Repo: ON' : 'Only Active Repo: OFF'
+          "
           :icon="showOnlyActive ? 'pi pi-check-circle' : 'pi pi-times-circle'"
-          :severity="showOnlyActive ? 'info' : 'secondary'" 
-          outlined
+          :variant="showOnlyActive ? 'primary' : 'secondary'"
           :aria-label="`Toggle active repository filter. Currently ${showOnlyActive ? 'enabled' : 'disabled'}`"
           :aria-pressed="showOnlyActive"
           role="switch"
           :loading="loading"
-          @click="$emit('toggle-active')" 
+          @click="$emit('toggle-active')"
         />
       </div>
     </template>
@@ -19,8 +25,8 @@
 </template>
 
 <script setup>
-import Card from 'primevue/card'
-import HealthButton from '@/components/Atoms/HealthButton.vue'
+import Card from 'primevue/card';
+import BaseButton from '@/components/Atoms/buttons/BaseButton.vue';
 
 defineProps({
   showOnlyActive: {
@@ -37,7 +43,7 @@ defineProps({
     required: false,
     default: '',
   },
-})
+});
 
-defineEmits(['toggle-active'])
+defineEmits(['toggle-active']);
 </script>

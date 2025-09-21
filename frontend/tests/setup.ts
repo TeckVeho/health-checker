@@ -1,5 +1,23 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
+import { mount, VueWrapper } from '@vue/test-utils'
+import { config } from '@vue/test-utils'
+
+// Make mount available globally
+declare global {
+  var mount: typeof import('@vue/test-utils').mount
+}
+
+global.mount = mount
+
+// Configure Vue Test Utils
+config.global.mocks = {
+  $t: (key: string) => key,
+  $tc: (key: string) => key,
+  $te: (key: string) => true,
+  $d: (value: any) => value,
+  $n: (value: any) => value,
+}
 
 // Mock process.client for browser environment
 Object.defineProperty(process, 'client', {

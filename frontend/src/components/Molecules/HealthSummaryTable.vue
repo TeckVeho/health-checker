@@ -1,6 +1,6 @@
 <template>
-  <DataTable 
-    :value="tableData" 
+  <DataTable
+    :value="tableData"
     class="p-datatable-sm"
     stripedRows
     :empty-message="emptyMessage"
@@ -8,9 +8,9 @@
     <Column field="severity" header="Severity Level" class="col-severity">
       <template #body="slotProps">
         <div class="flex items-center">
-          <Tag 
+          <Tag
             v-if="slotProps.data.tagSeverity"
-            :value="slotProps.data.severity" 
+            :value="slotProps.data.severity"
             :severity="slotProps.data.tagSeverity"
             class="text-sm font-medium"
           />
@@ -20,18 +20,24 @@
         </div>
       </template>
     </Column>
-    
+
     <Column field="count" header="Count" class="col-count">
       <template #body="slotProps">
-        <span :class="slotProps.data.isTotal ? 'font-semibold' : ''" class="text-sm text-gray-900">
+        <span
+          :class="slotProps.data.isTotal ? 'font-semibold' : ''"
+          class="text-sm text-gray-900"
+        >
           {{ slotProps.data.count }}
         </span>
       </template>
     </Column>
-    
+
     <Column field="percentage" header="Percentage" class="col-percentage">
       <template #body="slotProps">
-        <span :class="slotProps.data.isTotal ? 'font-semibold' : ''" class="text-sm text-gray-900">
+        <span
+          :class="slotProps.data.isTotal ? 'font-semibold' : ''"
+          class="text-sm text-gray-900"
+        >
           {{ slotProps.data.percentage }}%
         </span>
       </template>
@@ -40,21 +46,21 @@
 </template>
 
 <script setup>
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Tag from 'primevue/tag'
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+import Tag from 'primevue/tag';
 
 defineProps({
   tableData: {
     type: Array,
     required: true,
-    default: () => []
+    default: () => [],
   },
   emptyMessage: {
     type: String,
-    default: 'No health data available'
-  }
-})
+    default: 'No health data available',
+  },
+});
 </script>
 
 <style scoped>
@@ -90,4 +96,4 @@ defineProps({
 :deep(.p-datatable .p-datatable-tbody > tr:last-child) {
   font-weight: 600 !important;
 }
-</style> 
+</style>

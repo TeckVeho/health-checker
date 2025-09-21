@@ -1,12 +1,9 @@
 <template>
   <div :class="['w-full overflow-x-auto', customClass]">
-    <DataTable 
-      :value="alerts" 
-      :class="[
-        'p-datatable-sm shadow-md border rounded-md',
-        tableClass
-      ]"
-      stripedRows 
+    <DataTable
+      :value="alerts"
+      :class="['p-datatable-sm shadow-md border rounded-md', tableClass]"
+      stripedRows
       responsiveLayout="stack"
       sortMode="multiple"
       :loading="loading"
@@ -18,14 +15,14 @@
     >
       <Column field="severity" header="Severity" sortable class="col-severity">
         <template #body="slotProps">
-          <Tag 
-            :value="slotProps.data.severity" 
-            :severity="getSeverityColor(slotProps.data.severity)" 
+          <Tag
+            :value="slotProps.data.severity"
+            :severity="getSeverityColor(slotProps.data.severity)"
             data-label="Severity"
           />
         </template>
       </Column>
-      
+
       <Column field="checkType" header="Type" sortable class="col-check-type">
         <template #body="slotProps">
           <div class="text-sm" data-label="Type">
@@ -33,33 +30,43 @@
           </div>
         </template>
       </Column>
-      
+
       <Column field="title" header="Title" sortable class="col-title">
         <template #body="slotProps">
-          <div class="font-medium text-gray-900 truncate" :title="slotProps.data.title" data-label="Title">
+          <div
+            class="font-medium text-gray-900 truncate"
+            :title="slotProps.data.title"
+            data-label="Title"
+          >
             {{ slotProps.data.title || '-' }}
           </div>
         </template>
       </Column>
-      
+
       <Column field="description" header="Description" class="col-description">
         <template #body="slotProps">
-          <div 
-            class="text-sm text-gray-700 truncate" 
-            :title="slotProps.data.description" 
+          <div
+            class="text-sm text-gray-700 truncate"
+            :title="slotProps.data.description"
             data-label="Description"
             v-html="processIssueNumbersLocal(slotProps.data.description || '-')"
           />
         </template>
       </Column>
-      
+
       <Column field="filePath" header="File (Line)" class="col-file-path">
         <template #body="slotProps">
-          <a 
+          <a
             v-if="slotProps.data.filePath && slotProps.data.lineNumber"
-            :href="getFileUrl(slotProps.data.filePath, slotProps.data.lineNumber, slotProps.data.branch)"
-            class="file-link truncate block text-blue-600 hover:text-blue-800 hover:underline transition-colors duration-200" 
-            target="_blank" 
+            :href="
+              getFileUrl(
+                slotProps.data.filePath,
+                slotProps.data.lineNumber,
+                slotProps.data.branch
+              )
+            "
+            class="file-link truncate block text-blue-600 hover:text-blue-800 hover:underline transition-colors duration-200"
+            target="_blank"
             rel="noopener noreferrer"
             :aria-label="`View ${slotProps.data.filePath} at line ${slotProps.data.lineNumber} on GitHub`"
             :title="`${slotProps.data.filePath}:${slotProps.data.lineNumber}`"
@@ -70,20 +77,33 @@
           <span v-else class="text-gray-500" data-label="File (Line)">-</span>
         </template>
       </Column>
-      
+
       <Column field="codeSnippet" header="Code" class="col-code">
         <template #body="slotProps">
-          <pre class="code-snippet font-mono text-xs text-gray-700 bg-gray-50 p-2 rounded border max-h-24 overflow-y-auto whitespace-pre-wrap" data-label="Code">{{ slotProps.data.codeSnippet }}</pre>
+          <pre
+            class="code-snippet font-mono text-xs text-gray-700 bg-gray-50 p-2 rounded border max-h-24 overflow-y-auto whitespace-pre-wrap"
+            data-label="Code"
+            >{{ slotProps.data.codeSnippet }}</pre
+          >
         </template>
       </Column>
-      
+
       <Column field="note" header="Note" class="col-note">
         <template #body="slotProps">
-          <pre class="note-content text-sm text-gray-800 whitespace-pre-wrap max-h-20 overflow-y-auto" v-html="formatNotes(slotProps.data.notes)" data-label="Note" />
+          <pre
+            class="note-content text-sm text-gray-800 whitespace-pre-wrap max-h-20 overflow-y-auto"
+            v-html="formatNotes(slotProps.data.notes)"
+            data-label="Note"
+          />
         </template>
       </Column>
-      
-      <Column field="lastDetectedAt" header="Last Detected" sortable class="col-last-detected">
+
+      <Column
+        field="lastDetectedAt"
+        header="Last Detected"
+        sortable
+        class="col-last-detected"
+      >
         <template #body="slotProps">
           <div class="text-sm text-gray-600" data-label="Last Detected">
             {{ formatDate(slotProps.data.lastDetectedAt) }}
@@ -95,12 +115,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Tag from 'primevue/tag'
-import { getFileUrlLegacy, processIssueNumbers } from '~/utils/github'
-import { useAlerts } from '~/composables/useAlerts'
+import { ref } from 'vue';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+import Tag from 'primevue/tag';
+import { getFileUrlLegacy, processIssueNumbers } from '~/utils/github';
+import { useAlerts } from '~/composables/useAlerts';
 
 const props = defineProps({
   alerts: {
@@ -148,37 +168,43 @@ const props = defineProps({
     required: false,
     default: '',
   },
-})
+});
 
 // Use the shared useAlerts composable for formatDate
-const { formatDate } = useAlerts(ref(null), ref(null))
+const { formatDate } = useAlerts(ref(null), ref(null));
 
 // Utility functions
 const severityColorMap = {
   high: 'danger',
   middle: 'warning',
-  low: 'info'
-}
+  low: 'info',
+};
 
-const getSeverityColor = (level) => {
-  return severityColorMap[level] || 'success'
-}
+const getSeverityColor = level => {
+  return severityColorMap[level] || 'success';
+};
 
-const getCheckTypeLabel = (checkType) => {
-  return props.checkTypeLabels[checkType] || checkType
-}
+const getCheckTypeLabel = checkType => {
+  return props.checkTypeLabels[checkType] || checkType;
+};
 
 const getFileUrl = (filePath, lineNumber, branch) => {
-  return getFileUrlLegacy(props.owner, props.repo, filePath, lineNumber, branch)
-}
+  return getFileUrlLegacy(
+    props.owner,
+    props.repo,
+    filePath,
+    lineNumber,
+    branch
+  );
+};
 
-const formatNotes = (notes) => {
-  return (notes || '-').replace(/\n/g, '<br>')
-}
+const formatNotes = notes => {
+  return (notes || '-').replace(/\n/g, '<br>');
+};
 
-const processIssueNumbersLocal = (text) => {
-  return processIssueNumbers(text, props.owner, props.repo)
-}
+const processIssueNumbersLocal = text => {
+  return processIssueNumbers(text, props.owner, props.repo);
+};
 </script>
 
 <style scoped>
@@ -346,7 +372,7 @@ const processIssueNumbersLocal = (text) => {
   :deep(.p-datatable) {
     min-width: 1470px;
   }
-  
+
   :deep(.p-datatable .p-datatable-thead > tr > th),
   :deep(.p-datatable .p-datatable-tbody > tr > td) {
     padding: 0.5rem;
@@ -357,7 +383,7 @@ const processIssueNumbersLocal = (text) => {
   :deep(.p-datatable) {
     min-width: 1470px;
   }
-  
+
   :deep(.p-datatable .p-datatable-thead > tr > th),
   :deep(.p-datatable .p-datatable-tbody > tr > td) {
     padding: 0.375rem;
@@ -368,12 +394,12 @@ const processIssueNumbersLocal = (text) => {
   :deep(.p-datatable) {
     min-width: 1470px;
   }
-  
+
   :deep(.p-datatable .p-datatable-thead > tr > th),
   :deep(.p-datatable .p-datatable-tbody > tr > td) {
     padding: 0.25rem;
   }
-  
+
   :deep(.code-snippet) {
     padding: 0.25rem;
     font-size: 0.7rem;
@@ -386,21 +412,21 @@ const processIssueNumbersLocal = (text) => {
     min-width: auto;
     table-layout: auto;
   }
-  
+
   :deep(.p-datatable .p-datatable-thead > tr > th),
   :deep(.p-datatable .p-datatable-tbody > tr > td) {
     display: block;
     width: 100%;
     padding: 0.5rem;
   }
-  
+
   :deep(.p-datatable .p-datatable-tbody > tr > td:before) {
-    content: attr(data-label) ": ";
+    content: attr(data-label) ': ';
     font-weight: 600;
     display: inline-block;
     width: 120px;
   }
-  
+
   :deep(.code-snippet) {
     margin-top: 0.5rem;
   }

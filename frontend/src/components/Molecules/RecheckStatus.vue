@@ -5,7 +5,7 @@
         <div class="status-header">
           <i :class="headerIcon" class="status-icon"></i>
           <span>ReCheck Status</span>
-          <Badge 
+          <Badge
             v-if="status?.status === 'running'"
             :value="progressValue"
             severity="info"
@@ -13,22 +13,28 @@
           />
         </div>
       </template>
-      
+
       <template #content>
         <div class="status-content">
           <!-- Current Status -->
           <div class="status-row">
             <span class="status-label">Status:</span>
-            <Tag 
-              :value="statusText" 
+            <Tag
+              :value="statusText"
               :severity="statusSeverity"
               :icon="statusIcon"
               class="status-tag"
             />
           </div>
-          
+
           <!-- Current Phase (if running) -->
-          <div v-if="status?.status === 'running' && status.currentExecution?.currentPhase" class="status-row">
+          <div
+            v-if="
+              status?.status === 'running' &&
+              status.currentExecution?.currentPhase
+            "
+            class="status-row"
+          >
             <span class="status-label">Current Phase:</span>
             <span class="status-value">
               {{ status.currentExecution.currentPhase }}
@@ -37,20 +43,29 @@
               </span>
             </span>
           </div>
-          
+
           <!-- Duration (if running) -->
-          <div v-if="status?.status === 'running' && status.currentExecution?.durationSeconds" class="status-row">
+          <div
+            v-if="
+              status?.status === 'running' &&
+              status.currentExecution?.durationSeconds
+            "
+            class="status-row"
+          >
             <span class="status-label">Duration:</span>
-            <span class="status-value">{{ formatDuration(status.currentExecution.durationSeconds) }}</span>
+            <span class="status-value">{{
+              formatDuration(status.currentExecution.durationSeconds)
+            }}</span>
           </div>
-          
+
           <!-- Last Executed -->
           <div v-if="status?.lastExecutedAt" class="status-row">
             <span class="status-label">Last Executed:</span>
-            <span class="status-value">{{ formatDateTime(status.lastExecutedAt) }}</span>
+            <span class="status-value">{{
+              formatDateTime(status.lastExecutedAt)
+            }}</span>
           </div>
-          
-          
+
           <!-- Error Message (if error) -->
           <div v-if="status?.status === 'error'" class="status-row error-row">
             <span class="status-label error-label">Error:</span>
@@ -58,7 +73,7 @@
           </div>
         </div>
       </template>
-      
+
       <template #footer>
         <div class="status-footer">
           <Button
@@ -84,161 +99,168 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import Card from 'primevue/card'
-import Tag from 'primevue/tag'
-import Badge from 'primevue/badge'
-import Button from 'primevue/button'
-import type { RecheckStatusResponse } from '~/utils/api'
+import { computed } from 'vue';
+import Card from 'primevue/card';
+import Tag from 'primevue/tag';
+import Badge from 'primevue/badge';
+import Button from 'primevue/button';
+import type { RecheckStatusResponse } from '~/utils/api';
 
 export interface RecheckStatusProps {
-  status: RecheckStatusResponse | null
-  loading?: boolean
-  showHistoryButton?: boolean
-  compact?: boolean
-  inline?: boolean
+  status: RecheckStatusResponse | null;
+  loading?: boolean;
+  showHistoryButton?: boolean;
+  compact?: boolean;
+  inline?: boolean;
 }
 
 const props = withDefaults(defineProps<RecheckStatusProps>(), {
   loading: false,
   showHistoryButton: true,
   compact: false,
-  inline: false
-})
+  inline: false,
+});
 
 const emit = defineEmits<{
-  refresh: []
-  'view-history': []
-}>()
+  refresh: [];
+  'view-history': [];
+}>();
 
 // Computed properties
 const statusText = computed(() => {
-  if (!props.status) return 'Unknown'
-  
+  if (!props.status) return 'Unknown';
+
   switch (props.status.status) {
     case 'running':
-      return 'Running'
+      return 'Running';
     case 'completed':
-      return 'Completed'
+      return 'Completed';
     case 'error':
-      return 'Error'
+      return 'Error';
     case 'idle':
-      return 'Idle'
+      return 'Idle';
     default:
-      return 'Unknown'
+      return 'Unknown';
   }
-})
+});
 
 const statusSeverity = computed(() => {
-  if (!props.status) return 'secondary'
-  
+  if (!props.status) return 'secondary';
+
   switch (props.status.status) {
     case 'running':
-      return 'info'
+      return 'info';
     case 'completed':
-      return 'success'
+      return 'success';
     case 'error':
-      return 'danger'
+      return 'danger';
     case 'idle':
-      return 'secondary'
+      return 'secondary';
     default:
-      return 'secondary'
+      return 'secondary';
   }
-})
+});
 
 const statusIcon = computed(() => {
-  if (!props.status) return 'pi pi-question'
-  
+  if (!props.status) return 'pi pi-question';
+
   switch (props.status.status) {
     case 'running':
-      return 'pi pi-spin pi-spinner'
+      return 'pi pi-spin pi-spinner';
     case 'completed':
-      return 'pi pi-check'
+      return 'pi pi-check';
     case 'error':
-      return 'pi pi-times'
+      return 'pi pi-times';
     case 'idle':
-      return 'pi pi-clock'
+      return 'pi pi-clock';
     default:
-      return 'pi pi-question'
+      return 'pi pi-question';
   }
-})
+});
 
 const headerIcon = computed(() => {
-  if (!props.status) return 'pi pi-info-circle'
-  
+  if (!props.status) return 'pi pi-info-circle';
+
   switch (props.status.status) {
     case 'running':
-      return 'pi pi-spin pi-spinner'
+      return 'pi pi-spin pi-spinner';
     case 'completed':
-      return 'pi pi-check-circle'
+      return 'pi pi-check-circle';
     case 'error':
-      return 'pi pi-exclamation-triangle'
+      return 'pi pi-exclamation-triangle';
     case 'idle':
-      return 'pi pi-info-circle'
+      return 'pi pi-info-circle';
     default:
-      return 'pi pi-info-circle'
+      return 'pi pi-info-circle';
   }
-})
+});
 
 const progressValue = computed(() => {
-  if (!props.status?.currentExecution) return '0%'
-  return `${props.status.currentExecution.progress}%`
-})
+  if (!props.status?.currentExecution) return '0%';
+  return `${props.status.currentExecution.progress}%`;
+});
 
 const retryAfterSeconds = computed(() => {
-  if (!props.status?.nextAvailableAt) return 0
-  const now = new Date()
-  const nextAvailable = new Date(props.status.nextAvailableAt)
-  const diff = nextAvailable.getTime() - now.getTime()
-  return Math.max(0, Math.ceil(diff / 1000))
-})
+  if (!props.status?.nextAvailableAt) return 0;
+  const now = new Date();
+  const nextAvailable = new Date(props.status.nextAvailableAt);
+  const diff = nextAvailable.getTime() - now.getTime();
+  return Math.max(0, Math.ceil(diff / 1000));
+});
 
 const showPhaseProgress = computed(() => {
-  const execution = props.status?.currentExecution
-  if (!execution?.phaseDetails) return false
+  const execution = props.status?.currentExecution;
+  if (!execution?.phaseDetails) return false;
 
-  const details = execution.phaseDetails
-  return details.totalItems !== undefined && details.processedItems !== undefined
-})
+  const details = execution.phaseDetails;
+  return (
+    details.totalItems !== undefined && details.processedItems !== undefined
+  );
+});
 
 const phaseProgressText = computed(() => {
-  const execution = props.status?.currentExecution
-  if (!execution?.phaseDetails) return ''
+  const execution = props.status?.currentExecution;
+  if (!execution?.phaseDetails) return '';
 
-  const details = execution.phaseDetails
-  if (details.totalItems !== undefined && details.processedItems !== undefined) {
-    return `${details.processedItems}/${details.totalItems}`
+  const details = execution.phaseDetails;
+  if (
+    details.totalItems !== undefined &&
+    details.processedItems !== undefined
+  ) {
+    return `${details.processedItems}/${details.totalItems}`;
   }
 
-  return ''
-})
+  return '';
+});
 
 // Methods
 function formatDateTime(dateString: string): string {
   try {
-    const date = new Date(dateString)
-    return date.toLocaleString()
+    const date = new Date(dateString);
+    return date.toLocaleString();
   } catch {
-    return 'Invalid date'
+    return 'Invalid date';
   }
 }
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) {
-    return `${seconds}s`
+    return `${seconds}s`;
   }
-  
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = seconds % 60
-  
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
   if (minutes < 60) {
-    return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`
+    return remainingSeconds > 0
+      ? `${minutes}m ${remainingSeconds}s`
+      : `${minutes}m`;
   }
-  
-  const hours = Math.floor(minutes / 60)
-  const remainingMinutes = minutes % 60
-  
-  return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
 }
 </script>
 
@@ -352,7 +374,6 @@ function formatDuration(seconds: number): string {
   font-weight: 600;
   margin-left: 0.5rem;
 }
-
 
 .error-row {
   background-color: var(--red-50);
