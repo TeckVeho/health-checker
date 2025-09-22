@@ -12,9 +12,14 @@ export function useApiConfig() {
       return runtimeUrl;
     }
 
-    // デフォルト値を使用
+    // 本番環境では環境変数が必須
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('API_BASE_URL environment variable is required in production');
+    }
+
+    // 開発環境のみデフォルト値を使用
     const defaultUrl = 'http://localhost:23000';
-    console.log('API Base URL using default:', defaultUrl);
+    console.log('API Base URL using default (dev only):', defaultUrl);
     return defaultUrl;
   });
 

@@ -21,7 +21,7 @@ vi.mock('~/composables/useApi', () => ({
 }))
 
 vi.mock('~/composables/useApiConfig', () => ({
-  useApiConfig: vi.fn(() => ({ apiBaseUrl: 'http://localhost:3000' }))
+  useApiConfig: vi.fn(() => ({ apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:3000' }))
 }))
 
 vi.mock('~/composables/useCustomToast', () => ({

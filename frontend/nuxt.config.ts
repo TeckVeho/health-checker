@@ -16,10 +16,10 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     // サーバーサイドで使用する環境変数
-    apiBaseUrl: '',
+    apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || '',
     // クライアントサイドで使用する環境変数（NUXT_PUBLIC_プレフィックスが必要）
     public: {
-      apiBaseUrl: '',
+      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || '',
     },
   },
 

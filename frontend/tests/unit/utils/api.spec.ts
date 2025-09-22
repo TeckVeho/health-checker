@@ -56,7 +56,7 @@ describe('ApiService', () => {
     
     ;(mockedAxios.create as any).mockReturnValue(mockAxiosInstance)
     
-    apiService = new ApiService({ baseURL: 'http://localhost:3000' })
+    apiService = new ApiService({ baseURL: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:3000' })
   })
 
   afterEach(() => {
@@ -65,7 +65,7 @@ describe('ApiService', () => {
 
   describe('instantiation', () => {
     it('should create ApiService with default config', () => {
-      const service = new ApiService({ baseURL: 'http://localhost:3000' })
+      const service = new ApiService({ baseURL: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:3000' })
       expect(service).toBeInstanceOf(ApiService)
     })
 

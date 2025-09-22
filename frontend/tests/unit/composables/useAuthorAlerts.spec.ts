@@ -10,7 +10,7 @@ const mockedAxios = vi.mocked(axios)
 vi.mock('#app', () => ({
   useRuntimeConfig: () => ({
     public: {
-      apiBaseUrl: 'http://localhost:3000'
+      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'
     }
   })
 }))
@@ -150,7 +150,7 @@ describe('useAuthorAlerts', () => {
       await fetchData()
 
       expect(mockedAxios.get).toHaveBeenCalledWith(
-        'http://localhost:3000/api/alerts/by-author?sortBy=author&sortOrder=asc&page=2&limit=25&owner=test-owner&repo=test-repo'
+        `${process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'}/api/alerts/by-author?sortBy=author&sortOrder=asc&page=2&limit=25&owner=test-owner&repo=test-repo`
       )
     })
   })

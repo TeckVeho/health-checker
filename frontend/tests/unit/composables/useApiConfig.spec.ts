@@ -23,7 +23,7 @@ describe('useApiConfig', () => {
     it('should return config values from runtime config', () => {
       const { apiBaseUrl, apiTimeout } = useApiConfig()
       
-      expect(apiBaseUrl.value).toBe('http://localhost:3000')
+      expect(apiBaseUrl.value).toBe(process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:3000')
       expect(apiTimeout.value).toBe(10000)
     })
   })
@@ -32,7 +32,7 @@ describe('useApiConfig', () => {
     it('should return correct API base URL', () => {
       const { apiBaseUrl } = useApiConfig()
       
-      expect(apiBaseUrl.value).toBe('http://localhost:3000')
+      expect(apiBaseUrl.value).toBe(process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:3000')
     })
 
     it('should return correct API timeout', () => {
@@ -53,13 +53,13 @@ describe('useApiConfig', () => {
       const { apiBaseUrl, apiTimeout } = useApiConfig()
       
       // Initial values
-      expect(apiBaseUrl.value).toBe('http://localhost:3000')
+      expect(apiBaseUrl.value).toBe(process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:3000')
       expect(apiTimeout.value).toBe(10000)
       
       // Simulate config change
       mockConfig.public.apiBaseUrl = 'http://localhost:4000'
       mockConfig.public.apiTimeout = 15000
-      
+
       // Values should be reactive
       expect(apiBaseUrl.value).toBe('http://localhost:4000')
       expect(apiTimeout.value).toBe(15000)
@@ -218,7 +218,7 @@ describe('useApiConfig', () => {
 
     it('should handle number values correctly', () => {
       mockConfig.public = {
-        apiBaseUrl: 'http://localhost:3000',
+        apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:3000',
         apiTimeout: 5000,
         primevue: { options: { theme: { preset: {} } } }
       }

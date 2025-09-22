@@ -5,7 +5,7 @@ import { reactive } from 'vue'
 // Create a reactive config object that can be modified in tests
 const mockRuntimeConfig = reactive({
   public: {
-    apiBaseUrl: 'http://localhost:3000',
+    apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:3000',
     apiTimeout: 10000
   }
 })
