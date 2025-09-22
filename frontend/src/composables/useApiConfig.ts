@@ -12,15 +12,19 @@ export function useApiConfig() {
       return runtimeUrl;
     }
 
-    // 本番環境では環境変数が必須
+    // ランタイム設定が空の場合、本番環境では適切なエラーを表示
     if (process.env.NODE_ENV === 'production') {
-      throw new Error('NUXT_PUBLIC_API_BASE_URL environment variable is required in production');
+      console.error('Runtime config is empty. Please ensure NUXT_PUBLIC_API_BASE_URL is set during build.');
+      throw new Error('API configuration not found. Please check your environment variables.');
     }
 
-    // 開発環境のみデフォルト値を使用
-    const defaultUrl = process.env.NUXT_PUBLIC_API_BASE_URL;
-    console.log('API Base URL using default (dev only):', defaultUrl);
-    return defaultUrl;
+    // 開発環境でも環境変数が必須
+    const envUrl = process.env.NUXT_PUBLIC_API_BASE_URL;
+    if (!envUrl) {
+      throw new Error('NUXT_PUBLIC_API_BASE_URL environment variable is required');
+    }
+    console.log('API Base URL from environment variable:', envUrl);
+    return envUrl;
   });
 
   const apiTimeout = computed(() => {
