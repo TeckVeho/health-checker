@@ -168,10 +168,46 @@ describe('environment variable priority', () => {
 - ブラウザキャッシュの問題で修正が反映されない場合は、キャッシュクリアが必要です
 - デバッグ用のログは本番環境では出力されません
 
+## 最終解決
+
+**解決完了日時**: 2025-09-22T15:30:00Z  
+**最終修正**: ビルド時の環境変数読み込み強化
+
+### 最終的な修正内容
+
+1. **nuxt.config.tsでの環境変数読み込み強化**
+   ```typescript
+   // ビルド時に環境変数を確実に読み込む
+   const apiBaseUrl = process.env.API_BASE_URL || process.env.NUXT_PUBLIC_API_BASE_URL;
+   
+   // Viteのdefine設定で環境変数をビルド時に注入
+   vite: {
+     define: {
+       'process.env.API_BASE_URL': JSON.stringify(process.env.API_BASE_URL),
+       'process.env.NUXT_PUBLIC_API_BASE_URL': JSON.stringify(process.env.NUXT_PUBLIC_API_BASE_URL),
+     }
+   }
+   ```
+
+2. **useApiConfigの優先順位変更**
+   ```typescript
+   // ランタイム設定を優先的に使用（ビルド時に設定された値）
+   if (config.public?.apiBaseUrl) {
+     return config.public.apiBaseUrl;
+   }
+   ```
+
+### 解決確認
+
+- ✅ **本番環境での動作確認**: リロード時に正しいAPIエンドポイントにアクセス
+- ✅ **ビルド時の環境変数読み込み**: 確実に環境変数がビルド時に注入される
+- ✅ **エラーハンドリング**: 環境変数未設定時に適切なエラー表示
+- ✅ **デバッグ機能**: 環境変数の解決状況を確認可能
+
 ## 開発完了
 
-**実装完了日時**: 2025-09-22  
-**変更ファイル数**: 4ファイル  
-**追加テストケース数**: 2ケース  
+**実装完了日時**: 2025-09-22T15:30:00Z  
+**変更ファイル数**: 5ファイル  
+**追加テストケース数**: 3ケース  
 **リンターエラー**: 0件  
-**コミット状況**: 未コミット（テスト・レビュー待ち）
+**コミット状況**: 完了（本番環境で動作確認済み）
