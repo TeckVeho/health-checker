@@ -22,6 +22,51 @@ export interface AlertsResponse {
   alerts: Alert[];
 }
 
+// Pagination Types
+export interface PaginationInfo {
+  current: number;
+  total: number;
+  items: number;
+  from: number;
+  to: number;
+  pageSize: number;
+}
+
+export interface PaginationState {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+}
+
+// Tab State Types
+export interface TabState {
+  sortField?: string;
+  sortOrder?: 'asc' | 'desc';
+  filters?: Record<string, any>;
+  currentPage?: number;
+  pageSize?: number;
+}
+
+export interface AlertsTabState {
+  activeTab: 'active' | 'resolved';
+  tabStates: {
+    active: TabState;
+    resolved: TabState;
+  };
+}
+
+// API Response Types
+export interface PaginatedAlertsResponse {
+  data: Alert[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 // Check Type Labels
 export const checkTypeLabels: Record<string, string> = {
   // Issue-related types
@@ -60,9 +105,24 @@ export interface AlertTableProps {
   checkTypeLabels: Record<string, string>;
   owner?: string;
   repo?: string;
+  loading?: boolean;
+  emptyMessage?: string;
+  customClass?: string;
+  tableClass?: string;
+  tableType?: string;
+  // Pagination props
+  pagination?: PaginationState;
+  showPagination?: boolean;
+  onPageChange?: (page: number) => void;
 }
 
 export interface AlertsPageProps {
   owner?: string;
   repo?: string;
+}
+
+export interface AlertsTabContentProps {
+  owner: string;
+  repo: string;
+  checkTypeLabels: Record<string, string>;
 }

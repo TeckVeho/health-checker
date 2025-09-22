@@ -45,25 +45,61 @@
       aria-label="Loading alert data"
     />
 
-    <!-- Alerts Section -->
-    <div v-else-if="hasAlerts" class="alerts-section">
-      <SectionHeader
-        title="Active Alerts"
-        :count="visibleAlerts.length"
-        description="Issues that require immediate attention"
-        variant="active"
-      />
-
-      <AlertTable
-        :alerts="visibleAlerts"
-        :checkTypeLabels="checkTypeLabels"
-        :owner="owner"
-        :repo="repo"
-        :loading="loading"
-        empty-message="No active alerts found for this repository."
-        table-type="active"
-        custom-class="shadow-lg"
-      />
+    <!-- Alerts Tabs Section -->
+    <div v-else class="alerts-tabs-section">
+      <Tabs :value="activeTab" @update:value="handleTabChange">
+        <TabList>
+          <Tab value="active">Active Alerts</Tab>
+          <Tab value="resolved">Resolved Alerts</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel value="active">
+            <!-- Active Alerts Content -->
+            <div class="alerts-tab-content">
+              <SectionHeader
+                title="Active Alerts"
+                :count="visibleAlerts.length"
+                description="Issues that require immediate attention"
+                variant="active"
+              />
+              <AlertTable
+                :alerts="visibleAlerts"
+                :checkTypeLabels="checkTypeLabels"
+                :owner="owner"
+                :repo="repo"
+                :loading="loading"
+                empty-message="No active alerts found for this repository."
+                table-type="active"
+                custom-class="shadow-lg"
+              />
+            </div>
+          </TabPanel>
+          <TabPanel value="resolved">
+            <!-- Resolved Alerts Content -->
+            <div class="alerts-tab-content">
+              <SectionHeader
+                title="Resolved Alerts"
+                :count="paginationInfo.items"
+                description="Issues that have been automatically resolved"
+                variant="resolved"
+              />
+              <AlertTable
+                :alerts="resolvedAlerts"
+                :checkTypeLabels="checkTypeLabels"
+                :owner="owner"
+                :repo="repo"
+                :loading="resolvedAlertsLoading"
+                empty-message="No resolved alerts found for this repository."
+                table-type="resolved"
+                custom-class="shadow-lg"
+                :pagination="paginationInfo"
+                :show-pagination="true"
+                @on-page-change="handlePageChange"
+              />
+            </div>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
     </div>
 
     <!-- ReCheck History Modal -->
@@ -83,53 +119,24 @@
         @load-more="loadMoreHistory"
       />
     </Dialog>
-
-    <!-- Resolved Alerts Section -->
-    <div v-if="!loading && hasResolvedAlerts" class="space-y-4">
-      <SectionHeader
-        title="Resolved Alerts"
-        :count="resolvedAlerts.length"
-        description="Issues that have been automatically resolved"
-        variant="resolved"
-      />
-
-      <AlertTable
-        :alerts="resolvedAlerts"
-        :checkTypeLabels="checkTypeLabels"
-        :owner="owner"
-        :repo="repo"
-        :loading="false"
-        empty-message="No resolved alerts found for this repository."
-        table-type="resolved"
-        custom-class="shadow-lg"
-      />
-    </div>
-
-    <!-- No Alerts Message -->
-    <BaseState
-      v-if="!loading && !hasAlerts && !hasResolvedAlerts"
-      type="empty"
-      title="No Alerts Found"
-      description="This repository appears to be healthy with no active or resolved alerts."
-    />
   </div>
 </template>
 
 <script setup>
 import { onMounted, watch, ref, computed } from 'vue';
 import { useCustomToast } from '~/composables/useCustomToast';
+import SectionHeader from '~/components/Molecules/SectionHeader.vue';
 import AlertTable from '~/components/Molecules/AlertTable.vue';
 import BaseText from '~/components/Atoms/text/BaseText.vue';
 import BaseButton from '~/components/Atoms/buttons/BaseButton.vue';
 import RepoAlertTitle from '~/components/Atoms/RepoAlertTitle.vue';
-import SectionHeader from '~/components/Molecules/SectionHeader.vue';
-import BaseState from '~/components/Atoms/states/BaseState.vue';
 import RecheckButton from '~/components/Atoms/RecheckButton.vue';
 import RecheckStatus from '~/components/Molecules/RecheckStatus.vue';
 import RecheckHistory from '~/components/Molecules/RecheckHistory.vue';
 import Dialog from 'primevue/dialog';
 import { useRouteParams } from '~/composables/useRouteParams';
 import { useAlerts } from '~/composables/useAlerts';
+import { useAlertsTabs } from '~/composables/useAlertsTabs';
 import { useRecheck } from '~/composables/useRecheck';
 
 // Use toast for additional error handling
@@ -150,7 +157,21 @@ const {
   hasResolvedAlerts,
   startTemporaryPolling,
   isTemporaryPolling,
-} = useAlerts(owner, repo);
+  resolvedAlertsLoading,
+  resolvedAlertsPagination,
+  paginationInfo,
+  fetchResolvedAlerts,
+  goToPage,
+} = useAlerts(computed(() => owner.value), computed(() => repo.value));
+
+// Use the alerts tabs composable
+const { activeTab, setActiveTab, initializeFromUrl } = useAlertsTabs();
+
+// Handle page changes for resolved alerts
+const handlePageChange = (page) => {
+  console.log('handlePageChange called with page:', page);
+  goToPage(page);
+};
 
 // ReCheck functionality
 const showHistory = ref(false);
@@ -277,6 +298,19 @@ async function loadMoreHistory() {
     recheckHistoryLoading.value = false;
   }
 }
+
+// Tab change handler
+const handleTabChange = (tab) => {
+  console.log('Tab change requested:', tab);
+  console.log('Current activeTab:', activeTab.value);
+  setActiveTab(tab);
+  console.log('After setActiveTab, activeTab:', activeTab.value);
+  
+  // Fetch resolved alerts when switching to resolved tab
+  if (tab === 'resolved' && resolvedAlerts.value.length === 0) {
+    fetchResolvedAlerts();
+  }
+};
 // Watch for route changes and refetch alerts
 watch(
   [owner, repo],
@@ -297,6 +331,14 @@ watch(
 );
 
 onMounted(() => {
+  // Initialize tab state from URL
+  initializeFromUrl();
+  
+  // If resolved tab is active, also fetch resolved alerts
+  if (activeTab.value === 'resolved') {
+    fetchResolvedAlerts();
+  }
+  
   // Only show warning for invalid routes, fetchAlerts is already called by watch with immediate: true
   if (!hasValidParams.value) {
     toast.warn('Invalid Route', 'Owner and repository parameters are required');
@@ -308,6 +350,15 @@ onMounted(() => {
 .back-link:visited {
   color: white !important;
   text-decoration: none;
+}
+
+/* Alerts tabs section */
+.alerts-tabs-section {
+  @apply space-y-6;
+}
+
+.alerts-tab-content {
+  @apply space-y-6;
 }
 
 /* ReCheck inline controls */

@@ -11,20 +11,36 @@ export function useApiConfig() {
       console.log('API Base URL from runtime config:', runtimeUrl);
       return runtimeUrl;
     }
-
-    // ランタイム設定が空の場合、本番環境では適切なエラーを表示
-    if (process.env.NODE_ENV === 'production') {
-      console.error('Runtime config is empty. Please ensure NUXT_PUBLIC_API_BASE_URL is set during build.');
-      throw new Error('API configuration not found. Please check your environment variables.');
-    }
-
-    // 開発環境でも環境変数が必須
+    
+    // ランタイム設定がない場合は環境変数を直接使用
     const envUrl = process.env.NUXT_PUBLIC_API_BASE_URL;
-    if (!envUrl) {
-      throw new Error('NUXT_PUBLIC_API_BASE_URL environment variable is required');
+    if (envUrl) {
+      console.log('API Base URL from environment variable:', envUrl);
+      return envUrl;
     }
-    console.log('API Base URL from environment variable:', envUrl);
-    return envUrl;
+    
+    // 開発環境ではデフォルトのAPI URLを使用
+    if (process.env.NODE_ENV === 'development') {
+      const defaultUrl = 'http://localhost:23000';
+      console.warn('API Base URL not configured, using default development URL:', defaultUrl);
+      return defaultUrl;
+    }
+    
+    // 本番環境では現在のホストを使用するフォールバック
+    if (process.env.NODE_ENV === 'production' && typeof window !== 'undefined') {
+      const fallbackUrl = `${window.location.protocol}//${window.location.host}`;
+      console.warn('API Base URL not configured, using current host as fallback:', fallbackUrl);
+      return fallbackUrl;
+    }
+    
+    // 値が取得できない場合はエラーを投げる
+    console.error('API Base URL could not be determined:', {
+      env: {
+        NUXT_PUBLIC_API_BASE_URL: process.env.NUXT_PUBLIC_API_BASE_URL
+      },
+      config: config.public
+    });
+    throw new Error('NUXT_PUBLIC_API_BASE_URL environment variable is not set. Please set NUXT_PUBLIC_API_BASE_URL environment variable.');
   });
 
   const apiTimeout = computed(() => {
