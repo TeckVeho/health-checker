@@ -71,10 +71,10 @@ describe('useApiConfig', () => {
   })
 
   describe('environment variable priority', () => {
-    it('should prioritize API_BASE_URL environment variable', () => {
+    it('should prioritize NUXT_PUBLIC_API_BASE_URL environment variable', () => {
       // Mock environment variable
-      const originalEnv = process.env.API_BASE_URL
-      process.env.API_BASE_URL = 'https://api.production.com'
+      const originalEnv = process.env.NUXT_PUBLIC_API_BASE_URL
+      process.env.NUXT_PUBLIC_API_BASE_URL = 'https://api.production.com'
       
       // Reset config
       mockConfig.public = {
@@ -87,7 +87,7 @@ describe('useApiConfig', () => {
       expect(apiBaseUrl.value).toBe('https://api.production.com')
       
       // Restore original environment
-      process.env.API_BASE_URL = originalEnv
+      process.env.NUXT_PUBLIC_API_BASE_URL = originalEnv
     })
 
     it('should fallback to NUXT_PUBLIC_API_BASE_URL when API_BASE_URL is not set', () => {
@@ -131,7 +131,7 @@ describe('useApiConfig', () => {
       const { apiBaseUrl } = useApiConfig()
       
       // apiBaseUrl should throw error when no URL is configured
-      expect(() => apiBaseUrl.value).toThrow('API_BASE_URL environment variable is not set')
+      expect(() => apiBaseUrl.value).toThrow('NUXT_PUBLIC_API_BASE_URL environment variable is required')
       
       // Restore original environment
       process.env.API_BASE_URL = originalApiBaseUrl
@@ -160,20 +160,10 @@ describe('useApiConfig', () => {
       process.env.NUXT_PUBLIC_API_BASE_URL = originalNuxtPublicApiBaseUrl
     })
 
-    it('should use current host as fallback in production when no config is available', () => {
+    it('should throw error in production when no config is available', () => {
       // Mock production environment
       const originalNodeEnv = process.env.NODE_ENV
       process.env.NODE_ENV = 'production'
-      
-      // Mock window.location
-      const originalLocation = window.location
-      Object.defineProperty(window, 'location', {
-        value: {
-          protocol: 'https:',
-          host: 'example.com'
-        },
-        writable: true
-      })
       
       // Clear environment variables
       const originalApiBaseUrl = process.env.API_BASE_URL
@@ -189,14 +179,11 @@ describe('useApiConfig', () => {
       
       const { apiBaseUrl } = useApiConfig()
       
-      expect(apiBaseUrl.value).toBe('https://example.com')
+      // Should throw error in production when no config is available
+      expect(() => apiBaseUrl.value).toThrow('API configuration not found. Please check your environment variables.')
       
       // Restore original values
       process.env.NODE_ENV = originalNodeEnv
-      Object.defineProperty(window, 'location', {
-        value: originalLocation,
-        writable: true
-      })
       process.env.API_BASE_URL = originalApiBaseUrl
       process.env.NUXT_PUBLIC_API_BASE_URL = originalNuxtPublicApiBaseUrl
     })
