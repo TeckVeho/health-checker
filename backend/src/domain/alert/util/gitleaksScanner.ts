@@ -1,12 +1,12 @@
 import { exec } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
-import { randomUUID } from 'crypto';
 // import { format } from 'date-fns';
 import { Model } from 'sequelize';
 import sequelize from '../../../config/database';
 import { alertAttributes, alertModelOptions } from '../alertSchema';
 import AlertService from '../alertService';
+import { GitleaksErrorHandler, GitleaksExecutionResult } from './gitleaksErrorHandler';
 
 // Define Alert model directly from schema
 class Alert extends Model {}
@@ -32,7 +32,25 @@ export async function gitleaksScanner(owner: string, repo: string, processStartT
     console.warn(`⚠️ Failed to read .git/HEAD for branch name:`, err);
   }
 
-  const findings = await runGitleaks(workspace);
+  const executionResult = await runGitleaks(workspace);
+  
+  // Handle execution errors
+  if (!executionResult.success) {
+    const errorMessage = GitleaksErrorHandler.provideFallbackSolution(executionResult.error!);
+    console.error('❌ Gitleaks execution failed:', errorMessage);
+    console.error(GitleaksErrorHandler.formatErrorForLogging(executionResult.error!));
+    
+    // For critical errors, throw to stop processing
+    const severity = GitleaksErrorHandler.getErrorSeverity(executionResult.error!);
+    if (severity === 'critical') {
+      throw new Error(`Gitleaks execution failed: ${errorMessage}`);
+    }
+    
+    // For non-critical errors, continue with empty findings
+    console.warn('⚠️ Continuing with empty findings due to gitleaks error');
+  }
+
+  const findings = executionResult.findings;
   // const timestamp = format(new Date(), 'yyyyMMddHHmmss');
 
   const issues = await Promise.all(
@@ -84,7 +102,7 @@ export async function gitleaksScanner(owner: string, repo: string, processStartT
     detectedKeys.add(key);
   }
 
-  // Use AlertService.resolveUndetectedAlerts for consistent resolution logic
+  // Always call resolveUndetectedAlerts, even when there are errors (with empty findings)
   await AlertService.resolveUndetectedAlerts(
     owner, 
     repo, 
@@ -94,25 +112,60 @@ export async function gitleaksScanner(owner: string, repo: string, processStartT
   );
 }
 
-async function runGitleaks(workspace: string): Promise<any[]> {
-  return new Promise((resolve, reject) => {
-    const tmpPath = path.join(workspace, `gitleaks-result-${randomUUID()}.json`);
-    const cmd = `gitleaks detect --no-git --source=${workspace} --report-format=json --report-path=${tmpPath} --redact=0`;
+async function runGitleaks(workspace: string): Promise<GitleaksExecutionResult> {
+  const startTime = Date.now();
+  
+  return new Promise((resolve) => {
+    // Use stdout instead of file output to avoid file system issues
+    const cmd = `gitleaks detect --no-git --source=${workspace} --report-format=json --report-path=- --redact=0`;
 
-    const child = exec(cmd, async (error, _stdout, stderr) => {
+    const child = exec(cmd, (error, stdout, stderr) => {
+      const executionTime = Date.now() - startTime;
+      
       if (stderr) console.error('Gitleaks stderr:', stderr);
+      
+      // gitleaks returns exit code 1 when leaks are found, which is normal
       if (error && error.code !== 1) {
-        reject(error);
+        const errorContext = GitleaksErrorHandler.handleCommandError(error, {
+          workspace,
+          command: cmd,
+          stderr,
+          executionTime,
+        });
+        
+        resolve({
+          success: false,
+          findings: [],
+          error: errorContext,
+          executionTime,
+        });
         return;
       }
 
       try {
-        const raw = await fs.readFile(tmpPath, 'utf-8');
-        const findings = raw.trim() ? JSON.parse(raw) : [];
-        await fs.rm(tmpPath);
-        resolve(findings);
+        // Parse JSON from stdout
+        const findings = stdout.trim() ? JSON.parse(stdout) : [];
+        
+        resolve({
+          success: true,
+          findings,
+          executionTime,
+        });
       } catch (err) {
-        reject(err);
+        const parseError = err instanceof Error ? err : new Error('Unknown JSON parse error');
+        const errorContext = GitleaksErrorHandler.handleJsonParseError(parseError, {
+          workspace,
+          command: cmd,
+          stdout,
+          executionTime,
+        });
+        
+        resolve({
+          success: false,
+          findings: [],
+          error: errorContext,
+          executionTime,
+        });
       }
     });
 
