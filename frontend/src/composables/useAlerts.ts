@@ -36,18 +36,42 @@ export function useAlerts(owner: Ref<string | null>, repo: Ref<string | null>) {
   const maxTemporaryPolls = 1; // Poll once after 1 second after ReCheck completion
   let temporaryPollingTimer: NodeJS.Timeout | null = null;
 
+  // Pagination state for resolved alerts
+  const resolvedAlertsPagination = ref({
+    currentPage: 1,
+    totalPages: 0,
+    totalItems: 0,
+    pageSize: 20
+  });
+  const resolvedAlertsLoading = ref(false);
+  const resolvedAlertsError = ref<string | null>(null);
+  const resolvedAlertsData = ref<Alert[]>([]);
+
   // Computed properties
   const visibleAlerts = computed(() =>
     alerts.value.filter(a => !a.isIgnored && !a.systemResolved)
   );
 
-  const resolvedAlerts = computed(() =>
-    alerts.value.filter(a => !a.isIgnored && a.systemResolved)
-  );
+  const resolvedAlerts = computed(() => resolvedAlertsData.value);
 
   const hasAlerts = computed(() => visibleAlerts.value.length > 0);
 
   const hasResolvedAlerts = computed(() => resolvedAlerts.value.length > 0);
+
+  // Pagination computed properties
+  const paginationInfo = computed(() => ({
+    current: resolvedAlertsPagination.value.currentPage,
+    total: resolvedAlertsPagination.value.totalPages,
+    items: resolvedAlertsPagination.value.totalItems,
+    from: resolvedAlertsPagination.value.totalItems > 0 
+      ? (resolvedAlertsPagination.value.currentPage - 1) * resolvedAlertsPagination.value.pageSize + 1 
+      : 0,
+    to: Math.min(
+      resolvedAlertsPagination.value.currentPage * resolvedAlertsPagination.value.pageSize,
+      resolvedAlertsPagination.value.totalItems
+    ),
+    pageSize: resolvedAlertsPagination.value.pageSize
+  }));
 
   const alertCounts = computed(() => {
     const counts = { high: 0, middle: 0, low: 0 };
@@ -191,6 +215,83 @@ export function useAlerts(owner: Ref<string | null>, repo: Ref<string | null>) {
     error.value = null;
   };
 
+  // Resolved alerts pagination functions
+  const fetchResolvedAlerts = async (page: number = 1, pageSize: number = 20): Promise<void> => {
+    if (!validateParams()) {
+      return;
+    }
+
+    resolvedAlertsLoading.value = true;
+    resolvedAlertsError.value = null;
+
+    try {
+      // Use the existing alerts endpoint and filter for resolved alerts
+      const response = await apiService.fetchData<{
+        message: string;
+        alerts: Alert[];
+      }>(`/api/alerts/${owner.value}/${repo.value}`);
+
+      if (response && response.alerts) {
+        // Filter for resolved alerts only (systemResolved = true)
+        const allResolvedAlerts = response.alerts.filter(alert => 
+          alert.systemResolved === true
+        );
+
+        // Sort by lastDetectedAt descending
+        allResolvedAlerts.sort((a, b) => {
+          const dateA = new Date(a.lastDetectedAt || 0);
+          const dateB = new Date(b.lastDetectedAt || 0);
+          return dateB.getTime() - dateA.getTime();
+        });
+
+        // Apply pagination
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const paginatedAlerts = allResolvedAlerts.slice(startIndex, endIndex);
+
+        resolvedAlertsData.value = paginatedAlerts;
+        resolvedAlertsPagination.value = {
+          currentPage: page,
+          totalPages: Math.ceil(allResolvedAlerts.length / pageSize),
+          totalItems: allResolvedAlerts.length,
+          pageSize: pageSize
+        };
+      }
+    } catch (err) {
+      logError(err, 'fetchResolvedAlerts');
+      const errorMsg = getErrorMessage(err) || 'Failed to fetch resolved alerts';
+      resolvedAlertsError.value = errorMsg;
+      toast.error('Error Loading Resolved Alerts', errorMsg);
+    } finally {
+      resolvedAlertsLoading.value = false;
+    }
+  };
+
+  const goToPage = (page: number): void => {
+    console.log('goToPage called with page:', page);
+    console.log('Current pagination state:', resolvedAlertsPagination.value);
+    if (page >= 1 && page <= resolvedAlertsPagination.value.totalPages) {
+      resolvedAlertsPagination.value.currentPage = page;
+      console.log('Calling fetchResolvedAlerts with page:', page, 'pageSize:', resolvedAlertsPagination.value.pageSize);
+      fetchResolvedAlerts(page, resolvedAlertsPagination.value.pageSize);
+    } else {
+      console.log('Page out of range:', page, 'totalPages:', resolvedAlertsPagination.value.totalPages);
+    }
+  };
+
+  const setPageSize = (pageSize: number): void => {
+    resolvedAlertsPagination.value.pageSize = pageSize;
+    resolvedAlertsPagination.value.currentPage = 1;
+    fetchResolvedAlerts(1, pageSize);
+  };
+
+  const refreshResolvedAlerts = (): void => {
+    fetchResolvedAlerts(
+      resolvedAlertsPagination.value.currentPage,
+      resolvedAlertsPagination.value.pageSize
+    );
+  };
+
   // Polling functionality
   const startPolling = (interval: number = pollingInterval.value): void => {
     if (isPolling.value) {
@@ -308,12 +409,18 @@ export function useAlerts(owner: Ref<string | null>, repo: Ref<string | null>) {
     pollingInterval: readonly(pollingInterval),
     isTemporaryPolling: readonly(isTemporaryPolling),
 
+    // Pagination state
+    resolvedAlertsPagination: readonly(resolvedAlertsPagination),
+    resolvedAlertsLoading: readonly(resolvedAlertsLoading),
+    resolvedAlertsError: readonly(resolvedAlertsError),
+
     // Computed
     visibleAlerts,
     resolvedAlerts,
     hasAlerts,
     hasResolvedAlerts,
     alertCounts,
+    paginationInfo,
 
     // Utility functions
     formatDate,
@@ -329,6 +436,12 @@ export function useAlerts(owner: Ref<string | null>, repo: Ref<string | null>) {
     fetchAlerts,
     refreshAlerts,
     clearAlerts,
+
+    // Pagination actions
+    fetchResolvedAlerts,
+    goToPage,
+    setPageSize,
+    refreshResolvedAlerts,
 
     // Polling actions
     startPolling,

@@ -1,0 +1,80 @@
+{
+  "summary": {
+    "total_tests": 653,
+    "passed": 616,
+    "failed": 8,
+    "skipped": 29,
+    "test_files": {
+      "total": 37,
+      "passed": 33,
+      "failed": 3,
+      "skipped": 1
+    },
+    "duration": "4.32s",
+    "coverage": "Not available (tests failed)"
+  },
+  "failed_tests": [
+    {
+      "file": "tests/unit/composables/useAlertsTabs.spec.ts",
+      "test": "should save state to localStorage on changes",
+      "error": "expected \"spy\" to be called with arguments: [ …(2) ] Number of calls: 0",
+      "line": 153
+    },
+    {
+      "file": "tests/unit/composables/useAlertsTabs.spec.ts",
+      "test": "should initialize from URL query parameters",
+      "error": "expected 'active' to be 'resolved' // Object.is equality",
+      "line": 182
+    },
+    {
+      "file": "tests/unit/composables/useApiConfig.spec.ts",
+      "test": "should prioritize API_BASE_URL environment variable",
+      "error": "expected 'undefined' to be 'https://api.production.com' // Object.is equality",
+      "line": 87
+    },
+    {
+      "file": "tests/unit/components/AlertsTabContent.spec.ts",
+      "test": "should render active alerts content when active tab is selected",
+      "error": "expected 'Section HeaderAlert TableSection Head…' to contain 'Active Alerts'",
+      "line": 105
+    },
+    {
+      "file": "tests/unit/components/AlertsTabContent.spec.ts",
+      "test": "should render resolved alerts content when resolved tab is selected",
+      "error": "expected 'Section HeaderAlert TableSection Head…' to contain 'Resolved Alerts'",
+      "line": 129
+    },
+    {
+      "file": "tests/unit/components/AlertsTabContent.spec.ts",
+      "test": "should render empty state when no alerts are present",
+      "error": "expected 'Section HeaderAlert TableSection Head…' to contain 'No Alerts Found'",
+      "line": 143
+    },
+    {
+      "file": "tests/unit/components/AlertsTabContent.spec.ts",
+      "test": "should pass correct props to AlertTable for active alerts",
+      "error": "expected undefined to be false // Object.is equality",
+      "line": 192
+    },
+    {
+      "file": "tests/unit/components/AlertsTabContent.spec.ts",
+      "test": "should pass correct props to AlertTable for resolved alerts",
+      "error": "expected false to be true // Object.is equality",
+      "line": 216
+    }
+  ],
+  "issue_168_related_tests": {
+    "useAlertsTabs": {
+      "total": 11,
+      "passed": 9,
+      "failed": 2,
+      "status": "Partially working - localStorage and URL initialization issues"
+    },
+    "AlertsTabContent": {
+      "total": 8,
+      "passed": 3,
+      "failed": 5,
+      "status": "Major issues - component was removed during development"
+    }
+  }
+}

@@ -45,9 +45,7 @@ describe('useApiConfig', () => {
   describe('reactive updates', () => {
     it('should be reactive to config changes when no environment variables are set', () => {
       // Clear environment variables for this test
-      const originalApiBaseUrl = process.env.API_BASE_URL
       const originalNuxtPublicApiBaseUrl = process.env.NUXT_PUBLIC_API_BASE_URL
-      delete process.env.API_BASE_URL
       delete process.env.NUXT_PUBLIC_API_BASE_URL
       
       const { apiBaseUrl, apiTimeout } = useApiConfig()
@@ -65,16 +63,15 @@ describe('useApiConfig', () => {
       expect(apiTimeout.value).toBe(15000)
       
       // Restore original environment
-      process.env.API_BASE_URL = originalApiBaseUrl
       process.env.NUXT_PUBLIC_API_BASE_URL = originalNuxtPublicApiBaseUrl
     })
   })
 
   describe('environment variable priority', () => {
-    it('should prioritize API_BASE_URL environment variable', () => {
+    it('should prioritize NUXT_PUBLIC_API_BASE_URL environment variable', () => {
       // Mock environment variable
-      const originalEnv = process.env.API_BASE_URL
-      process.env.API_BASE_URL = 'https://api.production.com'
+      const originalEnv = process.env.NUXT_PUBLIC_API_BASE_URL
+      process.env.NUXT_PUBLIC_API_BASE_URL = 'https://api.production.com'
       
       // Reset config
       mockConfig.public = {
@@ -87,15 +84,13 @@ describe('useApiConfig', () => {
       expect(apiBaseUrl.value).toBe('https://api.production.com')
       
       // Restore original environment
-      process.env.API_BASE_URL = originalEnv
+      process.env.NUXT_PUBLIC_API_BASE_URL = originalEnv
     })
 
-    it('should fallback to NUXT_PUBLIC_API_BASE_URL when API_BASE_URL is not set', () => {
+    it('should use NUXT_PUBLIC_API_BASE_URL when runtime config is not set', () => {
       // Mock environment variables
-      const originalApiBaseUrl = process.env.API_BASE_URL
       const originalNuxtPublicApiBaseUrl = process.env.NUXT_PUBLIC_API_BASE_URL
       
-      delete process.env.API_BASE_URL
       process.env.NUXT_PUBLIC_API_BASE_URL = 'https://api.staging.com'
       
       // Reset config
@@ -109,7 +104,6 @@ describe('useApiConfig', () => {
       expect(apiBaseUrl.value).toBe('https://api.staging.com')
       
       // Restore original environment
-      process.env.API_BASE_URL = originalApiBaseUrl
       process.env.NUXT_PUBLIC_API_BASE_URL = originalNuxtPublicApiBaseUrl
     })
   })
@@ -117,10 +111,12 @@ describe('useApiConfig', () => {
   describe('error handling', () => {
     it('should throw error when no API base URL is configured', () => {
       // Clear environment variables
-      const originalApiBaseUrl = process.env.API_BASE_URL
       const originalNuxtPublicApiBaseUrl = process.env.NUXT_PUBLIC_API_BASE_URL
-      delete process.env.API_BASE_URL
       delete process.env.NUXT_PUBLIC_API_BASE_URL
+      
+      // Mock non-development environment
+      const originalNodeEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = 'production'
       
       // Reset config with undefined values
       mockConfig.public = {
@@ -128,21 +124,24 @@ describe('useApiConfig', () => {
         primevue: { options: { theme: { preset: {} } } }
       }
       
+      // Mock window as undefined for server-side test
+      const originalWindow = global.window
+      delete (global as any).window
+      
       const { apiBaseUrl } = useApiConfig()
       
       // apiBaseUrl should throw error when no URL is configured
-      expect(() => apiBaseUrl.value).toThrow('API_BASE_URL environment variable is not set')
+      expect(() => apiBaseUrl.value).toThrow('NUXT_PUBLIC_API_BASE_URL environment variable is not set')
       
       // Restore original environment
-      process.env.API_BASE_URL = originalApiBaseUrl
       process.env.NUXT_PUBLIC_API_BASE_URL = originalNuxtPublicApiBaseUrl
+      process.env.NODE_ENV = originalNodeEnv
+      global.window = originalWindow
     })
 
     it('should use runtime config when environment variables are not set', () => {
       // Clear environment variables
-      const originalApiBaseUrl = process.env.API_BASE_URL
       const originalNuxtPublicApiBaseUrl = process.env.NUXT_PUBLIC_API_BASE_URL
-      delete process.env.API_BASE_URL
       delete process.env.NUXT_PUBLIC_API_BASE_URL
       
       // Set runtime config
@@ -156,7 +155,6 @@ describe('useApiConfig', () => {
       expect(apiBaseUrl.value).toBe('https://api.runtime.com')
       
       // Restore original environment
-      process.env.API_BASE_URL = originalApiBaseUrl
       process.env.NUXT_PUBLIC_API_BASE_URL = originalNuxtPublicApiBaseUrl
     })
 
@@ -176,9 +174,7 @@ describe('useApiConfig', () => {
       })
       
       // Clear environment variables
-      const originalApiBaseUrl = process.env.API_BASE_URL
       const originalNuxtPublicApiBaseUrl = process.env.NUXT_PUBLIC_API_BASE_URL
-      delete process.env.API_BASE_URL
       delete process.env.NUXT_PUBLIC_API_BASE_URL
       
       // Reset config
@@ -197,7 +193,6 @@ describe('useApiConfig', () => {
         value: originalLocation,
         writable: true
       })
-      process.env.API_BASE_URL = originalApiBaseUrl
       process.env.NUXT_PUBLIC_API_BASE_URL = originalNuxtPublicApiBaseUrl
     })
   })

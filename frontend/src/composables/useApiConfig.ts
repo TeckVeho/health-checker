@@ -12,10 +12,17 @@ export function useApiConfig() {
     }
     
     // ランタイム設定がない場合は環境変数を直接使用
-    const envUrl = process.env.API_BASE_URL || process.env.NUXT_PUBLIC_API_BASE_URL;
+    const envUrl = process.env.NUXT_PUBLIC_API_BASE_URL;
     if (envUrl) {
       console.log('API Base URL from environment variable:', envUrl);
       return envUrl;
+    }
+    
+    // 開発環境ではデフォルトのAPI URLを使用
+    if (process.env.NODE_ENV === 'development') {
+      const defaultUrl = 'http://localhost:23000';
+      console.warn('API Base URL not configured, using default development URL:', defaultUrl);
+      return defaultUrl;
     }
     
     // 本番環境では現在のホストを使用するフォールバック
@@ -28,12 +35,11 @@ export function useApiConfig() {
     // 値が取得できない場合はエラーを投げる
     console.error('API Base URL could not be determined:', {
       env: {
-        API_BASE_URL: process.env.API_BASE_URL,
         NUXT_PUBLIC_API_BASE_URL: process.env.NUXT_PUBLIC_API_BASE_URL
       },
       config: config.public
     });
-    throw new Error('API_BASE_URL environment variable is not set. Please set API_BASE_URL or NUXT_PUBLIC_API_BASE_URL environment variable.');
+    throw new Error('NUXT_PUBLIC_API_BASE_URL environment variable is not set. Please set NUXT_PUBLIC_API_BASE_URL environment variable.');
   });
 
   const apiTimeout = computed(() => {

@@ -122,8 +122,8 @@ class ApiClient {
 
   constructor(config: Partial<ApiConfig> = {}, apiBaseUrl?: string) {
     if (!config.baseURL && !apiBaseUrl) {
-      console.error('API Client: No baseURL provided. Please ensure API_BASE_URL is set.');
-      throw new Error('API baseURL is required. Please set API_BASE_URL environment variable.');
+      console.error('API Client: No baseURL provided. Please ensure NUXT_PUBLIC_API_BASE_URL is set.');
+      throw new Error('API baseURL is required. Please set NUXT_PUBLIC_API_BASE_URL environment variable.');
     }
     
     this.config = {
@@ -696,8 +696,11 @@ export function useApiService(): ApiService {
         defaultBaseURL = `${window.location.protocol}//${window.location.host}`;
       } else {
         // サーバーサイドでは環境変数から取得
-        defaultBaseURL = process.env.API_BASE_URL || process.env.NUXT_PUBLIC_API_BASE_URL;
+        defaultBaseURL = process.env.NUXT_PUBLIC_API_BASE_URL;
       }
+    } else {
+      // 開発環境ではデフォルトのAPI URLを使用
+      defaultBaseURL = process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:23000';
     }
     
     apiServiceInstance = new ApiService({ baseURL: defaultBaseURL });

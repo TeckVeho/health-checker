@@ -111,6 +111,21 @@
         </template>
       </Column>
     </DataTable>
+
+    <!-- Pagination Info -->
+    <div v-if="showPagination && pagination" class="flex justify-between items-center mt-4">
+      <div class="text-sm text-gray-600">
+        Showing {{ pagination.from }}-{{ pagination.to }} of {{ pagination.items }} alerts
+      </div>
+      <Paginator
+        v-if="pagination.total > 1"
+        :first="(pagination.current - 1) * pagination.pageSize"
+        :rows="pagination.pageSize"
+        :total-records="pagination.items"
+        @page="handlePageChange"
+        class="pagination-component"
+      />
+    </div>
   </div>
 </template>
 
@@ -119,6 +134,7 @@ import { ref } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Tag from 'primevue/tag';
+import Paginator from 'primevue/paginator';
 import { getFileUrlLegacy, processIssueNumbers } from '~/utils/github';
 import { useAlerts } from '~/composables/useAlerts';
 
@@ -168,6 +184,17 @@ const props = defineProps({
     required: false,
     default: '',
   },
+  // Pagination props
+  pagination: {
+    type: Object,
+    required: false,
+    default: null,
+  },
+  showPagination: {
+    type: Boolean,
+    required: false,
+    default: false,
+  },
 });
 
 // Use the shared useAlerts composable for formatDate
@@ -204,6 +231,15 @@ const formatNotes = notes => {
 
 const processIssueNumbersLocal = text => {
   return processIssueNumbers(text, props.owner, props.repo);
+};
+
+// Emit events
+const emit = defineEmits(['onPageChange']);
+
+// Page change handler
+const handlePageChange = (event) => {
+  const newPage = Math.floor(event.first / event.rows) + 1;
+  emit('onPageChange', newPage);
 };
 </script>
 
@@ -447,5 +483,20 @@ const processIssueNumbersLocal = text => {
 :deep(.p-datatable .p-datatable-emptymessage) {
   padding: 2rem;
   text-align: center;
+}
+
+/* Pagination styles */
+.pagination-component {
+  margin-top: 1rem;
+}
+
+.pagination-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding: 0.5rem 0;
+  font-size: 0.875rem;
+  color: #6b7280;
 }
 </style>
