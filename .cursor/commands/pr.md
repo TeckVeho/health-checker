@@ -39,14 +39,20 @@ Create Pull Request through interactive AI Agent collaboration with streamlined 
 2. **Display Status Summary**: Show all modified, added, and deleted files with status indicators using `git --no-pager diff --name-status origin/develop..HEAD`
 3. **Fetch Issue Data**: Get issue #{issue_number} information using optimized caching strategy (cached local file first, GitHub CLI fallback)
 4. **Load Test Results**: Read test results from `docs/issues/{issue_number}/evidence/test-results.json` if available
-5. **Generate PR Body**: Create comprehensive PR body including:
+5. **Load Screenshots**: Scan `docs/issues/{issue_number}/evidence/` directory for PNG/JPG image files:
+   - Look for files with extensions: `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`
+   - Generate GitHub raw URLs with format: `https://github.com/TeckVeho/health-checker/blob/{current_branch}/docs/issues/{issue_number}/evidence/{filename}?raw=true`
+   - Create descriptive image titles from filenames (remove issue prefix, convert hyphens to spaces)
+   - Sort images alphabetically by filename
+6. **Generate PR Body**: Create comprehensive PR body including:
    - Issue reference and "Closes #{issue_number}" for automatic linking
    - Implementation summary and key changes
+   - **Screenshots Section** with image links using raw GitHub URLs
    - **Evidence Section** with test results and execution details
-6. **Save PR Body**: Write PR body content to `docs/issues/{issue_number}/pr.md` **BEFORE** committing
-7. **Display PR Body Preview**: Show generated PR body content for user review
-8. **User Confirmation**: Ask user "Do you want to create a PR? (y/n)" and wait for confirmation
-9. **Proceed Only if Confirmed**: Continue to Step 2 only if user confirms with 'y' or 'yes'
+7. **Save PR Body**: Write PR body content to `docs/issues/{issue_number}/pr.md` **BEFORE** committing
+8. **Display PR Body Preview**: Show generated PR body content for user review
+9. **User Confirmation**: Ask user "Do you want to create a PR? (y/n)" and wait for confirmation
+10. **Proceed Only if Confirmed**: Continue to Step 2 only if user confirms with 'y' or 'yes'
 
 ## Step 2: Commit and Push Verification
 
@@ -168,7 +174,22 @@ Step 3: GitHub PR Creation with Issue Linking
 - `git push origin {branch} --quiet --no-progress` - Push commits to remote (if needed)
 - `gh issue view {issue_number} --json title,body,labels,assignees,state,createdAt,updatedAt,url` - Get issue data for PR content
 - `gh pr create --title "..." --body "..." --base develop` - Create GitHub PR with issue linking
-- **File Operations**: Read test-results.json, write pr.md files
+- **File Operations**: Read test-results.json, write pr.md files, scan evidence directory for images
+
+**Screenshots Section Template:**
+```markdown
+## Screenshots
+
+{screenshot_links}
+
+Each image shows the implementation results and can be viewed by clicking the links above.
+
+**Example Screenshot Link Generation:**
+- File: `issue-168-resolved-alerts-tab-with-pagination.png`
+- Title: `Resolved Alerts Tab with Pagination`
+- URL: `https://github.com/TeckVeho/health-checker/blob/168-feat-alerts-tab-pagination/docs/issues/168/evidence/issue-168-resolved-alerts-tab-with-pagination.png?raw=true`
+- Markdown: `![Resolved Alerts Tab with Pagination](https://github.com/TeckVeho/health-checker/blob/168-feat-alerts-tab-pagination/docs/issues/168/evidence/issue-168-resolved-alerts-tab-with-pagination.png?raw=true)`
+```
 
 **Evidence Section Template:**
 ```markdown
