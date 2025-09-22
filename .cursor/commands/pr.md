@@ -52,16 +52,25 @@ Create Pull Request through interactive AI Agent collaboration with streamlined 
 
 1. **Check Uncommitted Changes**: Run `git --no-pager status --porcelain 2>$null` to check for uncommitted changes (with pager disabled)
 2. **Stage and Commit Changes**: If uncommitted changes exist:
-   - Run `git add . > $null 2>&1` to stage all changes
+   - Run `git add . > $null 2>&1` to stage all changes (includes all source code AND documentation files)
+   - **CRITICAL: Include Documentation**: Ensure all development documentation is committed:
+     - `docs/issues/{issue_number}/issue.md` - Issue details
+     - `docs/issues/{issue_number}/plan.md` - Implementation plan
+     - `docs/issues/{issue_number}/dev.md` - Development log
+     - `docs/issues/{issue_number}/test.md` - Test report
+     - `docs/issues/{issue_number}/pr.md` - PR body content
+     - `docs/issues/{issue_number}/evidence/` - Test evidence and coverage data
    - Create comprehensive commit message including:
      - Issue reference and main changes
      - Key improvements and features
      - Test results summary
+     - Documentation updates
      - "Closes #{issue_number}" to auto-close issue
    - Run `git commit -m "..." --no-edit --quiet > $null 2>&1` with detailed message
 3. **Push to Remote**: Check if local branch exists on remote:
    - Run `git push origin {current_branch} --quiet --no-progress` to push commits
    - Ensure remote branch is up to date before PR creation
+   - **Documentation Tracking**: All development documentation will be available in the PR for review
 
 ## Step 3: GitHub Pull Request Creation with Issue Linking
 
@@ -97,6 +106,7 @@ Step 1: Git Status Check and PR Body Generation
 Step 2: Commit and Push Verification
 ├── Check git --no-pager status --porcelain 2>$null for uncommitted changes (pager disabled)
 ├── If changes exist: git add . > $null 2>&1 && git commit -m "..." --no-edit --quiet > $null 2>&1
+│   └── Includes ALL files: source code + documentation (issue.md, plan.md, dev.md, test.md, pr.md, evidence/)
 ├── Push to remote: git push origin {current_branch} --quiet --no-progress
 └── Verify remote branch is up to date
 
@@ -227,6 +237,8 @@ Step 3: GitHub PR Creation with Issue Linking
 - **Error Handling**: Robust error handling for Git and GitHub operations
 - **Pre-commit Documentation**: PR body is generated and saved before any git operations
 - **Clear Organization**: Numbered sections (1, 2, 3, 4) for easy navigation and verification
+- **Complete Documentation Tracking**: All development documentation (issue.md, plan.md, dev.md, test.md, pr.md, evidence/) is committed and pushed with the PR
+- **Documentation Review**: Reviewers can access complete development history and evidence through the PR
 
 **Issue**: {issue_number or auto-detected}
 **Auto Link**: {auto_link (defaults to true)}

@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "totalStatements": 54.59,
+    "totalBranches": 44.21,
+    "totalFunctions": 39.41,
+    "totalLines": 54.98
+  },
+  "gitleaksFiles": {
+    "gitleaksScanner.ts": {
+      "statements": 98.59,
+      "branches": 73.68,
+      "functions": 100,
+      "lines": 98.55
+    },
+    "gitleaksErrorHandler.ts": {
+      "statements": 100,
+      "branches": 100,
+      "functions": 100,
+      "lines": 100
+    }
+  },
+  "testResults": {
+    "totalSuites": 29,
+    "passedSuites": 29,
+    "totalTests": 432,
+    "passedTests": 431,
+    "skippedTests": 1,
+    "failedTests": 0
+  }
+}
