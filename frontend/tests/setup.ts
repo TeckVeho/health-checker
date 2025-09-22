@@ -36,6 +36,9 @@ Object.defineProperty(window, 'localStorage', {
   writable: true
 })
 
+// Set test environment variables
+process.env.API_BASE_URL = 'http://localhost:3000'
+
 // Global mocks
 global.console = {
   ...console,

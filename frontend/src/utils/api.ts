@@ -121,8 +121,13 @@ class ApiClient {
   private apiBaseUrl?: string;
 
   constructor(config: Partial<ApiConfig> = {}, apiBaseUrl?: string) {
+    if (!config.baseURL && !apiBaseUrl) {
+      console.error('API Client: No baseURL provided. Please ensure API_BASE_URL is set.');
+      throw new Error('API baseURL is required. Please set API_BASE_URL environment variable.');
+    }
+    
     this.config = {
-      baseURL: config.baseURL || 'http://localhost:23000',
+      baseURL: config.baseURL || apiBaseUrl || '',
       timeout: config.timeout || 10000,
       retryAttempts: config.retryAttempts || 3,
       retryDelay: config.retryDelay || 1000,
@@ -680,7 +685,11 @@ let apiServiceInstance: ApiService | null = null;
 
 export function useApiService(): ApiService {
   if (!apiServiceInstance) {
-    apiServiceInstance = new ApiService();
+    // テスト環境ではデフォルトのbaseURLを設定
+    const defaultBaseURL = process.env.NODE_ENV === 'test' 
+      ? 'http://localhost:3000' 
+      : undefined;
+    apiServiceInstance = new ApiService({ baseURL: defaultBaseURL });
   }
   return apiServiceInstance;
 }

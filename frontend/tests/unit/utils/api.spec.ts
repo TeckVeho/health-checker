@@ -65,7 +65,7 @@ describe('ApiService', () => {
 
   describe('instantiation', () => {
     it('should create ApiService with default config', () => {
-      const service = new ApiService()
+      const service = new ApiService({ baseURL: 'http://localhost:3000' })
       expect(service).toBeInstanceOf(ApiService)
     })
 
