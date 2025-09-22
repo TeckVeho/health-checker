@@ -14,11 +14,11 @@ export function useApiConfig() {
 
     // 本番環境では環境変数が必須
     if (process.env.NODE_ENV === 'production') {
-      throw new Error('API_BASE_URL environment variable is required in production');
+      throw new Error('NUXT_PUBLIC_API_BASE_URL environment variable is required in production');
     }
 
     // 開発環境のみデフォルト値を使用
-    const defaultUrl = 'http://localhost:23000';
+    const defaultUrl = process.env.NUXT_PUBLIC_API_BASE_URL;
     console.log('API Base URL using default (dev only):', defaultUrl);
     return defaultUrl;
   });
