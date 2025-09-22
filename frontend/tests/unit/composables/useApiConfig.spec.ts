@@ -123,7 +123,10 @@ describe('useApiConfig', () => {
       delete process.env.NUXT_PUBLIC_API_BASE_URL
       
       // Reset config with undefined values
-      mockConfig.public = {}
+      mockConfig.public = {
+        apiBaseUrl: undefined,
+        primevue: { options: { theme: { preset: {} } } }
+      }
       
       const { apiBaseUrl } = useApiConfig()
       
