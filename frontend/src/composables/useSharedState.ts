@@ -36,10 +36,7 @@ function createSharedState() {
     apiBaseUrl,
     newUrl => {
       if (newUrl) {
-<<<<<<< HEAD
         console.log('API URL changed, reinitializing with:', newUrl);
-=======
->>>>>>> 4d340f814d8eaaef07ecad1668a1eb4c1fd6fc1f
         initializeApi();
       }
     },
