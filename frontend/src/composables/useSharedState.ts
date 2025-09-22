@@ -15,15 +15,25 @@ function createSharedState() {
   const { callApi } = useApi();
   const { apiBaseUrl } = useApiConfig();
 
-  // Initialize API service with correct base URL
-  apiService.init(apiBaseUrl.value);
+  // 確実に初期化を実行
+  const initializeApi = () => {
+    try {
+      const url = apiBaseUrl.value;
+      apiService.init(url);
+    } catch (error) {
+      console.error('Failed to initialize API:', error);
+    }
+  };
+
+  // 即座に初期化
+  initializeApi();
 
   // Watch for changes in apiBaseUrl and reinitialize API service
   watch(
     apiBaseUrl,
     newUrl => {
       if (newUrl) {
-        apiService.init(newUrl);
+        initializeApi();
       }
     },
     { immediate: false }

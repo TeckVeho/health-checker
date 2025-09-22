@@ -60,8 +60,52 @@ describe('useApiConfig', () => {
     })
   })
 
+  describe('environment variable priority', () => {
+    it('should prioritize API_BASE_URL environment variable', () => {
+      // Mock environment variable
+      const originalEnv = process.env.API_BASE_URL
+      process.env.API_BASE_URL = 'https://api.production.com'
+      
+      // Reset config
+      mockConfig.public = {}
+      
+      const { apiBaseUrl } = useApiConfig()
+      
+      expect(apiBaseUrl.value).toBe('https://api.production.com')
+      
+      // Restore original environment
+      process.env.API_BASE_URL = originalEnv
+    })
+
+    it('should fallback to NUXT_PUBLIC_API_BASE_URL when API_BASE_URL is not set', () => {
+      // Mock environment variables
+      const originalApiBaseUrl = process.env.API_BASE_URL
+      const originalNuxtPublicApiBaseUrl = process.env.NUXT_PUBLIC_API_BASE_URL
+      
+      delete process.env.API_BASE_URL
+      process.env.NUXT_PUBLIC_API_BASE_URL = 'https://api.staging.com'
+      
+      // Reset config
+      mockConfig.public = {}
+      
+      const { apiBaseUrl } = useApiConfig()
+      
+      expect(apiBaseUrl.value).toBe('https://api.staging.com')
+      
+      // Restore original environment
+      process.env.API_BASE_URL = originalApiBaseUrl
+      process.env.NUXT_PUBLIC_API_BASE_URL = originalNuxtPublicApiBaseUrl
+    })
+  })
+
   describe('undefined values', () => {
     it('should handle undefined config values', () => {
+      // Clear environment variables
+      const originalApiBaseUrl = process.env.API_BASE_URL
+      const originalNuxtPublicApiBaseUrl = process.env.NUXT_PUBLIC_API_BASE_URL
+      delete process.env.API_BASE_URL
+      delete process.env.NUXT_PUBLIC_API_BASE_URL
+      
       // Reset config with undefined values
       mockConfig.public = {}
       
@@ -70,9 +114,19 @@ describe('useApiConfig', () => {
       // apiBaseUrl should return default value when undefined
       expect(apiBaseUrl.value).toBe('http://localhost:23000')
       expect(apiTimeout.value).toBeUndefined()
+      
+      // Restore original environment
+      process.env.API_BASE_URL = originalApiBaseUrl
+      process.env.NUXT_PUBLIC_API_BASE_URL = originalNuxtPublicApiBaseUrl
     })
 
     it('should handle partial config values', () => {
+      // Clear environment variables
+      const originalApiBaseUrl = process.env.API_BASE_URL
+      const originalNuxtPublicApiBaseUrl = process.env.NUXT_PUBLIC_API_BASE_URL
+      delete process.env.API_BASE_URL
+      delete process.env.NUXT_PUBLIC_API_BASE_URL
+      
       // Reset config with partial values
       mockConfig.public = {
         apiBaseUrl: 'http://localhost:5000'
@@ -82,6 +136,10 @@ describe('useApiConfig', () => {
       
       expect(apiBaseUrl.value).toBe('http://localhost:5000')
       expect(apiTimeout.value).toBeUndefined()
+      
+      // Restore original environment
+      process.env.API_BASE_URL = originalApiBaseUrl
+      process.env.NUXT_PUBLIC_API_BASE_URL = originalNuxtPublicApiBaseUrl
     })
   })
 
