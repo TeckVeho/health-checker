@@ -685,10 +685,21 @@ let apiServiceInstance: ApiService | null = null;
 
 export function useApiService(): ApiService {
   if (!apiServiceInstance) {
-    // テスト環境ではデフォルトのbaseURLを設定
-    const defaultBaseURL = process.env.NODE_ENV === 'test' 
-      ? 'http://localhost:3000' 
-      : undefined;
+    // 環境に応じてデフォルトのbaseURLを設定
+    let defaultBaseURL: string | undefined;
+    
+    if (process.env.NODE_ENV === 'test') {
+      defaultBaseURL = 'http://localhost:3000';
+    } else if (process.env.NODE_ENV === 'production') {
+      // 本番環境では現在のホストを使用
+      if (typeof window !== 'undefined') {
+        defaultBaseURL = `${window.location.protocol}//${window.location.host}`;
+      } else {
+        // サーバーサイドでは環境変数から取得
+        defaultBaseURL = process.env.API_BASE_URL || process.env.NUXT_PUBLIC_API_BASE_URL;
+      }
+    }
+    
     apiServiceInstance = new ApiService({ baseURL: defaultBaseURL });
   }
   return apiServiceInstance;

@@ -159,6 +159,47 @@ describe('useApiConfig', () => {
       process.env.API_BASE_URL = originalApiBaseUrl
       process.env.NUXT_PUBLIC_API_BASE_URL = originalNuxtPublicApiBaseUrl
     })
+
+    it('should use current host as fallback in production when no config is available', () => {
+      // Mock production environment
+      const originalNodeEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = 'production'
+      
+      // Mock window.location
+      const originalLocation = window.location
+      Object.defineProperty(window, 'location', {
+        value: {
+          protocol: 'https:',
+          host: 'example.com'
+        },
+        writable: true
+      })
+      
+      // Clear environment variables
+      const originalApiBaseUrl = process.env.API_BASE_URL
+      const originalNuxtPublicApiBaseUrl = process.env.NUXT_PUBLIC_API_BASE_URL
+      delete process.env.API_BASE_URL
+      delete process.env.NUXT_PUBLIC_API_BASE_URL
+      
+      // Reset config
+      mockConfig.public = {
+        apiBaseUrl: undefined,
+        primevue: { options: { theme: { preset: {} } } }
+      }
+      
+      const { apiBaseUrl } = useApiConfig()
+      
+      expect(apiBaseUrl.value).toBe('https://example.com')
+      
+      // Restore original values
+      process.env.NODE_ENV = originalNodeEnv
+      Object.defineProperty(window, 'location', {
+        value: originalLocation,
+        writable: true
+      })
+      process.env.API_BASE_URL = originalApiBaseUrl
+      process.env.NUXT_PUBLIC_API_BASE_URL = originalNuxtPublicApiBaseUrl
+    })
   })
 
   describe('type safety', () => {
