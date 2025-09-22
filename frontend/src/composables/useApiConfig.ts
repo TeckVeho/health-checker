@@ -6,9 +6,10 @@ export function useApiConfig() {
 
   const apiBaseUrl = computed(() => {
     // ランタイム設定を優先的に使用（ビルド時に設定された値）
-    if (config.public?.apiBaseUrl) {
-      console.log('API Base URL from runtime config:', config.public.apiBaseUrl);
-      return config.public.apiBaseUrl;
+    const runtimeUrl = config.public?.apiBaseUrl;
+    if (runtimeUrl && runtimeUrl !== '') {
+      console.log('API Base URL from runtime config:', runtimeUrl);
+      return runtimeUrl;
     }
     
     // ランタイム設定がない場合は環境変数を直接使用

@@ -121,11 +121,7 @@ class ApiClient {
   private apiBaseUrl?: string;
 
   constructor(config: Partial<ApiConfig> = {}, apiBaseUrl?: string) {
-    if (!config.baseURL && !apiBaseUrl) {
-      console.error('API Client: No baseURL provided. Please ensure NUXT_PUBLIC_API_BASE_URL is set.');
-      throw new Error('API baseURL is required. Please set NUXT_PUBLIC_API_BASE_URL environment variable.');
-    }
-    
+    // 初期化時はbaseURLを必須としない（後でinitで設定される）
     this.config = {
       baseURL: config.baseURL || apiBaseUrl || '',
       timeout: config.timeout || 10000,
@@ -708,5 +704,18 @@ export function useApiService(): ApiService {
   return apiServiceInstance;
 }
 
-// Export for direct use
-export const apiService = useApiService();
+// Export for direct use - 遅延初期化に変更
+export const apiService = {
+  init: (baseURL?: string) => useApiService().init(baseURL),
+  getRepos: (...args: Parameters<ApiService['getRepos']>) => useApiService().getRepos(...args),
+  getAlertSummary: (...args: Parameters<ApiService['getAlertSummary']>) => useApiService().getAlertSummary(...args),
+  getAlertSummaryByCheckType: (...args: Parameters<ApiService['getAlertSummaryByCheckType']>) => useApiService().getAlertSummaryByCheckType(...args),
+  executeGlobalRecheck: (...args: Parameters<ApiService['executeGlobalRecheck']>) => useApiService().executeGlobalRecheck(...args),
+  executeRecheck: (...args: Parameters<ApiService['executeRecheck']>) => useApiService().executeRecheck(...args),
+  getRecheckStatus: (...args: Parameters<ApiService['getRecheckStatus']>) => useApiService().getRecheckStatus(...args),
+  getRecheckHistory: (...args: Parameters<ApiService['getRecheckHistory']>) => useApiService().getRecheckHistory(...args),
+  getRecheckStats: (...args: Parameters<ApiService['getRecheckStats']>) => useApiService().getRecheckStats(...args),
+  getRecheckSettings: (...args: Parameters<ApiService['getRecheckSettings']>) => useApiService().getRecheckSettings(...args),
+  updateRecheckSettings: (...args: Parameters<ApiService['updateRecheckSettings']>) => useApiService().updateRecheckSettings(...args),
+  fetchData: (...args: Parameters<ApiService['fetchData']>) => useApiService().fetchData(...args),
+};

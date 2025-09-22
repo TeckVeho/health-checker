@@ -14,7 +14,7 @@ module.exports = {
         NODE_ENV: 'production',
         HOST: process.env.NITRO_HOST,
         PORT: process.env.NITRO_PORT,
-        API_BASE_URL: process.env.API_BASE_URL,
+        NUXT_PUBLIC_API_BASE_URL: process.env.NUXT_PUBLIC_API_BASE_URL,
       },
     },
   ],

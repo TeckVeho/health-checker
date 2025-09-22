@@ -106,7 +106,7 @@ Object.defineProperty(window, 'localStorage', {
 })
 
 // Set test environment variables
-process.env.API_BASE_URL = 'http://localhost:3000'
+process.env.NUXT_PUBLIC_API_BASE_URL = process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'
 
 // Global mocks
 global.console = {

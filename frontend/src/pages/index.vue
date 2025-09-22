@@ -18,7 +18,7 @@
       <TabPanels>
         <TabPanel value="severity">
           <!-- Loading -->
-          <div v-if="repos.length === 0">
+          <div v-if="!repos || repos.length === 0">
             <BaseText
               text="Loading repositories..."
               :loading="true"
@@ -40,7 +40,7 @@
         </TabPanel>
         <TabPanel value="checkType">
           <!-- Loading -->
-          <div v-if="repos.length === 0">
+          <div v-if="!checkTypeRepos || checkTypeRepos.length === 0">
             <BaseText
               text="Loading checkType data..."
               :loading="true"
