@@ -19,7 +19,7 @@ export function useAlerts(owner: Ref<string | null>, repo: Ref<string | null>) {
   const toast = useCustomToast();
 
   // Initialize API service with correct base URL
-  apiService.init(apiBaseUrl);
+  apiService.init(apiBaseUrl.value);
 
   const alerts = ref<Alert[]>([]);
   const loading = ref(false);

@@ -121,11 +121,7 @@ class ApiClient {
   private apiBaseUrl?: string;
 
   constructor(config: Partial<ApiConfig> = {}, apiBaseUrl?: string) {
-    if (!config.baseURL && !apiBaseUrl) {
-      console.error('API Client: No baseURL provided. Please ensure API_BASE_URL is set.');
-      throw new Error('API baseURL is required. Please set API_BASE_URL environment variable.');
-    }
-    
+    // 初期化時はbaseURLを必須としない（後でinitで設定される）
     this.config = {
       baseURL: config.baseURL || apiBaseUrl || '',
       timeout: config.timeout || 10000,
@@ -685,25 +681,24 @@ let apiServiceInstance: ApiService | null = null;
 
 export function useApiService(): ApiService {
   if (!apiServiceInstance) {
-    // 環境に応じてデフォルトのbaseURLを設定
-    let defaultBaseURL: string | undefined;
-    
-    if (process.env.NODE_ENV === 'test') {
-      defaultBaseURL = 'http://localhost:3000';
-    } else if (process.env.NODE_ENV === 'production') {
-      // 本番環境では現在のホストを使用
-      if (typeof window !== 'undefined') {
-        defaultBaseURL = `${window.location.protocol}//${window.location.host}`;
-      } else {
-        // サーバーサイドでは環境変数から取得
-        defaultBaseURL = process.env.API_BASE_URL || process.env.NUXT_PUBLIC_API_BASE_URL;
-      }
-    }
-    
-    apiServiceInstance = new ApiService({ baseURL: defaultBaseURL });
+    // APIServiceのインスタンスを作成（baseURLは後で設定される）
+    apiServiceInstance = new ApiService();
   }
   return apiServiceInstance;
 }
 
-// Export for direct use
-export const apiService = useApiService();
+// Export for direct use - 遅延初期化に変更
+export const apiService = {
+  init: (baseURL?: string) => useApiService().init(baseURL),
+  getRepos: (...args: Parameters<ApiService['getRepos']>) => useApiService().getRepos(...args),
+  getAlertSummary: (...args: Parameters<ApiService['getAlertSummary']>) => useApiService().getAlertSummary(...args),
+  getAlertSummaryByCheckType: (...args: Parameters<ApiService['getAlertSummaryByCheckType']>) => useApiService().getAlertSummaryByCheckType(...args),
+  executeGlobalRecheck: (...args: Parameters<ApiService['executeGlobalRecheck']>) => useApiService().executeGlobalRecheck(...args),
+  executeRecheck: (...args: Parameters<ApiService['executeRecheck']>) => useApiService().executeRecheck(...args),
+  getRecheckStatus: (...args: Parameters<ApiService['getRecheckStatus']>) => useApiService().getRecheckStatus(...args),
+  getRecheckHistory: (...args: Parameters<ApiService['getRecheckHistory']>) => useApiService().getRecheckHistory(...args),
+  getRecheckStats: (...args: Parameters<ApiService['getRecheckStats']>) => useApiService().getRecheckStats(...args),
+  getRecheckSettings: (...args: Parameters<ApiService['getRecheckSettings']>) => useApiService().getRecheckSettings(...args),
+  updateRecheckSettings: (...args: Parameters<ApiService['updateRecheckSettings']>) => useApiService().updateRecheckSettings(...args),
+  fetchData: (...args: Parameters<ApiService['fetchData']>) => useApiService().fetchData(...args),
+};
