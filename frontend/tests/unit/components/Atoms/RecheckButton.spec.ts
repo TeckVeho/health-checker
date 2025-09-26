@@ -290,6 +290,16 @@ describe('RecheckButton', () => {
       expect(wrapper.find('.status-indicator').exists()).toBe(false);
     });
 
+    it('does not show status indicator by default (showStatus defaults to false)', () => {
+      const wrapper = mount(RecheckButton, {
+        props: {
+          status: 'running',
+        },
+      });
+
+      expect(wrapper.find('.status-indicator').exists()).toBe(false);
+    });
+
     it('shows correct status text for different statuses', () => {
       const statuses = [
         { status: 'running', expectedText: 'Running' },

@@ -1,0 +1,111 @@
+{
+  "testSuite": "Issue #170 - ReCheck Status Display Method Change",
+  "timestamp": "2025-09-26T11:35:00Z",
+  "framework": "Vitest",
+  "environment": "jsdom",
+  "summary": {
+    "totalTests": 62,
+    "passed": 62,
+    "failed": 0,
+    "skipped": 0,
+    "duration": "3.12s",
+    "coverage": {
+      "recheckButton": {
+        "statements": 100,
+        "branches": 100,
+        "functions": 100,
+        "lines": 100
+      },
+      "overall": {
+        "statements": 2.08,
+        "branches": 61.46,
+        "functions": 12.5,
+        "lines": 2.08
+      }
+    }
+  },
+  "testFiles": [
+    {
+      "file": "tests/unit/components/Atoms/RecheckButton.spec.ts",
+      "tests": 36,
+      "passed": 36,
+      "failed": 0,
+      "duration": "69ms",
+      "coverage": {
+        "statements": 100,
+        "branches": 100,
+        "functions": 100,
+        "lines": 100
+      },
+      "keyTests": [
+        {
+          "name": "does not show status indicator by default (showStatus defaults to false)",
+          "status": "passed",
+          "description": "New test added to verify the default behavior change"
+        },
+        {
+          "name": "shows status indicator when showStatus is true and status is provided",
+          "status": "passed",
+          "description": "Backward compatibility test"
+        },
+        {
+          "name": "does not show status indicator when showStatus is false",
+          "status": "passed",
+          "description": "Explicit false behavior test"
+        }
+      ]
+    },
+    {
+      "file": "tests/unit/components/Molecules/RecheckStatus.spec.ts",
+      "tests": 26,
+      "passed": 26,
+      "failed": 0,
+      "duration": "87ms",
+      "coverage": "Not specifically measured",
+      "description": "Related component test to ensure no regressions"
+    }
+  ],
+  "functionalVerification": {
+    "recheckButtonFunctionality": {
+      "buttonLabels": "✅ All label states work correctly",
+      "buttonIcons": "✅ All icon states work correctly",
+      "buttonSeverity": "✅ All severity states work correctly",
+      "buttonDisabledState": "✅ Disabled states work correctly",
+      "eventHandling": "✅ Click events work correctly",
+      "loadingState": "✅ Loading states work correctly",
+      "sizeVariants": "✅ Size variants work correctly"
+    },
+    "statusIndicatorBehavior": {
+      "defaultBehavior": "✅ Status indicator hidden by default (NEW)",
+      "explicitTrue": "✅ Status indicator shows when showStatus=true",
+      "explicitFalse": "✅ Status indicator hidden when showStatus=false",
+      "statusTexts": "✅ All status texts display correctly",
+      "statusSeverities": "✅ All status severities display correctly"
+    },
+    "retryCountdown": {
+      "display": "✅ Retry countdown displays when needed",
+      "formatting": "✅ Time formatting works correctly",
+      "hiding": "✅ Countdown hides when not needed"
+    }
+  },
+  "regressionTests": {
+    "recheckStatus": {
+      "component": "RecheckStatus.vue",
+      "tests": 26,
+      "passed": 26,
+      "status": "✅ No regressions detected",
+      "description": "Related component maintains full functionality"
+    }
+  },
+  "performanceMetrics": {
+    "testExecution": {
+      "recheckButtonTests": "69ms",
+      "recheckStatusTests": "87ms",
+      "totalDuration": "3.12s"
+    },
+    "coverage": {
+      "targetComponent": "100% coverage on RecheckButton.vue",
+      "overallProject": "2.08% (expected for focused testing)"
+    }
+  }
+}
