@@ -49,7 +49,7 @@ const props = withDefaults(defineProps<RecheckButtonProps>(), {
   canExecute: true,
   status: 'idle',
   retryAfterSeconds: 0,
-  showStatus: true,
+  showStatus: false,
   size: 'normal',
 });
 
