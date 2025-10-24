@@ -16,6 +16,9 @@ export const CHECK_TYPE_COLUMNS = [
   // Security category - security-related issues
   { label: 'Security', key: 'security', tagSeverity: 'danger' },
 
+  // PR category - pull request related issues
+  { label: 'PR', key: 'pr', tagSeverity: 'info' },
+
   // Test/Performance category - testing and performance issues
   { label: 'Test/Performance', key: 'test_performance', tagSeverity: 'info' },
 ] as const;
@@ -46,12 +49,18 @@ export const CHECK_TYPE_MAPPING = {
   // Security category
   security: ['exposed_secret_key', 'security_risk', 'package_vulnerability'],
 
+  // PR category
+  pr: [
+    'pull_request_format_violation',
+    'pr_missing_evidence',
+    'pr_unclear_changes',
+    'pr_review_workflow_missing',
+  ],
+
   // Test/Performance category
   test_performance: [
     'no_unit_test_ci',
     'performance_issue',
-    'pull_request_format_violation',
-    'pr_review_workflow_missing',
     'release_labeling_workflow_missing',
   ],
 } as const;
