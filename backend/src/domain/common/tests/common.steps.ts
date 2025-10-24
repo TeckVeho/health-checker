@@ -5,12 +5,13 @@ import request from 'supertest';
 import { expect } from 'chai';
 import express from 'express';
 import routes from '../../../router';
-import sequelize from '../../../config/database';
+import createSequelizeInstance from '../../../config/database';
 import setupAssociations from '@config/associations';
 import getMessage from '../../../utils/message';
 
 setupAssociations();
 
+const sequelize = createSequelizeInstance();
 const app = express();
 app.use(express.json());
 app.use('/api', routes);

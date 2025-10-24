@@ -3,10 +3,13 @@ import fs from 'fs/promises';
 import path from 'path';
 // import { format } from 'date-fns';
 import { Model } from 'sequelize';
-import sequelize from '../../../config/database';
+import createSequelizeInstance from '../../../config/database';
 import { alertAttributes, alertModelOptions } from '../alertSchema';
 import AlertService from '../alertService';
 import { GitleaksErrorHandler, GitleaksExecutionResult } from './gitleaksErrorHandler';
+
+// Get Sequelize instance
+const sequelize = createSequelizeInstance();
 
 // Define Alert model directly from schema
 class Alert extends Model {}

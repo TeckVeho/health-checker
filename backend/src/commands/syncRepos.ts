@@ -1,9 +1,12 @@
 // src/commands/syncRepos.ts
 
-import 'dotenv/config';
+import { EnvironmentConfig } from '../config/environment';
 import RepoService from '../domain/repo/repoService';
 
 async function main() {
+  // Initialize environment variables first
+  EnvironmentConfig.initialize();
+  
   const args = process.argv.slice(2);
   const owner = args[0];
 

@@ -1,6 +1,9 @@
 import { Model } from 'sequelize';
-import sequelize from '../../config/database';
+import createSequelizeInstance from '../../config/database';
 import { repoAttributes, repoModelOptions } from './repoSchema';
+
+// Get Sequelize instance
+const sequelize = createSequelizeInstance();
 
 // Define Repo model
 class Repo extends Model {

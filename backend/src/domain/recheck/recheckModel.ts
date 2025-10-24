@@ -1,5 +1,5 @@
 import { Model, Op } from 'sequelize';
-import sequelize from '../../config/database';
+import createSequelizeInstance from '../../config/database';
 import {
   RecheckExecutionAttributes,
   RecheckExecutionCreationAttributes,
@@ -303,6 +303,9 @@ export class RecheckSettings extends Model<RecheckSettingsAttributes, RecheckSet
     return instance;
   }
 }
+
+// Get Sequelize instance
+const sequelize = createSequelizeInstance();
 
 // Initialize models
 RecheckExecution.init(recheckExecutionAttributes, {

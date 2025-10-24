@@ -1,12 +1,19 @@
 // src/features/repo/repoService.ts
 
 import { Model } from 'sequelize';
-import sequelize from '../../config/database';
+import createSequelizeInstance from '../../config/database';
 import { repoAttributes, repoModelOptions } from './repoSchema';
 import { UniqueConstraintError } from 'sequelize';
 import getMessage from '../../utils/message';
 import { Octokit } from '@octokit/rest';
 import { InferAttributes } from 'sequelize';
+import { EnvironmentConfig } from '../../config/environment';
+
+// Initialize environment variables first
+EnvironmentConfig.initialize();
+
+// Get Sequelize instance
+const sequelize = createSequelizeInstance();
 
 // Define Repo model directly from schema
 class Repo extends Model {}
@@ -15,14 +22,22 @@ Repo.init(repoAttributes, {
   ...repoModelOptions,
 });
 
-const githubToken = process.env.GITHUB_API_KEY;
-if (!githubToken) throw new Error('GITHUB_API_KEY is required');
-const octokit = new Octokit({
-  auth: githubToken,
-  request: {
-    headers: { accept: 'application/vnd.github+json' },
-  },
-});
+// GitHub API client - will be initialized when needed
+let octokit: Octokit | null = null;
+
+function getOctokit(): Octokit {
+  if (!octokit) {
+    const githubToken = process.env.GITHUB_API_KEY;
+    if (!githubToken) throw new Error('GITHUB_API_KEY is required');
+    octokit = new Octokit({
+      auth: githubToken,
+      request: {
+        headers: { accept: 'application/vnd.github+json' },
+      },
+    });
+  }
+  return octokit;
+}
 type RepoData = InferAttributes<Repo>;
 type RepoQueryParams = {
   page: number;
@@ -125,8 +140,9 @@ class RepoService {
   }
   static async syncReposFromGithub(owner: string): Promise<RepoData[]> {
     const insertedRepos: RepoData[] = [];
+    const octokitInstance = getOctokit();
 
-    const repos = await octokit.paginate(octokit.repos.listForOrg, {
+    const repos = await octokitInstance.paginate(octokitInstance.repos.listForOrg, {
       org: owner,
       per_page: 100, // eslint-disable-line @typescript-eslint/naming-convention
       type: 'all',
@@ -135,7 +151,7 @@ class RepoService {
     for (const repo of repos) {
       console.log(`Sync ${repo.owner.login}/${repo.name}`);
       try {
-        const { data: fullRepo } = await octokit.repos.get({
+        const { data: fullRepo } = await octokitInstance.repos.get({
           owner: repo.owner.login,
           repo: repo.name,
         });
@@ -145,7 +161,7 @@ class RepoService {
 
         let lastCommitAt: Date | null = null;
         try {
-          const commits = await octokit.repos.listCommits({
+          const commits = await octokitInstance.repos.listCommits({
             owner: repo.owner.login,
             repo: repo.name,
             per_page: 1, // eslint-disable-line @typescript-eslint/naming-convention
@@ -157,7 +173,7 @@ class RepoService {
 
         let lastIssueCreatedAt: Date | null = null;
         try {
-          const issues = await octokit.issues.listForRepo({
+          const issues = await octokitInstance.issues.listForRepo({
             owner: repo.owner.login,
             repo: repo.name,
             state: 'all',
@@ -173,7 +189,7 @@ class RepoService {
 
         let lastPrCreatedAt: Date | null = null;
         try {
-          const pulls = await octokit.pulls.list({
+          const pulls = await octokitInstance.pulls.list({
             owner: repo.owner.login,
             repo: repo.name,
             state: 'all',

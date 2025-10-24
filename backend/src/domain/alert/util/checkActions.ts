@@ -34,7 +34,7 @@ import path from 'path';
 import { format } from 'date-fns';
 import AlertService from '../alertService';
 import { Model } from 'sequelize';
-import sequelize from '../../../config/database';
+import createSequelizeInstance from '../../../config/database';
 import { alertAttributes, alertModelOptions } from '../alertSchema';
 
 // Only check for GITHUB_API_KEY in non-test environments
@@ -44,6 +44,9 @@ if (!githubToken && process.env.NODE_ENV !== 'test') {
 }
 
 const octokit = new Octokit({ auth: githubToken || 'dummy-token' });
+
+// Get Sequelize instance
+const sequelize = createSequelizeInstance();
 
 // Define Alert model directly from schema
 class Alert extends Model {}

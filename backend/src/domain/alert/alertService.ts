@@ -1,5 +1,5 @@
 import { Model } from 'sequelize';
-import sequelize from '../../config/database';
+import createSequelizeInstance from '../../config/database';
 import { repoAttributes, repoModelOptions } from '../repo/repoSchema';
 import { alertAttributes, alertModelOptions } from './alertSchema';
 import { cloneRepo } from './util/cloneRepo';
@@ -8,9 +8,13 @@ import { auditScanner } from './util/auditScanner';
 import { checkBranches, type AlertCandidate } from './util/checkBranches';
 import { checkIssues, type IssueAlertCandidate } from './util/checkIssues';
 import { checkActions } from './util/checkActions';
+import { checkPullRequests } from './util/checkPullRequests';
 import { QueryTypes, Op } from 'sequelize';
 import { subDays, format } from 'date-fns';
 import { Octokit } from '@octokit/rest';
+
+// Get Sequelize instance
+const sequelize = createSequelizeInstance();
 
 // GitHub API client
 const githubToken = process.env.GITHUB_API_KEY;
@@ -521,6 +525,79 @@ class AlertService {
     return { owner, repo };
   }
 
+  static async processPullRequestAlerts(owner: string, repo: string, processStartTime?: Date): Promise<{ owner: string; repo: string }> {
+    const timestamp = new Date();
+    const result = await checkPullRequests(owner, repo);
+    const detectedKeySet = new Set<string>();
+
+    // Process new alerts
+    for (const alert of result.alerts) {
+      const key = [alert.owner, alert.repo, alert.checkType, alert.title, alert.filePath, alert.lineNumber, alert.codeSnippet, alert.branch].join('||');
+      detectedKeySet.add(key);
+
+      await Alert.findOrCreate({
+        where: { 
+          owner: alert.owner, 
+          repo: alert.repo, 
+          checkType: alert.checkType, 
+          title: alert.title, 
+          filePath: alert.filePath, 
+          lineNumber: alert.lineNumber, 
+          codeSnippet: alert.codeSnippet, 
+          branch: alert.branch 
+        },
+        defaults: {
+          owner: alert.owner,
+          repo: alert.repo,
+          checkType: alert.checkType,
+          title: alert.title,
+          description: alert.description,
+          severity: alert.severity,
+          author: alert.author,
+          filePath: alert.filePath,
+          lineNumber: alert.lineNumber,
+          codeSnippet: alert.codeSnippet,
+          branch: alert.branch,
+          detectCount: 1,
+          lastDetectedAt: timestamp,
+          isIgnored: false,
+          manualResolved: false,
+          systemResolved: false,
+          createdAt: timestamp,
+        },
+      }).then(async ([record, created]) => {
+        if (!created) {
+          await record.update({
+            detectCount: (record as any).detectCount + 1,
+            lastDetectedAt: timestamp,
+            systemResolved: false,
+            systemResolvedReason: undefined,
+          });
+        }
+      });
+    }
+
+    // Resolve old alerts that are no longer detected
+    await Alert.update(
+      {
+        systemResolved: true,
+        systemResolvedReason: 'PR quality issue resolved',
+        lastDetectedAt: timestamp,
+      },
+      {
+        where: {
+          owner,
+          repo,
+          checkType: ['pr_unclear_changes', 'pr_missing_evidence'],
+          systemResolved: false,
+          lastDetectedAt: processStartTime ? { [Op.lt]: processStartTime } : { [Op.lt]: timestamp },
+        },
+      }
+    );
+
+    return { owner, repo };
+  }
+
   static async runAlert(
     options: { 
       owner: string; 
@@ -540,7 +617,7 @@ class AlertService {
     }
   ): Promise<Record<string, unknown>> {
     const { owner, repo, checks, onProgress } = options;
-    const effectiveChecks = checks ?? ['branch', 'clone', 'gitleaks', 'issue'];
+    const effectiveChecks = checks ?? ['branch', 'clone', 'gitleaks', 'issue', 'pr'];
     const results: Record<string, unknown> = {};
     const totalPhases = effectiveChecks.length;
     let currentPhaseIndex = 0;
@@ -605,6 +682,14 @@ class AlertService {
       await this.processActionAlerts(owner, repo, processStartTime);
       updateProgress('GitHub Actions Analysis', 100);
       results.actions = 'checked';
+      currentPhaseIndex++;
+    }
+
+    if (effectiveChecks.includes('pr')) {
+      updateProgress('Pull Request Analysis', 0);
+      await this.processPullRequestAlerts(owner, repo, processStartTime);
+      updateProgress('Pull Request Analysis', 100);
+      results.pr = 'checked';
       currentPhaseIndex++;
     }
 
