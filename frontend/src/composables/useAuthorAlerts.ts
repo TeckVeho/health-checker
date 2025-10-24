@@ -30,6 +30,9 @@ interface AuthorAggregation {
     templateOnly: number;
     unclearInstruction: number;
     unassigned: number;
+    prFormatViolation: number;
+    prMissingEvidence: number;
+    prUnclearChanges: number;
   };
   repositories: string[];
   lastActivityDate: string;
