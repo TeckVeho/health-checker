@@ -1,13 +1,16 @@
 // src/features/alert/alertModel.ts
 
 import { Model } from 'sequelize';
-import sequelize from '../../config/database';
+import createSequelizeInstance from '../../config/database';
 import { 
   AlertAttributes, 
   AlertCreationAttributes, 
   alertAttributes, 
   alertModelOptions 
 } from './alertSchema';
+
+// Get Sequelize instance
+const sequelize = createSequelizeInstance();
 
 // Model definition
 class Alert extends Model<AlertAttributes, AlertCreationAttributes> implements AlertAttributes {

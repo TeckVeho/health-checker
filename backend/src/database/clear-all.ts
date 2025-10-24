@@ -1,9 +1,10 @@
 // src/database/clear-all.ts
 import { QueryTypes } from 'sequelize';
-import sequelize from '../config/database';
+import createSequelizeInstance from '../config/database';
 
 (async () => {
   try {
+    const sequelize = createSequelizeInstance();
     const queryInterface = sequelize.getQueryInterface();
 
     const tables = await sequelize.query<{ name: string }>('SELECT table_name AS name FROM information_schema.tables WHERE table_schema = DATABASE();', { type: QueryTypes.SELECT });

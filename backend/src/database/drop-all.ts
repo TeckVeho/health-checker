@@ -1,10 +1,11 @@
 // src/database/drop-all.ts
 
 import { QueryTypes } from 'sequelize';
-import sequelize from '../config/database';
+import createSequelizeInstance from '../config/database';
 
 (async () => {
   try {
+    const sequelize = createSequelizeInstance();
     const queryInterface = sequelize.getQueryInterface();
 
     console.log('Starting to drop all tables in the database...');

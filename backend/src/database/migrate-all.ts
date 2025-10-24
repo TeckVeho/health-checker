@@ -1,6 +1,7 @@
 // backend/src/database/migrate-all.ts
 import { Model } from 'sequelize';
-import sequelize from '../config/database';
+import { EnvironmentConfig } from '../config/environment';
+import createSequelizeInstance from '../config/database';
 import { repoAttributes, repoModelOptions } from '../domain/repo/repoSchema';
 import { alertAttributes, alertModelOptions } from '../domain/alert/alertSchema';
 import { 
@@ -14,6 +15,8 @@ import {
  * Create tables directly from schema definitions without importing model classes
  */
 async function createTablesFromSchemas(): Promise<void> {
+  // Get Sequelize instance after environment variables are initialized
+  const sequelize = createSequelizeInstance();
   // Define Repo model directly from schema
   class Repo extends Model {}
   Repo.init(repoAttributes, {
@@ -53,6 +56,9 @@ async function createTablesFromSchemas(): Promise<void> {
 
 (async () => {
   try {
+    // Initialize environment variables first
+    EnvironmentConfig.initialize();
+    
     await createTablesFromSchemas();
     process.exit(0);
   } catch (error) {
