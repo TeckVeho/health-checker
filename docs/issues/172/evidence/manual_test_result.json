@@ -1,0 +1,35 @@
+{
+  "testType": "Manual Test",
+  "testDate": "2025-01-27T11:31:00Z",
+  "testCommand": "yarn alert pr TeckVeho drivee-link",
+  "testResult": "SUCCESS",
+  "executionTime": "26.09s",
+  "testDetails": {
+    "repository": "TeckVeho/drivee-link",
+    "pullRequestsFound": 1,
+    "pullRequestsProcessed": 1,
+    "alertsGenerated": 1,
+    "alertTypes": ["pr_missing_evidence"],
+    "processingSteps": [
+      "Database connection established",
+      "Open pull requests fetched",
+      "PR #1140 processed",
+      "LLM analysis completed",
+      "Alert generated for missing evidence",
+      "Alert saved to database"
+    ]
+  },
+  "functionality": {
+    "prCheckFeature": "WORKING",
+    "githubApiIntegration": "WORKING",
+    "llmAnalysis": "WORKING",
+    "alertGeneration": "WORKING",
+    "databaseIntegration": "WORKING"
+  },
+  "output": {
+    "status": "✅ Manual check done for TeckVeho/drivee-link",
+    "result": {
+      "pr": "checked"
+    }
+  }
+}

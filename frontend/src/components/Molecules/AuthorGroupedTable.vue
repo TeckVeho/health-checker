@@ -177,6 +177,51 @@
             />
           </template>
         </Column>
+
+        <!-- PR Format Violation Column -->
+        <Column
+          field="issueTypeCounts.prFormatViolation"
+          header="PR Format"
+          :sortable="true"
+          class="text-center min-w-20"
+        >
+          <template #body="{ data: row }">
+            <BaseTag
+              :value="row.issueTypeCounts.prFormatViolation || 0"
+              size="small"
+            />
+          </template>
+        </Column>
+
+        <!-- PR Missing Evidence Column -->
+        <Column
+          field="issueTypeCounts.prMissingEvidence"
+          header="PR Missing Evidence"
+          :sortable="true"
+          class="text-center min-w-20"
+        >
+          <template #body="{ data: row }">
+            <BaseTag
+              :value="row.issueTypeCounts.prMissingEvidence || 0"
+              size="small"
+            />
+          </template>
+        </Column>
+
+        <!-- PR Unclear Changes Column -->
+        <Column
+          field="issueTypeCounts.prUnclearChanges"
+          header="PR Unclear Changes"
+          :sortable="true"
+          class="text-center min-w-20"
+        >
+          <template #body="{ data: row }">
+            <BaseTag
+              :value="row.issueTypeCounts.prUnclearChanges || 0"
+              size="small"
+            />
+          </template>
+        </Column>
       </DataTable>
 
       <!-- Pagination -->
