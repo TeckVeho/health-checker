@@ -788,13 +788,13 @@ class AlertService {
 
     const offset = (page - 1) * limit;
     
-    // Build where conditions - Only show Issue type alerts for author grouping
+    // Build where conditions - Show Issue type alerts and PR format violations for author grouping
     const whereConditions: string[] = ['is_ignored = false', 'system_resolved = false'];
     const replacements: (string | number)[] = [];
 
-    // Filter for Issue type alerts only (author-related issues)
-    whereConditions.push('check_type LIKE ?');
-    replacements.push('issue_%');
+    // Filter for Issue type alerts and PR format violations (author-related issues and PR checks)
+    whereConditions.push('(check_type LIKE ? OR check_type = ? OR check_type = ? OR check_type = ?)');
+    replacements.push('issue_%', 'pull_request_format_violation', 'pr_missing_evidence', 'pr_unclear_changes');
 
     if (owner) {
       whereConditions.push('owner = ?');
@@ -832,6 +832,9 @@ class AlertService {
         COUNT(CASE WHEN check_type = 'issue_template_only' THEN 1 END) as template_only_count,
         COUNT(CASE WHEN check_type = 'issue_unclear_instruction' THEN 1 END) as unclear_instruction_count,
         COUNT(CASE WHEN check_type = 'issue_unassigned' THEN 1 END) as unassigned_count,
+        COUNT(CASE WHEN check_type = 'pull_request_format_violation' THEN 1 END) as pr_format_violation_count,
+        COUNT(CASE WHEN check_type = 'pr_missing_evidence' THEN 1 END) as pr_missing_evidence_count,
+        COUNT(CASE WHEN check_type = 'pr_unclear_changes' THEN 1 END) as pr_unclear_changes_count,
         GROUP_CONCAT(DISTINCT owner || '/' || repo) as repositories,
         MAX(last_detected_at) as last_activity_date
       FROM alerts 
@@ -882,7 +885,10 @@ class AlertService {
         notInProject: parseInt(row.not_in_project_count),
         templateOnly: parseInt(row.template_only_count),
         unclearInstruction: parseInt(row.unclear_instruction_count),
-        unassigned: parseInt(row.unassigned_count)
+        unassigned: parseInt(row.unassigned_count),
+        prFormatViolation: parseInt(row.pr_format_violation_count),
+        prMissingEvidence: parseInt(row.pr_missing_evidence_count),
+        prUnclearChanges: parseInt(row.pr_unclear_changes_count)
       },
       repositories: row.repositories ? row.repositories.split(',') : [],
       lastActivityDate: row.last_activity_date
@@ -915,7 +921,12 @@ class AlertService {
       // eslint-disable-next-line @typescript-eslint/naming-convention
       system_resolved: false,
       checkType: {
-        [Op.like]: 'issue_%'  // Only show issue-type alerts
+        [Op.or]: [
+          { [Op.like]: 'issue_%' },  // Issue-type alerts
+          'pull_request_format_violation',  // PR format violations
+          'pr_missing_evidence',  // PR missing evidence
+          'pr_unclear_changes'   // PR unclear changes
+        ]
       }
     };
 
