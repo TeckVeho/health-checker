@@ -3,9 +3,8 @@
 Calculate and display the estimated Story Points (SP) for a specified GitHub issue directly in the Cursor chat.
 
 ## Parameters
-
-* `issue_number` (required): GitHub issue number to evaluate and calculate SP for.
-
+* issue_number (optional): GitHub issue number to evaluate and calculate SP for.
+* If omitted, the command automatically detects the most recently updated issue file under docs/issues/.
 ---
 
 ## Instructions
