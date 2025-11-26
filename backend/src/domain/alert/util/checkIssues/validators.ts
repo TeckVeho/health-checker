@@ -89,7 +89,7 @@ export function validateStoryPoints(
       `Issue #${issue.number} has no Story Point assigned.`,
       'low'
     ));
-  } else if (storyPoints > 8) {
+  } /*else if (storyPoints > 8) {
     // SP greater than 8 (possibly overestimated)
     alerts.push(createAlert(
       issue,
@@ -99,7 +99,7 @@ export function validateStoryPoints(
       `Issue #${issue.number} has Story Point ${storyPoints} which is greater than 8 (possibly overestimated).`,
       'low'
     ));
-  }
+  }*/
 
   return alerts;
 }
