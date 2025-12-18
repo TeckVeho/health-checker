@@ -44,3 +44,5 @@ export interface LLMAnalysisResult {
   unclearReason?: string;
   missingEvidenceReason?: string;
 }
+
+
