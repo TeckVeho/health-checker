@@ -24,8 +24,26 @@ Please analyze the following pull request for quality issues. Respond in JSON fo
 }
 
 Criteria:
-1. "unclearChanges": true if the PR description is vague, lacks specific implementation details, or doesn't clearly explain what changes were made
-2. "missingEvidence": true if the PR lacks evidence like screenshots, test logs, performance benchmarks, or verification results
+1. unclearChanges
+- Set to true only if the PR description is almost empty or provides no meaningful explanation at all.
+- If there is any explanation of what was changed (even high-level, short, or informal), set this to false.
+-Detailed implementation steps are not required.
+
+
+2. missingEvidence
+- Set to true only if there is nothing that looks like evidence.
+- Set to false if any of the following are present:
+- Screenshot(s)
+- Log output
+- Test result text
+- URL (PR, issue, deploy link, staging link, etc.)
+
+Important Notes
+- Be generous and practical in judgment.
+- If the author made any reasonable effort to explain or show validation, treat it as OK.
+- Do not expect perfect documentation.
+- Description stating that something was tested or verified (even without proof)
+
 
 **Pull Request Title**: ${prTitle}
 **Pull Request Description**:
