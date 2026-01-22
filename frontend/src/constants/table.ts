@@ -7,8 +7,20 @@ export const SEVERITY_COLUMNS = [
 
 // Check Type Columns based on checkTypeLabels
 export const CHECK_TYPE_COLUMNS = [
-  // Issue category - grouped issue-related alert types
-  { label: 'Issue', key: 'issue', tagSeverity: 'warning' },
+  // Issue Date category - date-related issues
+  { label: 'Date', key: 'date', tagSeverity: 'warning' },
+
+  // Issue SP category - story point related issues
+  { label: 'SP', key: 'sp', tagSeverity: 'warning' },
+
+  // Issue Assign category - assignment related issues
+  { label: 'Assign', key: 'assign', tagSeverity: 'warning' },
+
+  // Issue Body category - content quality related issues
+  { label: 'Body', key: 'body', tagSeverity: 'warning' },
+
+  // Issue Project category - project membership related issues
+  { label: 'Project', key: 'project', tagSeverity: 'warning' },
 
   // Branch category - branch-related violations
   { label: 'Branch', key: 'branch', tagSeverity: 'danger' },
@@ -20,22 +32,38 @@ export const CHECK_TYPE_COLUMNS = [
   { label: 'PR', key: 'pr', tagSeverity: 'info' },
 
   // Test/Performance category - testing and performance issues
-  { label: 'Test/Performance', key: 'test_performance', tagSeverity: 'info' },
+  { label: 'Test', key: 'test', tagSeverity: 'info' },
 ] as const;
 
 // Individual check types for detailed mapping
 export const CHECK_TYPE_MAPPING = {
-  // Issue category
-  issue: [
-    'issue_unclear_instruction',
-    'issue_template_only',
+  // Issue Date category
+  date: [
     'issue_missing_end_date',
     'issue_expired_end_date',
+  ],
+
+  // Issue SP category
+  sp: [
     'issue_missing_sp',
     'issue_large_sp',
-    'issue_not_in_project',
-    'issue_format_violation',
+  ],
+
+  // Issue Assign category
+  assign: [
     'issue_unassigned',
+  ],
+
+  // Issue Body category
+  body: [
+    'issue_template_only',
+    'issue_unclear_instruction',
+    'issue_format_violation',
+  ],
+
+  // Issue Project category
+  project: [
+    'issue_not_in_project',
   ],
 
   // Branch category
@@ -58,7 +86,7 @@ export const CHECK_TYPE_MAPPING = {
   ],
 
   // Test/Performance category
-  test_performance: [
+  test: [
     'no_unit_test_ci',
     'performance_issue',
     'release_labeling_workflow_missing',

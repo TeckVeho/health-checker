@@ -31,17 +31,6 @@
         </template>
       </Column>
 
-      <Column field="description" header="Description" sortable>
-        <template #body="slotProps">
-          <div
-            class="text-white max-w-xs truncate"
-            :title="slotProps.data.description"
-          >
-            {{ slotProps.data.description || '-' }}
-          </div>
-        </template>
-      </Column>
-
       <Column field="totalViolations" header="Total" sortable>
         <template #body="slotProps">
           <BaseTag :value="slotProps.data.totalViolations" />
