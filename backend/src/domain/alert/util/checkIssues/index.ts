@@ -60,6 +60,13 @@ export async function checkIssues(
         continue;
       }
 
+      // Skip issues with "Parent" label (parent issues don't have SP or deadlines)
+      const hasParentLabel = issue.labels.some((label) => label.name === 'Parent');
+      if (hasParentLabel) {
+        console.log(`  Skipping issue #${issue.number} - has "Parent" label`);
+        continue;
+      }
+
       console.log(`  Processing issue #${issue.number} (${i + 1}/${issues.length})`);
 
       // Report progress to callback
