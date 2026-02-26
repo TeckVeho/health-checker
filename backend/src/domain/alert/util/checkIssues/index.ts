@@ -60,10 +60,13 @@ export async function checkIssues(
         continue;
       }
 
-      // Skip issues with "Parent" label (parent issues don't have SP or deadlines)
-      const hasParentLabel = issue.labels.some((label) => label.name === 'Parent');
-      if (hasParentLabel) {
-        console.log(`  Skipping issue #${issue.number} - has "Parent" label`);
+      // Skip issues with specific labels (these issues don't have SP/deadlines or are out of scope)
+      const skipLabels = ['parent', 'bug'];
+      const hasSkipLabel = issue.labels.some((label) =>
+        skipLabels.includes(String(label.name || '').toLowerCase())
+      );
+      if (hasSkipLabel) {
+        console.log(`  Skipping issue #${issue.number} - has skip label (${skipLabels.join(', ')})`);
         continue;
       }
 
@@ -94,7 +97,7 @@ export async function checkIssues(
       // LLM-based content quality checks
       const templateDetection = await detectTemplateOnlyIssue(issue.title, issue.body || '');
       const clarityDetection = await detectUnclearInstructions(issue.title, issue.body || '');
-      
+
       const contentAlerts = validateContentQuality(
         issue,
         owner,
