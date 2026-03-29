@@ -33,16 +33,7 @@ export default defineNuxtConfig({
     },
   },
 
-  postcss: {
-    plugins: {}
-  },
-
   vite: {
-    css: {
-      postcss: {
-        plugins: []
-      }
-    },
     define: {
       // ビルド時に環境変数を確実に注入
       'process.env.NUXT_PUBLIC_API_BASE_URL': JSON.stringify(process.env.NUXT_PUBLIC_API_BASE_URL),
