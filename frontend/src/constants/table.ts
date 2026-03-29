@@ -31,6 +31,9 @@ export const CHECK_TYPE_COLUMNS = [
   // PR category - pull request related issues
   { label: 'PR', key: 'pr', tagSeverity: 'info' },
 
+  // PR ↔ issue link (scheduled check only)
+  { label: 'Not Linked PR', key: 'notLinkedPr', tagSeverity: 'info' },
+
   // Test/Performance category - testing and performance issues
   { label: 'Test', key: 'test', tagSeverity: 'info' },
 ] as const;
@@ -84,6 +87,8 @@ export const CHECK_TYPE_MAPPING = {
     'pr_unclear_changes',
     'pr_review_workflow_missing',
   ],
+
+  notLinkedPr: ['pr_issue_not_linked'],
 
   // Test/Performance category
   test: [

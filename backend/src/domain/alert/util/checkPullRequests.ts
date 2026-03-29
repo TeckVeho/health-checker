@@ -4,7 +4,7 @@
  */
 
 import { checkPullRequests as checkPullRequestsInternal } from './checkPullRequests/index';
-import { CheckPullRequestsResult } from './checkPullRequests/types';
+import { CheckPullRequestsResult, CheckPullRequestsOptions } from './checkPullRequests/types';
 
 /**
  * Main function to check pull requests for various problems
@@ -13,10 +13,15 @@ import { CheckPullRequestsResult } from './checkPullRequests/types';
 export async function checkPullRequests(
   owner: string,
   repo: string,
-  onProgress?: (processed: number, total: number) => void
+  onProgress?: (processed: number, total: number) => void,
+  options?: CheckPullRequestsOptions
 ): Promise<CheckPullRequestsResult> {
-  return await checkPullRequestsInternal(owner, repo, onProgress);
+  return await checkPullRequestsInternal(owner, repo, onProgress, options);
 }
 
 // Re-export types for backward compatibility
-export type { CheckPullRequestsResult, PullRequestAlertCandidate } from './checkPullRequests/types';
+export type {
+  CheckPullRequestsResult,
+  PullRequestAlertCandidate,
+  CheckPullRequestsOptions,
+} from './checkPullRequests/types';

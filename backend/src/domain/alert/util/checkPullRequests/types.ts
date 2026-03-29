@@ -38,6 +38,12 @@ export interface CheckPullRequestsResult {
   alerts: PullRequestAlertCandidate[];
 }
 
+/** Options for `checkPullRequests` */
+export interface CheckPullRequestsOptions {
+  /** When true, include recently closed PRs and run `pr_issue_not_linked` (scheduled/cron runs only). */
+  isScheduledRun?: boolean;
+}
+
 export interface LLMAnalysisResult {
   unclearChanges: boolean;
   missingEvidence: boolean;
