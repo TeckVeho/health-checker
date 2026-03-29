@@ -33,6 +33,7 @@ interface AuthorAggregation {
     prFormatViolation: number;
     prMissingEvidence: number;
     prUnclearChanges: number;
+    prIssueNotLinked: number;
   };
   repositories: string[];
   lastActivityDate: string;

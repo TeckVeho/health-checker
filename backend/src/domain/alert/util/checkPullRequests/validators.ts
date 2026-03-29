@@ -1,8 +1,9 @@
 /**
  * Business rule validation logic for pull requests
  */
-import { GitHubPullRequest, PullRequestAlertCandidate, LLMAnalysisResult } from './types';
+import { GitHubPullRequest, PullRequestAlertCandidate } from './types';
 import { analyzePRWithLLM } from './llm';
+import { getClosingIssuesReferenceCount } from './github';
 
 /**
  * Create an alert candidate with common fields
@@ -80,5 +81,34 @@ export async function validatePRQuality(
     // Continue processing other PRs even if one fails
   }
 
+  return alerts;
+}
+
+/**
+ * PR に Linked issues（closing references）が1件も無い場合にアラート
+ */
+export async function validatePrIssueLinked(
+  pr: GitHubPullRequest,
+  owner: string,
+  repo: string
+): Promise<PullRequestAlertCandidate[]> {
+  const alerts: PullRequestAlertCandidate[] = [];
+  try {
+    const count = await getClosingIssuesReferenceCount(owner, repo, pr.number);
+    if (count === 0) {
+      alerts.push(
+        createAlert(
+          pr,
+          owner,
+          repo,
+          'pr_issue_not_linked',
+          `PR has no linked issues (GitHub linked / closing issue references) PR#${pr.number}`,
+          'middle'
+        )
+      );
+    }
+  } catch (error) {
+    console.error(`❌ Error checking linked issues for PR #${pr.number}:`, error);
+  }
   return alerts;
 }

@@ -222,6 +222,21 @@
             />
           </template>
         </Column>
+
+        <!-- PR Not Linked to Issue -->
+        <Column
+          field="issueTypeCounts.prIssueNotLinked"
+          header="Not Linked PR"
+          :sortable="true"
+          class="text-center min-w-20"
+        >
+          <template #body="{ data: row }">
+            <BaseTag
+              :value="row.issueTypeCounts.prIssueNotLinked || 0"
+              size="small"
+            />
+          </template>
+        </Column>
       </DataTable>
 
       <!-- Pagination -->
