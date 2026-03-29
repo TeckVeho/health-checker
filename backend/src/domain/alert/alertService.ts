@@ -525,9 +525,14 @@ class AlertService {
     return { owner, repo };
   }
 
-  static async processPullRequestAlerts(owner: string, repo: string, processStartTime?: Date): Promise<{ owner: string; repo: string }> {
+  static async processPullRequestAlerts(
+    owner: string,
+    repo: string,
+    processStartTime?: Date,
+    isScheduledRun = false
+  ): Promise<{ owner: string; repo: string }> {
     const timestamp = new Date();
-    const result = await checkPullRequests(owner, repo);
+    const result = await checkPullRequests(owner, repo, undefined, { isScheduledRun });
     const detectedKeySet = new Set<string>();
 
     // Process new alerts
@@ -577,7 +582,11 @@ class AlertService {
       });
     }
 
-    // Resolve old alerts that are no longer detected
+    // Resolve old alerts that are no longer detected (scheduled runのみ pr_issue_not_linked を解消対象に含める)
+    const prQualityCheckTypes: string[] = ['pr_unclear_changes', 'pr_missing_evidence'];
+    if (isScheduledRun) {
+      prQualityCheckTypes.push('pr_issue_not_linked');
+    }
     await Alert.update(
       {
         systemResolved: true,
@@ -588,7 +597,7 @@ class AlertService {
         where: {
           owner,
           repo,
-          checkType: ['pr_unclear_changes', 'pr_missing_evidence'],
+          checkType: prQualityCheckTypes,
           systemResolved: false,
           lastDetectedAt: processStartTime ? { [Op.lt]: processStartTime } : { [Op.lt]: timestamp },
         },
@@ -603,6 +612,8 @@ class AlertService {
       owner: string; 
       repo: string; 
       checks?: string[];
+      /** 定期チェック（cron 等）のとき true。PR↔issue 紐づきチェックはこのときのみ実行 */
+      isScheduledRun?: boolean;
       onProgress?: (progress: {
         currentPhase: string;
         totalPhases: number;
@@ -616,7 +627,7 @@ class AlertService {
       }) => void;
     }
   ): Promise<Record<string, unknown>> {
-    const { owner, repo, checks, onProgress } = options;
+    const { owner, repo, checks, onProgress, isScheduledRun = false } = options;
     const effectiveChecks = checks ?? ['branch', 'clone', 'gitleaks', 'issue', 'pr'];
     const results: Record<string, unknown> = {};
     const totalPhases = effectiveChecks.length;
@@ -687,7 +698,7 @@ class AlertService {
 
     if (effectiveChecks.includes('pr')) {
       updateProgress('Pull Request Analysis', 0);
-      await this.processPullRequestAlerts(owner, repo, processStartTime);
+      await this.processPullRequestAlerts(owner, repo, processStartTime, isScheduledRun);
       updateProgress('Pull Request Analysis', 100);
       results.pr = 'checked';
       currentPhaseIndex++;
@@ -751,7 +762,12 @@ class AlertService {
           continue;
         }
 
-        const result = await this.runAlert({ owner: repoOwner, repo: repoName, checks });
+        const result = await this.runAlert({
+          owner: repoOwner,
+          repo: repoName,
+          checks,
+          isScheduledRun: true,
+        });
         results.push({ repo: repoName, ...result });
       } catch (err) {
         console.error(`❌ Failed to process ${repoName}`, err);
@@ -793,8 +809,16 @@ class AlertService {
     const replacements: (string | number)[] = [];
 
     // Filter for Issue type alerts and PR format violations (author-related issues and PR checks)
-    whereConditions.push('(check_type LIKE ? OR check_type = ? OR check_type = ? OR check_type = ?)');
-    replacements.push('issue_%', 'pull_request_format_violation', 'pr_missing_evidence', 'pr_unclear_changes');
+    whereConditions.push(
+      '(check_type LIKE ? OR check_type = ? OR check_type = ? OR check_type = ? OR check_type = ?)'
+    );
+    replacements.push(
+      'issue_%',
+      'pull_request_format_violation',
+      'pr_missing_evidence',
+      'pr_unclear_changes',
+      'pr_issue_not_linked'
+    );
 
     if (owner) {
       whereConditions.push('owner = ?');
@@ -835,6 +859,7 @@ class AlertService {
         COUNT(CASE WHEN check_type = 'pull_request_format_violation' THEN 1 END) as pr_format_violation_count,
         COUNT(CASE WHEN check_type = 'pr_missing_evidence' THEN 1 END) as pr_missing_evidence_count,
         COUNT(CASE WHEN check_type = 'pr_unclear_changes' THEN 1 END) as pr_unclear_changes_count,
+        COUNT(CASE WHEN check_type = 'pr_issue_not_linked' THEN 1 END) as pr_issue_not_linked_count,
         GROUP_CONCAT(DISTINCT owner || '/' || repo) as repositories,
         MAX(last_detected_at) as last_activity_date
       FROM alerts 
@@ -888,7 +913,8 @@ class AlertService {
         unassigned: parseInt(row.unassigned_count),
         prFormatViolation: parseInt(row.pr_format_violation_count),
         prMissingEvidence: parseInt(row.pr_missing_evidence_count),
-        prUnclearChanges: parseInt(row.pr_unclear_changes_count)
+        prUnclearChanges: parseInt(row.pr_unclear_changes_count),
+        prIssueNotLinked: parseInt(row.pr_issue_not_linked_count)
       },
       repositories: row.repositories ? row.repositories.split(',') : [],
       lastActivityDate: row.last_activity_date
@@ -925,7 +951,8 @@ class AlertService {
           { [Op.like]: 'issue_%' },  // Issue-type alerts
           'pull_request_format_violation',  // PR format violations
           'pr_missing_evidence',  // PR missing evidence
-          'pr_unclear_changes'   // PR unclear changes
+          'pr_unclear_changes',  // PR unclear changes
+          'pr_issue_not_linked'  // PR not linked to an issue
         ]
       }
     };
