@@ -37,3 +37,4 @@ frontend/*.log
 frontend/.vercel/
 frontend/.cache/
 frontend/coverage/
+frontend/package-lock.json

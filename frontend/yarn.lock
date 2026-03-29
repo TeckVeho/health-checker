@@ -1909,7 +1909,7 @@
   resolved "https://registry.yarnpkg.com/@primevue/metadata/-/metadata-4.5.4.tgz#1fee3fbc60ca8c330371a7756cf695d0e680d996"
   integrity sha512-jJFD0KYm8bPYgFo0JP3Dc2RkyXzrMI1XHQGsEKTysx9Jx2d1XdxtFji/ZsQeoo/RmwUNof5ciZ72URq37rnK+g==
 
-"@primevue/nuxt-module@4.5.4":
+"@primevue/nuxt-module@^4.5.4":
   version "4.5.4"
   resolved "https://registry.npmjs.org/@primevue/nuxt-module/-/nuxt-module-4.5.4.tgz#cfca041e2866ca9f01d57ed3e1a659c75d32c599"
   integrity sha512-ckffyeJcBCAVhi5IkiYcpQ8EVoNv0eSZhbxBdU3T5wz5bYgo0jd9dAetMc5D2j+vGLBqcTZQnqy8eTwcN3rZHQ==
