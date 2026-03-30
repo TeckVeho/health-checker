@@ -84,6 +84,15 @@ export async function validatePRQuality(
   return alerts;
 }
 
+/** pr_issue_not_linked から除外する Dependabot 系 PR（タイトル・作者） */
+function shouldSkipPrIssueNotLinkedForDependabot(pr: GitHubPullRequest): boolean {
+  if (pr.title.toLowerCase().includes('dependabot')) {
+    return true;
+  }
+  const login = pr.user.login.toLowerCase();
+  return login === 'dependabot[bot]' || login === 'dependabot';
+}
+
 /**
  * PR に Linked issues（closing references）が1件も無い場合にアラート
  */
@@ -93,6 +102,9 @@ export async function validatePrIssueLinked(
   repo: string
 ): Promise<PullRequestAlertCandidate[]> {
   const alerts: PullRequestAlertCandidate[] = [];
+  if (shouldSkipPrIssueNotLinkedForDependabot(pr)) {
+    return alerts;
+  }
   try {
     const count = await getClosingIssuesReferenceCount(owner, repo, pr.number);
     if (count === 0) {
