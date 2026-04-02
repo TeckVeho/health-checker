@@ -21,6 +21,7 @@ function mapRestPullRequest(pr: {
   html_url: string;
   created_at: string;
   updated_at: string;
+  state: string;
 }): GitHubPullRequest {
   return {
     number: pr.number,
@@ -35,6 +36,7 @@ function mapRestPullRequest(pr: {
     html_url: pr.html_url,
     created_at: pr.created_at,
     updated_at: pr.updated_at,
+    state: pr.state === 'closed' ? 'closed' : 'open',
   };
 }
 

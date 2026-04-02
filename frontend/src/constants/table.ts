@@ -34,6 +34,9 @@ export const CHECK_TYPE_COLUMNS = [
   // PR ↔ issue link (scheduled check only)
   { label: 'Not Linked PR', key: 'notLinkedPr', tagSeverity: 'info' },
 
+  // Dependabot open PRs (author login contains "dependabot")
+  { label: 'Dependabot', key: 'dependabot', tagSeverity: 'info' },
+
   // Test/Performance category - testing and performance issues
   { label: 'Test', key: 'test', tagSeverity: 'info' },
 ] as const;
@@ -89,6 +92,8 @@ export const CHECK_TYPE_MAPPING = {
   ],
 
   notLinkedPr: ['pr_issue_not_linked'],
+
+  dependabot: ['dependabot_open_pr'],
 
   // Test/Performance category
   test: [

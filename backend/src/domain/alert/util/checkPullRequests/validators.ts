@@ -84,13 +84,43 @@ export async function validatePRQuality(
   return alerts;
 }
 
+/** 作成者 login に `dependabot` を含む（大小無視） */
+export function isDependabotAuthor(pr: GitHubPullRequest): boolean {
+  return pr.user.login.toLowerCase().includes('dependabot');
+}
+
 /** pr_issue_not_linked から除外する Dependabot 系 PR（タイトル・作者） */
 function shouldSkipPrIssueNotLinkedForDependabot(pr: GitHubPullRequest): boolean {
   if (pr.title.toLowerCase().includes('dependabot')) {
     return true;
   }
-  const login = pr.user.login.toLowerCase();
-  return login === 'dependabot[bot]' || login === 'dependabot';
+  return isDependabotAuthor(pr);
+}
+
+/**
+ * オープンかつ Dependabot 作成の PR を 1 PR あたり 1 アラートにする（定期・手動の両方）
+ */
+export function validateDependabotOpenPr(
+  pr: GitHubPullRequest,
+  owner: string,
+  repo: string
+): PullRequestAlertCandidate[] {
+  if (pr.state !== 'open') {
+    return [];
+  }
+  if (!isDependabotAuthor(pr)) {
+    return [];
+  }
+  return [
+    createAlert(
+      pr,
+      owner,
+      repo,
+      'dependabot_open_pr',
+      `Open Dependabot PR pending merge/review PR#${pr.number}`,
+      'low'
+    ),
+  ];
 }
 
 /**

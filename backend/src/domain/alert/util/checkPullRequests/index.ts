@@ -9,7 +9,7 @@ import {
   GitHubPullRequest,
 } from './types';
 import { fetchOpenPullRequests, fetchPullRequestsForScheduledCheck } from './github';
-import { validatePRQuality, validatePrIssueLinked } from './validators';
+import { validatePRQuality, validatePrIssueLinked, validateDependabotOpenPr } from './validators';
 
 /**
  * Main function to check pull requests for various problems
@@ -45,6 +45,8 @@ export async function checkPullRequests(
 
       const prAlerts = await validatePRQuality(pr, owner, repo);
       alerts.push(...prAlerts);
+
+      alerts.push(...validateDependabotOpenPr(pr, owner, repo));
 
       if (isScheduledRun) {
         const linkAlerts = await validatePrIssueLinked(pr, owner, repo);

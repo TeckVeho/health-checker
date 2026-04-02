@@ -15,6 +15,8 @@ export interface GitHubPullRequest {
   html_url: string;
   created_at: string;
   updated_at: string;
+  /** REST API `state` — required for open-only checks when mixing open + closed PR lists */
+  state: 'open' | 'closed';
 }
 
 export interface PullRequestAlertCandidate {
