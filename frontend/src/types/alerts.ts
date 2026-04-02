@@ -97,6 +97,12 @@ export const checkTypeLabels: Record<string, string> = {
   pull_request_format_violation: 'Pull Request Format Violation',
   pr_review_workflow_missing: 'PR Review Workflow Missing',
   release_labeling_workflow_missing: 'Release Labeling Workflow Missing',
+
+  // PR quality / linkage
+  pr_issue_not_linked: 'PR Not Linked to Issue',
+  pr_missing_evidence: 'PR Missing Evidence',
+  pr_unclear_changes: 'PR Unclear Changes',
+  dependabot_open_pr: 'Dependabot Open PR',
 };
 
 // Component Props Types

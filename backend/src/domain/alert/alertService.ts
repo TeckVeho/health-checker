@@ -583,7 +583,11 @@ class AlertService {
     }
 
     // Resolve old alerts that are no longer detected (scheduled runのみ pr_issue_not_linked を解消対象に含める)
-    const prQualityCheckTypes: string[] = ['pr_unclear_changes', 'pr_missing_evidence'];
+    const prQualityCheckTypes: string[] = [
+      'pr_unclear_changes',
+      'pr_missing_evidence',
+      'dependabot_open_pr',
+    ];
     if (isScheduledRun) {
       prQualityCheckTypes.push('pr_issue_not_linked');
     }
