@@ -10,30 +10,30 @@ function createSequelizeInstance(): Sequelize {
     return sequelize;
   }
 
-  const DB_NAME = process.env.DB_NAME as string;
-  const DB_USER = process.env.DB_USER as string;
-  const DB_PASSWORD = process.env.DB_PASSWORD as string;
-  const DB_HOST = process.env.DB_HOST || '127.0.0.1';
-  const DB_PORT = Number(process.env.DB_PORT) || 3306;
-  const DB_CLIENT = process.env.DB_CLIENT || 'mysql'; // 'mysql' | 'postgres' | 'sqlite3'
-  const TZ = process.env.TZ || '+09:00';
+  const dbName = process.env.DB_NAME as string;
+  const dbUser = process.env.DB_USER as string;
+  const dbPassword = process.env.DB_PASSWORD as string;
+  const dbHost = process.env.DB_HOST || '127.0.0.1';
+  const dbPort = Number(process.env.DB_PORT) || 3306;
+  const dbClient = process.env.DB_CLIENT || 'mysql'; // 'mysql' | 'postgres' | 'sqlite3'
+  const tz = process.env.TZ || '+09:00';
 
-  process.env.TZ = TZ;
+  process.env.TZ = tz;
 
-  console.log(`[Database] Creating Sequelize instance with DB_USER: ${DB_USER}, DB_HOST: ${DB_HOST}, DB_NAME: ${DB_NAME}`);
+  console.log(`[Database] Creating Sequelize instance with DB_USER: ${dbUser}, DB_HOST: ${dbHost}, DB_NAME: ${dbName}`);
 
-  if (DB_CLIENT === 'sqlite3') {
+  if (dbClient === 'sqlite3') {
     sequelize = new Sequelize({
       dialect: 'sqlite',
       storage: process.env.DB_FILE === ':memory:' ? ':memory:' : path.resolve(__dirname, process.env.DB_FILE || 'database.sqlite'),
       logging: false,
     });
-  } else if (DB_CLIENT === 'postgres') {
-    sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
-      host: DB_HOST,
-      port: DB_PORT || 5432,
+  } else if (dbClient === 'postgres') {
+    sequelize = new Sequelize(dbName, dbUser, dbPassword, {
+      host: dbHost,
+      port: dbPort || 5432,
       dialect: 'postgres',
-      timezone: TZ,
+      timezone: tz,
       pool: {
         max: 10,
         min: 0,
@@ -44,11 +44,11 @@ function createSequelizeInstance(): Sequelize {
     });
   } else {
     // default: mysql
-    sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
-      host: DB_HOST,
-      port: DB_PORT,
+    sequelize = new Sequelize(dbName, dbUser, dbPassword, {
+      host: dbHost,
+      port: dbPort,
       dialect: 'mysql',
-      timezone: TZ,
+      timezone: tz,
       pool: {
         max: 10,
         min: 0,

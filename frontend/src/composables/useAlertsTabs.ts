@@ -6,7 +6,7 @@ type AlertsTabValue = 'active' | 'resolved';
 interface TabState {
   sortField?: string;
   sortOrder?: 'asc' | 'desc';
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
   currentPage?: number;
   pageSize?: number;
 }

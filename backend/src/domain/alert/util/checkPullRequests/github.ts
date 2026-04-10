@@ -2,6 +2,7 @@
  * GitHub API operations for pull request data
  */
 import { Octokit } from '@octokit/rest';
+import type { RestEndpointMethodTypes } from '@octokit/rest';
 import { subDays } from 'date-fns';
 import { GitHubPullRequest } from './types';
 
@@ -12,17 +13,11 @@ const octokit = new Octokit({
   auth: githubToken,
 });
 
-function mapRestPullRequest(pr: {
-  number: number;
-  title: string;
-  body: string | null;
-  user: { login?: string | null } | null;
-  head: { ref: string };
-  html_url: string;
-  created_at: string;
-  updated_at: string;
-  state: string;
-}): GitHubPullRequest {
+type RestPullFromApi =
+  | RestEndpointMethodTypes['pulls']['list']['response']['data'][number]
+  | RestEndpointMethodTypes['pulls']['get']['response']['data'];
+
+function mapRestPullRequest(pr: RestPullFromApi): GitHubPullRequest {
   return {
     number: pr.number,
     title: pr.title,
@@ -33,9 +28,9 @@ function mapRestPullRequest(pr: {
     head: {
       ref: pr.head.ref,
     },
-    html_url: pr.html_url,
-    created_at: pr.created_at,
-    updated_at: pr.updated_at,
+    htmlUrl: pr.html_url,
+    createdAt: pr.created_at,
+    updatedAt: pr.updated_at,
     state: pr.state === 'closed' ? 'closed' : 'open',
   };
 }
@@ -47,6 +42,7 @@ export async function fetchOpenPullRequests(owner: string, repo: string): Promis
   console.log(`  Fetching open pull requests for ${owner}/${repo}...`);
 
   try {
+    /* eslint-disable @typescript-eslint/naming-convention -- GitHub REST query/body keys (per_page) */
     const response = await octokit.pulls.list({
       owner,
       repo,
@@ -55,6 +51,7 @@ export async function fetchOpenPullRequests(owner: string, repo: string): Promis
       direction: 'desc',
       per_page: 100, // GitHub API limit
     });
+    /* eslint-enable @typescript-eslint/naming-convention */
 
     const pullRequests: GitHubPullRequest[] = response.data.map(mapRestPullRequest);
 
@@ -84,6 +81,7 @@ export async function fetchRecentlyClosedPullRequestsCreatedWithin(
 
   try {
     while (true) {
+      /* eslint-disable @typescript-eslint/naming-convention -- GitHub REST query keys */
       const response = await octokit.pulls.list({
         owner,
         repo,
@@ -93,6 +91,7 @@ export async function fetchRecentlyClosedPullRequestsCreatedWithin(
         per_page: perPage,
         page,
       });
+      /* eslint-enable @typescript-eslint/naming-convention */
 
       if (response.data.length === 0) {
         break;
@@ -183,11 +182,13 @@ export async function getClosingIssuesReferenceCount(owner: string, repo: string
  */
 export async function getPullRequestDetails(owner: string, repo: string, prNumber: number): Promise<GitHubPullRequest | null> {
   try {
+    /* eslint-disable @typescript-eslint/naming-convention -- GitHub REST path/body keys */
     const response = await octokit.pulls.get({
       owner,
       repo,
       pull_number: prNumber,
     });
+    /* eslint-enable @typescript-eslint/naming-convention */
 
     const pr = response.data;
     return mapRestPullRequest(pr);
