@@ -20,7 +20,9 @@
     "repo:sync": "ts-node -r tsconfig-paths/register src/commands/syncRepos.ts",
     "alert": "ts-node -r tsconfig-paths/register src/commands/alertRunner.ts",
     "project:setsp": "ts-node -r tsconfig-paths/register src/commands/projectSetSp.ts",
-    "checkIssues": "ts-node -r tsconfig-paths/register src/commands/checkIssues.ts"
+    "checkIssues": "ts-node -r tsconfig-paths/register src/commands/checkIssues.ts",
+    "org:package-versions": "ts-node -r tsconfig-paths/register src/commands/orgPackageVersionsCsv.ts",
+    "dedupe:package-versions-csv": "ts-node -r tsconfig-paths/register src/commands/dedupePackageVersionsCsv.ts"
   },
   "keywords": [],
   "author": "",
@@ -31,6 +33,7 @@
     "@octokit/graphql": "^9.0.1",
     "@octokit/plugin-rest-endpoint-methods": "^16.0.0",
     "@octokit/rest": "^22.0.0",
+    "@yarnpkg/lockfile": "^1.1.0",
     "ai": "^4.3.16",
     "bcrypt": "^5.1.1",
     "better-sqlite3": "^11.10.0",
