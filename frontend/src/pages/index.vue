@@ -73,6 +73,10 @@
 
 <script setup lang="ts">
 import { onMounted, computed } from 'vue';
+
+useHead({
+  title: 'Dashboard · Github Health Checker',
+});
 import { useRepoHealth } from '@/composables/useRepoHealth';
 import { useCheckTypeAlerts } from '@/composables/useCheckTypeAlerts';
 import { useTabState } from '@/composables/useTabState';
