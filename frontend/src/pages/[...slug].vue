@@ -145,6 +145,14 @@ const toast = useCustomToast();
 // Use route params composable
 const { owner, repo, hasValidParams } = useRouteParams();
 
+useHead({
+  title: computed(() =>
+    owner.value && repo.value
+      ? `${owner.value}/${repo.value} · Github Health Checker`
+      : 'Github Health Checker'
+  ),
+});
+
 // Use the alerts composable
 const {
   loading,

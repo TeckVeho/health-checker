@@ -28,7 +28,7 @@ function createAlert(
     lineNumber: -1,
     codeSnippet: '',
     branch: pr.head.ref,
-    issueUrl: pr.html_url,
+    issueUrl: pr.htmlUrl,
   };
 }
 

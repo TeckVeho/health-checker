@@ -16,6 +16,12 @@ export default defineNuxtConfig({
   css: ["primeicons/primeicons.css"],
   ssr: false,
 
+  app: {
+    head: {
+      title: "Github Health Checker",
+    },
+  },
+
   primevue: {
     options: {
       theme: {

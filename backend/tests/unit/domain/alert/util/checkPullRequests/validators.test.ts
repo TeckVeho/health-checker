@@ -15,9 +15,9 @@ function basePr(overrides: Partial<GitHubPullRequest> = {}): GitHubPullRequest {
     body: 'body',
     user: { login: 'dependabot[bot]' },
     head: { ref: 'dependabot/npm-foo' },
-    html_url: 'https://github.com/o/r/pull/1',
-    created_at: '2025-01-01T00:00:00Z',
-    updated_at: '2025-01-01T00:00:00Z',
+    htmlUrl: 'https://github.com/o/r/pull/1',
+    createdAt: '2025-01-01T00:00:00Z',
+    updatedAt: '2025-01-01T00:00:00Z',
     state: 'open',
     ...overrides,
   };

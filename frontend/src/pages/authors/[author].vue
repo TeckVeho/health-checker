@@ -290,9 +290,8 @@ onMounted(() => {
   fetchData();
 });
 
-// Set page title
 useHead({
-  title: `${author} - Author Details`,
+  title: `${author} · Github Health Checker`,
 });
 </script>
 
