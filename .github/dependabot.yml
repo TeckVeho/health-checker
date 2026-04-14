@@ -2,7 +2,9 @@ version: 2
 
 updates:
   # =====================================
-  # Frontend (React / Vue - npm)
+  # Frontend (npm)
+  # - minor / patch は grouped
+  # - major は group に入れず個別 PR
   # =====================================
   - package-ecosystem: "npm"
     directory: "/frontend"
@@ -12,16 +14,24 @@ updates:
       time: "04:00"
       timezone: "Asia/Tokyo"
     groups:
-      production-dependencies:
-        dependency-type: production
-      development-dependencies:
-        dependency-type: development
+      frontend-production-non-major:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      frontend-development-non-major:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "frontend"
 
   # =====================================
-  # Backend (Node.js - npm)
+  # Backend (npm)
+  # - minor / patch は grouped
+  # - major は group に入れず個別 PR
   # =====================================
   - package-ecosystem: "npm"
     directory: "/backend"
@@ -31,16 +41,24 @@ updates:
       time: "04:00"
       timezone: "Asia/Tokyo"
     groups:
-      production-dependencies:
-        dependency-type: production
-      development-dependencies:
-        dependency-type: development
+      backend-production-non-major:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      backend-development-non-major:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "backend"
 
   # =====================================
   # GitHub Actions
+  # - minor / patch は grouped
+  # - major は group に入れず個別 PR
   # =====================================
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -50,9 +68,13 @@ updates:
       time: "04:00"
       timezone: "Asia/Tokyo"
     groups:
-      actions:
+      github-actions-non-major:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "ci"
+      - "other"
