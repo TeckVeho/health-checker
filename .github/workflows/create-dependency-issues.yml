@@ -1,0 +1,274 @@
+name: Create dependency issues
+
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+      timezone: "Asia/Tokyo"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: write
+
+jobs:
+  create-dependency-issues:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create issues from open Dependabot PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const IMPORTANT_PACKAGES = new Map([
+              ['node', 'Node.js'],
+              ['@types/node', 'Node.js'],
+              ['php', 'PHP'],
+              ['typescript', 'TypeScript'],
+              ['react', 'React'],
+              ['next', 'Next.js'],
+              ['vue', 'Vue.js'],
+              ['nuxt', 'Nuxt.js'],
+              ['nuxt3', 'Nuxt.js'],
+              ['react-native', 'React Native'],
+              ['expo', 'Expo SDK'],
+              ['vuetify', 'Vuetify'],
+              ['element-plus', 'element-plus'],
+              ['laravel/framework', 'Laravel'],
+              ['express', 'Express'],
+              ['@nestjs/core', 'NestJS'],
+              ['@nestjs/common', 'NestJS'],
+              ['vite', 'Vite'],
+              ['webpack', 'webpack'],
+              ['axios', 'axios'],
+            ]);
+
+            function getLabels(pr) {
+              return (pr.labels || []).map(label => label.name);
+            }
+
+            function getCategory(pr) {
+              const labels = getLabels(pr);
+              if (labels.includes('frontend')) return 'frontend';
+              if (labels.includes('backend')) return 'backend';
+              return 'other';
+            }
+
+            function parsePackageName(title) {
+              // Examples:
+              // Bump react from 18.2.0 to 19.0.0 in /frontend
+              // Bump @nestjs/core from 10.0.0 to 11.0.0 in /backend
+              const match = title.match(/^Bump\s+(.+?)\s+from\s+/i);
+              return match ? match[1].trim() : null;
+            }
+
+            function parseVersions(title) {
+              // Extract only the first numeric component for major comparison.
+              const match = title.match(/from\s+v?(\d+)(?:\.[^\s]*)?\s+to\s+v?(\d+)(?:\.[^\s]*)?/i);
+              if (!match) return null;
+
+              return {
+                fromMajor: Number(match[1]),
+                toMajor: Number(match[2]),
+              };
+            }
+
+            function isMajorUpdate(pr) {
+              const versions = parseVersions(pr.title || '');
+              if (!versions) return false;
+              return versions.toMajor > versions.fromMajor;
+            }
+
+            function isDependabotPR(pr) {
+              return pr.user?.login === 'dependabot[bot]';
+            }
+
+            async function listOpenDependabotPRs() {
+              const pulls = await github.paginate(github.rest.pulls.list, {
+                owner,
+                repo,
+                state: 'open',
+                per_page: 100,
+              });
+
+              return pulls.filter(isDependabotPR);
+            }
+
+            async function listOpenIssues() {
+              const issues = await github.paginate(github.rest.issues.listForRepo, {
+                owner,
+                repo,
+                state: 'open',
+                per_page: 100,
+              });
+
+              // Exclude pull requests because the Issues API also returns PRs.
+              return issues.filter(issue => !issue.pull_request);
+            }
+
+            async function openIssueExists(title, openIssues) {
+              return openIssues.some(issue => issue.title === title);
+            }
+
+            async function createIssueIfNeeded({ title, body, labels, openIssues }) {
+              if (await openIssueExists(title, openIssues)) {
+                core.info(`Skip creating issue because it already exists: ${title}`);
+                return;
+              }
+
+              await github.rest.issues.create({
+                owner,
+                repo,
+                title,
+                body,
+                labels,
+              });
+
+              core.info(`Created issue: ${title}`);
+            }
+
+            function buildIssueBody(header, prs) {
+              const lines = [
+                header,
+                '',
+                'Open Dependabot PRs:',
+                ...prs.map(pr => `- #${pr.number} ${pr.title}`),
+              ];
+
+              return lines.join('\n');
+            }
+
+            const prs = await listOpenDependabotPRs();
+            const openIssues = await listOpenIssues();
+
+            const buckets = {
+              frontend: { normal: [], majorBulk: [], majorImportant: new Map() },
+              backend: { normal: [], majorBulk: [], majorImportant: new Map() },
+              other: { normal: [], majorBulk: [], majorImportant: new Map() },
+            };
+
+            for (const pr of prs) {
+              const category = getCategory(pr);
+              const packageName = parsePackageName(pr.title || '');
+              const major = isMajorUpdate(pr);
+
+              if (!major) {
+                buckets[category].normal.push(pr);
+                continue;
+              }
+
+              if (packageName && IMPORTANT_PACKAGES.has(packageName)) {
+                const displayName = IMPORTANT_PACKAGES.get(packageName);
+
+                if (!buckets[category].majorImportant.has(displayName)) {
+                  buckets[category].majorImportant.set(displayName, []);
+                }
+
+                buckets[category].majorImportant.get(displayName).push(pr);
+              } else {
+                buckets[category].majorBulk.push(pr);
+              }
+            }
+
+            const normalIssueConfigs = [
+              {
+                title: 'Dependency updates: frontend',
+                labels: ['dependencies', 'frontend'],
+                prs: buckets.frontend.normal,
+              },
+              {
+                title: 'Dependency updates: backend',
+                labels: ['dependencies', 'backend'],
+                prs: buckets.backend.normal,
+              },
+              {
+                title: 'Dependency updates: other',
+                labels: ['dependencies', 'other'],
+                prs: buckets.other.normal,
+              },
+            ];
+
+            for (const config of normalIssueConfigs) {
+              if (config.prs.length === 0) continue;
+
+              await createIssueIfNeeded({
+                title: config.title,
+                labels: config.labels,
+                body: buildIssueBody(
+                  'This issue was automatically created for non-major dependency update PRs.',
+                  config.prs
+                ),
+                openIssues,
+              });
+            }
+
+            const majorBulkIssueConfigs = [
+              {
+                title: 'Major dependency updates: frontend',
+                labels: ['dependencies', 'frontend', 'major-update'],
+                prs: buckets.frontend.majorBulk,
+              },
+              {
+                title: 'Major dependency updates: backend',
+                labels: ['dependencies', 'backend', 'major-update'],
+                prs: buckets.backend.majorBulk,
+              },
+              {
+                title: 'Major dependency updates: other',
+                labels: ['dependencies', 'other', 'major-update'],
+                prs: buckets.other.majorBulk,
+              },
+            ];
+
+            for (const config of majorBulkIssueConfigs) {
+              if (config.prs.length === 0) continue;
+
+              await createIssueIfNeeded({
+                title: config.title,
+                labels: config.labels,
+                body: buildIssueBody(
+                  'This issue was automatically created for major dependency update PRs that are not in the important package list.',
+                  config.prs
+                ),
+                openIssues,
+              });
+            }
+
+            for (const [displayName, importantPRs] of buckets.frontend.majorImportant.entries()) {
+              await createIssueIfNeeded({
+                title: `Major dependency update: ${displayName} (frontend)`,
+                labels: ['dependencies', 'frontend', 'major-update'],
+                body: buildIssueBody(
+                  `This issue was automatically created for an important major dependency update: ${displayName}.`,
+                  importantPRs
+                ),
+                openIssues,
+              });
+            }
+
+            for (const [displayName, importantPRs] of buckets.backend.majorImportant.entries()) {
+              await createIssueIfNeeded({
+                title: `Major dependency update: ${displayName} (backend)`,
+                labels: ['dependencies', 'backend', 'major-update'],
+                body: buildIssueBody(
+                  `This issue was automatically created for an important major dependency update: ${displayName}.`,
+                  importantPRs
+                ),
+                openIssues,
+              });
+            }
+
+            for (const [displayName, importantPRs] of buckets.other.majorImportant.entries()) {
+              await createIssueIfNeeded({
+                title: `Major dependency update: ${displayName} (other)`,
+                labels: ['dependencies', 'other', 'major-update'],
+                body: buildIssueBody(
+                  `This issue was automatically created for an important major dependency update: ${displayName}.`,
+                  importantPRs
+                ),
+                openIssues,
+              });
+            }
