@@ -35,7 +35,7 @@
     "@octokit/rest": "^22.0.0",
     "@yarnpkg/lockfile": "^1.1.0",
     "ai": "^4.3.16",
-    "bcrypt": "^5.1.1",
+    "bcrypt": "^6.0.0",
     "better-sqlite3": "^11.10.0",
     "cliui": "6.0.0",
     "cookie-parser": "^1.4.7",
@@ -54,7 +54,7 @@
   },
   "devDependencies": {
     "@cucumber/cucumber": "^11.0.1",
-    "@types/bcrypt": "^5.0.2",
+    "@types/bcrypt": "^6.0.0",
     "@types/chai": "^5.0.1",
     "@types/cookie-parser": "^1.4.7",
     "@types/cors": "^2.8.18",
