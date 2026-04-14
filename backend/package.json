@@ -37,7 +37,7 @@
     "ai": "^4.3.16",
     "bcrypt": "^5.1.1",
     "better-sqlite3": "^11.10.0",
-    "cliui": "6.0.0",
+    "cliui": "9.0.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
