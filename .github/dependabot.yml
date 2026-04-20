@@ -1,38 +1,6 @@
 version: 2
 
 updates:
-  # =====================================
-  # Frontend (npm)
-  # - Group minor and patch updates
-  # - Leave major updates as individual PRs
-  # =====================================
-  - package-ecosystem: "npm"
-    directory: "/frontend"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "04:00"
-      timezone: "Asia/Tokyo"
-    groups:
-      frontend-production-non-major:
-        dependency-type: "production"
-        update-types:
-          - "minor"
-          - "patch"
-      frontend-development-non-major:
-        dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
-    labels:
-      - "dependencies"
-      - "frontend"
-
-  # =====================================
-  # Backend (npm)
-  # - Group minor and patch updates
-  # - Leave major updates as individual PRs
-  # =====================================
   - package-ecosystem: "npm"
     directory: "/backend"
     schedule:
@@ -41,40 +9,41 @@ updates:
       time: "04:00"
       timezone: "Asia/Tokyo"
     groups:
-      backend-production-non-major:
+      production-updates:
         dependency-type: "production"
         update-types:
+          - "major"
           - "minor"
           - "patch"
-      backend-development-non-major:
+      development-updates:
         dependency-type: "development"
         update-types:
+          - "major"
           - "minor"
           - "patch"
     labels:
       - "dependencies"
-      - "backend"
-
-  # =====================================
-  # GitHub Actions
-  # - Group minor and patch updates
-  # - Leave major updates as individual PRs
-  # =====================================
-  - package-ecosystem: "github-actions"
-    directory: "/"
+      - "npm-backend"
+  - package-ecosystem: "npm"
+    directory: "/frontend"
     schedule:
       interval: "weekly"
       day: "monday"
       time: "04:00"
       timezone: "Asia/Tokyo"
     groups:
-      github-actions-non-major:
-        patterns:
-          - "*"
+      production-updates:
+        dependency-type: "production"
         update-types:
+          - "major"
+          - "minor"
+          - "patch"
+      development-updates:
+        dependency-type: "development"
+        update-types:
+          - "major"
           - "minor"
           - "patch"
     labels:
       - "dependencies"
-      - "ci"
-      - "other"
+      - "npm-frontend"
