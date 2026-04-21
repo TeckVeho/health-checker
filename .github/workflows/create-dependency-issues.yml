@@ -2,7 +2,7 @@ name: Create dependency issues
 
 on:
   schedule:
-    - cron: "0 5 * * 1"
+    - cron: "0 7 * * 1"
       timezone: "Asia/Tokyo"
   workflow_dispatch:
 
@@ -23,10 +23,32 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
 
+            // Keys align with IMPORTANT_PACKAGES_BY_ECOSYSTEM in pushDependabotFromCsv.ts (exclude-patterns / issue bucketing).
+            // Omit "node" and "php" — not reliable Dependabot dependency names for this map.
+            const ISSUE_INSTRUCTIONS_EN = [
+              'Please address the Dependabot PRs listed in this issue.',
+              '',
+              '**Goal:**',
+              'Safely incorporate dependency update PRs and merge those that pass verification without issues.',
+              '',
+              '**Steps:**',
+              '- Review the PR list in this issue body',
+              '- For each PR, review the diff, what is being updated, and the scope of impact',
+              '- Bring related PRs into your local workspace in appropriate groupings',
+              '- Run build / lint / test and verify the results',
+              '- If something fails, narrow down which PR caused the problem',
+              '- Merge problem-free PRs on the remote and close them',
+              '- If you defer any PR, document the reason',
+              '',
+              '**Notes:**',
+              '- Do not merge all PRs in a single bulk merge',
+              '- Always review grouped PRs carefully',
+              '- Treat high-impact updates with extra care',
+              '- It is acceptable to address only a subset when appropriate',
+            ].join('\n');
+
             const IMPORTANT_PACKAGES = new Map([
-              ['node', 'Node.js'],
               ['@types/node', 'Node.js'],
-              ['php', 'PHP'],
               ['typescript', 'TypeScript'],
               ['react', 'React'],
               ['next', 'Next.js'],
@@ -37,21 +59,26 @@ jobs:
               ['expo', 'Expo SDK'],
               ['vuetify', 'Vuetify'],
               ['element-plus', 'element-plus'],
-              ['laravel/framework', 'Laravel'],
               ['express', 'Express'],
               ['@nestjs/core', 'NestJS'],
               ['@nestjs/common', 'NestJS'],
               ['vite', 'Vite'],
               ['webpack', 'webpack'],
               ['axios', 'axios'],
+              ['laravel/framework', 'Laravel'],
             ]);
 
             function getLabels(pr) {
               return (pr.labels || []).map(label => label.name);
             }
 
+            /**
+             * Scope tags from pushDependabotFromCsv-generated dependabot.yml:
+             * root npm -> frontend, root composer -> backend; subdirs may add frontend | backend | e2e | other.
+             */
             function getCategory(pr) {
               const labels = getLabels(pr);
+              if (labels.includes('e2e')) return 'e2e';
               if (labels.includes('frontend')) return 'frontend';
               if (labels.includes('backend')) return 'backend';
               return 'other';
@@ -76,10 +103,24 @@ jobs:
               };
             }
 
+            /**
+             * Primary: parse the PR title for a semver major bump (current generator does not put bump type on PR labels).
+             * Fallback only: major-update / minor-update / patch-update for older repos or hand-written dependabot.yml
+             * when the title does not match the single-package "Bump X from ... to ..." pattern (e.g. some grouped PRs).
+             */
             function isMajorUpdate(pr) {
-              const versions = parseVersions(pr.title || '');
-              if (!versions) return false;
-              return versions.toMajor > versions.fromMajor;
+              const labels = getLabels(pr);
+              const title = pr.title || '';
+
+              const versions = parseVersions(title);
+              if (versions !== null) {
+                return versions.toMajor > versions.fromMajor;
+              }
+
+              if (labels.includes('major-update')) return true;
+              if (labels.includes('minor-update') || labels.includes('patch-update')) return false;
+
+              return false;
             }
 
             function isDependabotPR(pr) {
@@ -132,6 +173,8 @@ jobs:
 
             function buildIssueBody(header, prs) {
               const lines = [
+                ISSUE_INSTRUCTIONS_EN,
+                '',
                 header,
                 '',
                 'Open Dependabot PRs:',
@@ -147,6 +190,7 @@ jobs:
             const buckets = {
               frontend: { normal: [], majorBulk: [], majorImportant: new Map() },
               backend: { normal: [], majorBulk: [], majorImportant: new Map() },
+              e2e: { normal: [], majorBulk: [], majorImportant: new Map() },
               other: { normal: [], majorBulk: [], majorImportant: new Map() },
             };
 
@@ -185,6 +229,11 @@ jobs:
                 prs: buckets.backend.normal,
               },
               {
+                title: 'Dependency updates: e2e',
+                labels: ['dependencies', 'e2e'],
+                prs: buckets.e2e.normal,
+              },
+              {
                 title: 'Dependency updates: other',
                 labels: ['dependencies', 'other'],
                 prs: buckets.other.normal,
@@ -215,6 +264,11 @@ jobs:
                 title: 'Major dependency updates: backend',
                 labels: ['dependencies', 'backend', 'major-update'],
                 prs: buckets.backend.majorBulk,
+              },
+              {
+                title: 'Major dependency updates: e2e',
+                labels: ['dependencies', 'e2e', 'major-update'],
+                prs: buckets.e2e.majorBulk,
               },
               {
                 title: 'Major dependency updates: other',
@@ -253,6 +307,18 @@ jobs:
               await createIssueIfNeeded({
                 title: `Major dependency update: ${displayName} (backend)`,
                 labels: ['dependencies', 'backend', 'major-update'],
+                body: buildIssueBody(
+                  `This issue was automatically created for an important major dependency update: ${displayName}.`,
+                  importantPRs
+                ),
+                openIssues,
+              });
+            }
+
+            for (const [displayName, importantPRs] of buckets.e2e.majorImportant.entries()) {
+              await createIssueIfNeeded({
+                title: `Major dependency update: ${displayName} (e2e)`,
+                labels: ['dependencies', 'e2e', 'major-update'],
                 body: buildIssueBody(
                   `This issue was automatically created for an important major dependency update: ${displayName}.`,
                   importantPRs
