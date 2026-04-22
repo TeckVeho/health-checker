@@ -146,22 +146,98 @@ export async function fetchPullRequestsForScheduledCheck(owner: string, repo: st
 }
 
 /**
- * Count GitHub "closing issues" references (Linked issues / development references) for a PR.
+ * GitHub のクローズキーワードを本文から抽出する（.github/workflows/pr-policy-check.yml と同じ正規表現）。
+ * GraphQL の closingIssuesReferences はクロスリポジトリを返さない場合があるため、ワークフローと同様に本文も見る。
+ *
+ * @see https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue
  */
-export async function getClosingIssuesReferenceCount(owner: string, repo: string, prNumber: number): Promise<number> {
-  const response = await octokit.graphql<{
-    repository: {
-      pullRequest: {
-        closingIssuesReferences: { totalCount: number };
+export function parseClosingReferencesFromBody(text: string, owner: string, repo: string): Set<string> {
+  const refs = new Set<string>();
+  const keyword = '(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)';
+
+  const crossRepo = new RegExp(`\\b${keyword}\\s+([\\w.-]+\\/[\\w.-]+)#(\\d+)\\b`, 'gi');
+  let match: RegExpExecArray | null;
+  while ((match = crossRepo.exec(text)) !== null) {
+    refs.add(`${match[1]}#${match[2]}`);
+  }
+
+  const issueUrl = new RegExp(
+    `\\b${keyword}\\s+https?://github\\.com/([\\w.-]+/[\\w.-]+)/(?:issues|pull)/(\\d+)\\b`,
+    'gi'
+  );
+  while ((match = issueUrl.exec(text)) !== null) {
+    refs.add(`${match[1]}#${match[2]}`);
+  }
+
+  const sameRepoHash = new RegExp(`\\b${keyword}\\s+#(\\d+)\\b`, 'gi');
+  while ((match = sameRepoHash.exec(text)) !== null) {
+    refs.add(`${owner}/${repo}#${match[1]}`);
+  }
+
+  const sameRepoGh = new RegExp(`\\b${keyword}\\s+GH-(\\d+)\\b`, 'gi');
+  while ((match = sameRepoGh.exec(text)) !== null) {
+    refs.add(`${owner}/${repo}#${match[1]}`);
+  }
+
+  return refs;
+}
+
+/* GraphQL 標準フィールド __typename — naming-convention 対象外 */
+/* eslint-disable @typescript-eslint/naming-convention */
+type PullRequestIssueLinkQueryResult = {
+  repository: {
+    pullRequest: {
+      closingIssuesReferences: { nodes: Array<{ number?: number } | null> | null } | null;
+      timelineItems: {
+        nodes: Array<{
+          __typename?: string;
+          subject?: { __typename?: string; number?: number };
+        } | null> | null;
       } | null;
     } | null;
-  }>(
+  } | null;
+};
+/* eslint-enable @typescript-eslint/naming-convention */
+
+/**
+ * PR ポリシー（pr-policy-check.yml）と同条件で、リンク済み issue 相当とみなせるか。
+ * - closingIssuesReferences（キーワードリンク）
+ * - timeline CONNECTED_EVENT（サイドバー手動リンク）
+ * - 上記が無くても本文にクローズキーワード＋ issue 参照があれば可
+ */
+export async function prHasLinkedIssuePerPolicy(
+  owner: string,
+  repo: string,
+  prNumber: number,
+  body: string | null
+): Promise<boolean> {
+  const normalizedBody = (body ?? '').replace(/\r\n/g, '\n').trim();
+  if (parseClosingReferencesFromBody(normalizedBody, owner, repo).size > 0) {
+    return true;
+  }
+
+  const response = await octokit.graphql<PullRequestIssueLinkQueryResult>(
     `
-    query GetClosingIssuesRefCount($owner: String!, $repo: String!, $prNumber: Int!) {
+    query PrIssueLinkPolicy($owner: String!, $repo: String!, $prNumber: Int!) {
       repository(owner: $owner, name: $repo) {
         pullRequest(number: $prNumber) {
-          closingIssuesReferences(first: 1) {
-            totalCount
+          closingIssuesReferences(first: 20) {
+            nodes {
+              number
+            }
+          }
+          timelineItems(first: 100, itemTypes: [CONNECTED_EVENT]) {
+            nodes {
+              __typename
+              ... on ConnectedEvent {
+                subject {
+                  __typename
+                  ... on Issue {
+                    number
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -170,11 +246,28 @@ export async function getClosingIssuesReferenceCount(owner: string, repo: string
     { owner, repo, prNumber }
   );
 
-  const pr = response.repository?.pullRequest;
-  if (!pr) {
-    return 0;
+  const prNode = response.repository?.pullRequest;
+  if (!prNode) {
+    return false;
   }
-  return pr.closingIssuesReferences?.totalCount ?? 0;
+
+  const linkedIssueNumbers = new Set<number>();
+  for (const issue of prNode.closingIssuesReferences?.nodes ?? []) {
+    if (issue?.number != null) {
+      linkedIssueNumbers.add(issue.number);
+    }
+  }
+  for (const node of prNode.timelineItems?.nodes ?? []) {
+    if (
+      node?.__typename === 'ConnectedEvent' &&
+      node.subject?.__typename === 'Issue' &&
+      node.subject.number != null
+    ) {
+      linkedIssueNumbers.add(node.subject.number);
+    }
+  }
+
+  return linkedIssueNumbers.size > 0;
 }
 
 /**
