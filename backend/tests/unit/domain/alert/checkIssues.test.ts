@@ -11,6 +11,7 @@ const mockOctokit = {
 };
 
 jest.mock('@octokit/rest', () => ({
+  __esModule: true,
   Octokit: jest.fn().mockImplementation(() => mockOctokit),
 }));
 

@@ -4,14 +4,15 @@ import AlertService from '../../../../src/domain/alert/alertService';
 import getMessage from '../../../../src/utils/message';
 
 // Mock database configuration to prevent connection attempts
-jest.mock('../../../../src/config/database', () => ({
-  __esModule: true,
-  default: {
+jest.mock('../../../../src/config/database', () => {
+  const mockSequelize = {
     sync: jest.fn().mockResolvedValue(undefined),
     close: jest.fn().mockResolvedValue(undefined),
     authenticate: jest.fn().mockResolvedValue(undefined),
-  },
-}));
+  };
+  const createSequelizeInstance = jest.fn(() => mockSequelize);
+  return { __esModule: true, default: createSequelizeInstance, createSequelizeInstance };
+});
 
 // Mock dependencies
 jest.mock('../../../../src/domain/alert/alertService');

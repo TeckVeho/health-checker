@@ -9,8 +9,15 @@ jest.mock('../../../../../src/domain/alert/alertService', () => ({
   resolveUndetectedAlerts: jest.fn().mockResolvedValue(undefined),
 }));
 
-// Mock the database
-jest.mock('../../../../../src/config/database', () => ({}));
+// Mock the database (default export must be createSequelizeInstance)
+jest.mock('../../../../../src/config/database', () => {
+  const mockSequelize = {
+    sync: jest.fn().mockResolvedValue(undefined),
+    define: jest.fn().mockReturnValue({}),
+  };
+  const createSequelizeInstance = jest.fn(() => mockSequelize);
+  return { __esModule: true, default: createSequelizeInstance, createSequelizeInstance };
+});
 
 describe('GitleaksScanner', () => {
   const testWorkspace = path.join(__dirname, 'test-workspace');

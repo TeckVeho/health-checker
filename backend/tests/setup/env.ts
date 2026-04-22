@@ -5,10 +5,9 @@ process.env.OPENAI_API_KEY = 'test-dummy-openai-key';
 process.env.TZ = '+09:00';
 process.env.GITHUB_LOCAL_WORKSPACE = '/tmp/test-workspace';
 
-// データベースを使わないようにモック化
-jest.mock('../../src/config/database', () => ({
-  __esModule: true,
-  default: {
+// データベースを使わないようにモック化（default は createSequelizeInstance ファクトリ）
+jest.mock('../../src/config/database', () => {
+  const mockSequelize = {
     sync: jest.fn().mockResolvedValue(undefined),
     close: jest.fn().mockResolvedValue(undefined),
     authenticate: jest.fn().mockResolvedValue(undefined),
@@ -23,8 +22,14 @@ jest.mock('../../src/config/database', () => ({
       count: jest.fn().mockResolvedValue(0),
       aggregate: jest.fn().mockResolvedValue(0),
     }),
-  },
-}));
+  };
+  const createSequelizeInstance = jest.fn(() => mockSequelize);
+  return {
+    __esModule: true,
+    default: createSequelizeInstance,
+    createSequelizeInstance,
+  };
+});
 
 // Sequelizeモデルをモック化
 jest.mock('sequelize', () => {

@@ -42,12 +42,11 @@ jest.mock('@ai-sdk/openai', () => ({
 }));
 
 // Mock database configuration
-jest.mock('../../../../src/config/database', () => ({
-  __esModule: true,
-  default: {
-    query: jest.fn(),
-  },
-}));
+jest.mock('../../../../src/config/database', () => {
+  const mockSequelize = { query: jest.fn() };
+  const createSequelizeInstance = jest.fn(() => mockSequelize);
+  return { __esModule: true, default: createSequelizeInstance, createSequelizeInstance };
+});
 
 // Mock alert schema
 jest.mock('../../../../src/domain/alert/alertSchema', () => ({
@@ -55,32 +54,20 @@ jest.mock('../../../../src/domain/alert/alertSchema', () => ({
   alertModelOptions: {},
 }));
 
-// Mock Alert model
-const mockAlert = {
-  findOrCreate: jest.fn(),
-  update: jest.fn(),
-};
-
-jest.mock('sequelize', () => {
-  const originalModule = jest.requireActual('sequelize');
-  return {
-    ...originalModule,
-    Model: jest.fn().mockImplementation(() => mockAlert),
-  };
-});
-
 jest.mock('../../../../src/domain/repo/repoSchema', () => ({
   repoAttributes: {},
   repoModelOptions: {},
 }));
 
-// Mock Sequelize with proper Model class
+// Mock Sequelize（2 重定義をやめ、Alert.update 等 static を揃える）
 jest.mock('sequelize', () => ({
   Model: class MockModel {
     static init = jest.fn();
     static findOrCreate = jest.fn();
     static findAll = jest.fn();
     static findOne = jest.fn();
+    static update = jest.fn().mockResolvedValue([0, []]);
+    static count = jest.fn().mockResolvedValue(0);
   },
   QueryTypes: { SELECT: 'SELECT' },
   Op: { gte: 'gte' },
