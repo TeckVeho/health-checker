@@ -182,6 +182,8 @@ export function parseClosingReferencesFromBody(text: string, owner: string, repo
   return refs;
 }
 
+/* GraphQL 標準フィールド __typename — naming-convention 対象外 */
+/* eslint-disable @typescript-eslint/naming-convention */
 type PullRequestIssueLinkQueryResult = {
   repository: {
     pullRequest: {
@@ -195,6 +197,7 @@ type PullRequestIssueLinkQueryResult = {
     } | null;
   } | null;
 };
+/* eslint-enable @typescript-eslint/naming-convention */
 
 /**
  * PR ポリシー（pr-policy-check.yml）と同条件で、リンク済み issue 相当とみなせるか。
