@@ -39,6 +39,10 @@
 import { ref, computed } from 'vue'
 import { useApiConfig } from '~/composables/useApiConfig'
 
+useHead({
+  title: '環境変数テスト · Github Health Checker',
+})
+
 const { apiBaseUrl: computedApiBaseUrl } = useApiConfig()
 
 // 環境変数の値を直接取得

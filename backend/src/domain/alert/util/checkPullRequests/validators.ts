@@ -3,7 +3,7 @@
  */
 import { GitHubPullRequest, PullRequestAlertCandidate } from './types';
 import { analyzePRWithLLM } from './llm';
-import { getClosingIssuesReferenceCount } from './github';
+import { prHasLinkedIssuePerPolicy } from './github';
 
 /**
  * Create an alert candidate with common fields
@@ -28,7 +28,7 @@ function createAlert(
     lineNumber: -1,
     codeSnippet: '',
     branch: pr.head.ref,
-    issueUrl: pr.html_url,
+    issueUrl: pr.htmlUrl,
   };
 }
 
@@ -136,15 +136,15 @@ export async function validatePrIssueLinked(
     return alerts;
   }
   try {
-    const count = await getClosingIssuesReferenceCount(owner, repo, pr.number);
-    if (count === 0) {
+    const satisfiesPolicy = await prHasLinkedIssuePerPolicy(owner, repo, pr.number, pr.body);
+    if (!satisfiesPolicy) {
       alerts.push(
         createAlert(
           pr,
           owner,
           repo,
           'pr_issue_not_linked',
-          `PR has no linked issues (GitHub linked / closing issue references) PR#${pr.number}`,
+          `PR has no linked issues (same criteria as PR policy workflow: GraphQL links or closing keywords in body) PR#${pr.number}`,
           'middle'
         )
       );

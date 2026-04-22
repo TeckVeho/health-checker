@@ -12,9 +12,9 @@ export interface GitHubPullRequest {
   head: {
     ref: string;
   };
-  html_url: string;
-  created_at: string;
-  updated_at: string;
+  htmlUrl: string;
+  createdAt: string;
+  updatedAt: string;
   /** REST API `state` — required for open-only checks when mixing open + closed PR lists */
   state: 'open' | 'closed';
 }
