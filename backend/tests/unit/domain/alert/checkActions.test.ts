@@ -39,17 +39,18 @@ jest.mock('sequelize', () => {
 });
 
 // Mock database config
-jest.mock('../../../../src/config/database', () => ({
-  __esModule: true,
-  default: {
+jest.mock('../../../../src/config/database', () => {
+  const mockSequelize = {
     authenticate: jest.fn(),
     close: jest.fn(),
     define: jest.fn(),
     sync: jest.fn(),
     transaction: jest.fn(),
     query: jest.fn(),
-  },
-}));
+  };
+  const createSequelizeInstance = jest.fn(() => mockSequelize);
+  return { __esModule: true, default: createSequelizeInstance, createSequelizeInstance };
+});
 
 // Mock Octokit
 const mockOctokit = {

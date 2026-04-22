@@ -62,7 +62,7 @@ export async function checkIssues(
 
       // Skip issues with specific labels (these issues don't have SP/deadlines or are out of scope)
       const skipLabels = ['parent', 'bug'];
-      const hasSkipLabel = issue.labels.some((label) =>
+      const hasSkipLabel = (issue.labels ?? []).some((label) =>
         skipLabels.includes(String(label.name || '').toLowerCase())
       );
       if (hasSkipLabel) {

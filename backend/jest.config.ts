@@ -7,6 +7,8 @@ const config: Config = {
   collectCoverage: true,
   coverageDirectory: 'coverage',
   moduleFileExtensions: ['ts', 'js'],
+  // tsc 出力 dist が残っていると手動モック等が二重解決されうる
+  modulePathIgnorePatterns: ['<rootDir>/dist/'],
   testMatch: [
     '<rootDir>/tests/**/*.test.ts',
     '<rootDir>/src/**/*.test.ts',
@@ -22,13 +24,12 @@ const config: Config = {
     '@utils/(.*)': '<rootDir>/src/utils/$1',
     '@config/(.*)': '<rootDir>/src/config/$1',
     '@routes/(.*)': '<rootDir>/src/routes/$1',
-    '^@octokit/rest$': '<rootDir>/tests/__mocks__/@octokit/rest.js',
   },
   transform: {
     '^.+\\.ts$': [
       'ts-jest',
       {
-        useESM: true, 
+        useESM: true,
       },
     ],
   },
