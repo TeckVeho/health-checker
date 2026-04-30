@@ -1,6 +1,6 @@
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
-import { OPENAI_CONFIG } from '../../../config/openai';
+import { isOpenAILlmEnabled, OPENAI_CONFIG } from '../../../config/openai';
 import { GitHubPullRequest } from './github';
 
 export class PRCheck {
@@ -85,6 +85,16 @@ export class PRCheck {
     diffResult: boolean;
     diffReason: string;
   }> {
+    if (!isOpenAILlmEnabled()) {
+      return {
+        type: 'other',
+        prBodyResult: true,
+        prBodyReason: 'OPENAI_API_KEY is not set; AI review skipped.',
+        diffResult: true,
+        diffReason: 'OPENAI_API_KEY is not set; AI review skipped.',
+      };
+    }
+
     const prompt = `
   Please analyze both the PR description and the code changes.
   Respond in the following JSON format:

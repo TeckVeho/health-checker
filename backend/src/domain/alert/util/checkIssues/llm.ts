@@ -3,7 +3,7 @@
  */
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
-import { OPENAI_CONFIG } from '../../../../config/openai';
+import { isOpenAILlmEnabled, OPENAI_CONFIG } from '../../../../config/openai';
 import { LLMAnalysisResult } from './types';
 import { fallbackTemplateDetection, fallbackUnclearInstructionsDetection } from './parsers';
 
@@ -15,6 +15,13 @@ export async function detectTemplateOnlyIssue(title: string, body: string): Prom
     return {
       result: true,
       reason: 'The issue body is empty, which indicates template-only content.',
+    };
+  }
+
+  if (!isOpenAILlmEnabled()) {
+    return {
+      result: false,
+      reason: 'OPENAI_API_KEY is not set; LLM template check skipped.',
     };
   }
 
@@ -86,6 +93,13 @@ export async function detectUnclearInstructions(title: string, body: string): Pr
     return {
       result: false, // Empty body is handled by template detection
       reason: 'Empty body is handled by template detection.',
+    };
+  }
+
+  if (!isOpenAILlmEnabled()) {
+    return {
+      result: false,
+      reason: 'OPENAI_API_KEY is not set; LLM clarity check skipped.',
     };
   }
 

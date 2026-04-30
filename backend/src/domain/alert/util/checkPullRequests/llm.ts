@@ -3,7 +3,7 @@
  */
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
-import { OPENAI_CONFIG } from '../../../../config/openai';
+import { isOpenAILlmEnabled, OPENAI_CONFIG } from '../../../../config/openai';
 import { GitHubPullRequest, LLMAnalysisResult } from './types';
 
 /**
@@ -12,6 +12,15 @@ import { GitHubPullRequest, LLMAnalysisResult } from './types';
 export async function analyzePRWithLLM(pr: GitHubPullRequest): Promise<LLMAnalysisResult> {
   const prBody = pr.body || '';
   const prTitle = pr.title;
+
+  if (!isOpenAILlmEnabled()) {
+    return {
+      unclearChanges: false,
+      missingEvidence: false,
+      unclearReason: 'OPENAI_API_KEY is not set; LLM PR quality check skipped.',
+      missingEvidenceReason: 'OPENAI_API_KEY is not set; LLM PR quality check skipped.',
+    };
+  }
 
   const prompt = `
 Please analyze the following pull request for quality issues. Respond in JSON format:
