@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention -- OpenAI Batch / chat completions bodies use snake_case per API */
 import OpenAI, { toFile } from 'openai';
 import { OPENAI_CONFIG, isOpenAILlmEnabled } from '../../../config/openai';
 
