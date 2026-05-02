@@ -7,26 +7,13 @@ import { isOpenAILlmEnabled, OPENAI_CONFIG } from '../../../../config/openai';
 import { LLMAnalysisResult } from './types';
 import { fallbackTemplateDetection, fallbackUnclearInstructionsDetection } from './parsers';
 
-/**
- * Detects template-only issues using LLM with fallback to heuristics
- */
-export async function detectTemplateOnlyIssue(title: string, body: string): Promise<LLMAnalysisResult> {
-  if (!body || body.trim().length === 0) {
-    return {
-      result: true,
-      reason: 'The issue body is empty, which indicates template-only content.',
-    };
-  }
+function extractJsonPayload(content: string): string {
+  const jsonMatch = content.match(/```(?:json)?([\s\S]*?)```/);
+  return (jsonMatch?.[1]?.trim() || content.trim());
+}
 
-  if (!isOpenAILlmEnabled()) {
-    return {
-      result: false,
-      reason: 'OPENAI_API_KEY is not set; LLM template check skipped.',
-    };
-  }
-
-  try {
-    const prompt = `
+export function buildIssueTemplatePrompt(title: string, body: string): string {
+  return `
 You are analyzing a GitHub Issue body to determine if it contains only template content or placeholders.
 
 Issue Title: ${title}
@@ -49,62 +36,10 @@ Respond ONLY in this JSON format:
   "reason": "Short explanation of why this is template-only or has content."
 }
 `.trim();
-
-    const result = await generateText({
-      model: openai(OPENAI_CONFIG.MODEL),
-      prompt,
-      temperature: 1,
-    });
-
-    const content = result.text?.trim();
-
-    if (!content) {
-      throw new Error('Empty LLM response');
-    }
-
-    const jsonMatch = content.match(/```(?:json)?([\s\S]*?)```/);
-    const raw = jsonMatch?.[1]?.trim() || content;
-
-    const parsed = JSON.parse(raw);
-
-    if (typeof parsed.result === 'boolean' && typeof parsed.reason === 'string') {
-      return parsed;
-    } else {
-      throw new Error('Missing or invalid fields in LLM response');
-    }
-  } catch (error) {
-    console.error('Error in LLM template detection:', error);
-    // Fallback to heuristic-based detection
-    const fallbackResult = fallbackTemplateDetection(body);
-    return {
-      result: fallbackResult,
-      reason: fallbackResult
-        ? 'Heuristic: Body appears to contain only template placeholders.'
-        : 'Heuristic: Body contains meaningful content beyond templates.',
-    };
-  }
 }
 
-/**
- * Detects unclear instructions using LLM with fallback to heuristics
- */
-export async function detectUnclearInstructions(title: string, body: string): Promise<LLMAnalysisResult> {
-  if (!body || body.trim().length === 0) {
-    return {
-      result: false, // Empty body is handled by template detection
-      reason: 'Empty body is handled by template detection.',
-    };
-  }
-
-  if (!isOpenAILlmEnabled()) {
-    return {
-      result: false,
-      reason: 'OPENAI_API_KEY is not set; LLM clarity check skipped.',
-    };
-  }
-
-  try {
-    const prompt = `
+export function buildIssueClarityPrompt(title: string, body: string): string {
+  return `
 You are analyzing a GitHub Issue body to determine if it lacks clear, actionable instructions.
 
 Issue Title: ${title}
@@ -122,6 +57,79 @@ Respond ONLY in this JSON format:
   "reason": "Short explanation of why the instructions are clear or unclear."
 }
 `.trim();
+}
+
+export function parseTemplateOnlyFromAssistantText(assistantText: string, bodyForFallback: string): LLMAnalysisResult {
+  try {
+    const raw = extractJsonPayload(assistantText);
+    const parsed = JSON.parse(raw);
+    if (typeof parsed.result === 'boolean' && typeof parsed.reason === 'string') {
+      return parsed;
+    }
+    throw new Error('Missing or invalid fields in LLM response');
+  } catch (error) {
+    console.error('Error parsing LLM template detection (batch):', error);
+    const fallbackResult = fallbackTemplateDetection(bodyForFallback);
+    return {
+      result: fallbackResult,
+      reason: fallbackResult
+        ? 'Heuristic: Body appears to contain only template placeholders.'
+        : 'Heuristic: Body contains meaningful content beyond templates.',
+    };
+  }
+}
+
+export function parseUnclearInstructionsFromAssistantText(
+  assistantText: string,
+  bodyForFallback: string
+): LLMAnalysisResult {
+  try {
+    const raw = extractJsonPayload(assistantText);
+    const parsed = JSON.parse(raw);
+    if (typeof parsed.result === 'boolean' && typeof parsed.reason === 'string') {
+      return parsed;
+    }
+    throw new Error('Missing or invalid fields in LLM response');
+  } catch (error) {
+    console.error('Error parsing LLM unclear instructions (batch):', error);
+    const fallbackResult = fallbackUnclearInstructionsDetection(bodyForFallback);
+    return {
+      result: fallbackResult,
+      reason: fallbackResult
+        ? 'Heuristic: Body lacks minimum actionable clarity.'
+        : 'Heuristic: Body shows minimum actionable clarity.',
+    };
+  }
+}
+
+/**
+ * Detects template-only issues using LLM with fallback to heuristics
+ */
+export async function detectTemplateOnlyIssue(
+  title: string,
+  body: string,
+  options?: { prefetchedAssistantText?: string }
+): Promise<LLMAnalysisResult> {
+  if (!body || body.trim().length === 0) {
+    return {
+      result: true,
+      reason: 'The issue body is empty, which indicates template-only content.',
+    };
+  }
+
+  if (!isOpenAILlmEnabled()) {
+    return {
+      result: false,
+      reason: 'OPENAI_API_KEY is not set; LLM template check skipped.',
+    };
+  }
+
+  if (options?.prefetchedAssistantText !== undefined) {
+    return parseTemplateOnlyFromAssistantText(options.prefetchedAssistantText, body);
+  }
+
+  try {
+    const prompt = buildIssueTemplatePrompt(title, body);
 
     const result = await generateText({
       model: openai(OPENAI_CONFIG.MODEL),
@@ -135,19 +143,63 @@ Respond ONLY in this JSON format:
       throw new Error('Empty LLM response');
     }
 
-    const jsonMatch = content.match(/```(?:json)?([\s\S]*?)```/);
-    const raw = jsonMatch?.[1]?.trim() || content;
+    return parseTemplateOnlyFromAssistantText(content, body);
+  } catch (error) {
+    console.error('Error in LLM template detection:', error);
+    const fallbackResult = fallbackTemplateDetection(body);
+    return {
+      result: fallbackResult,
+      reason: fallbackResult
+        ? 'Heuristic: Body appears to contain only template placeholders.'
+        : 'Heuristic: Body contains meaningful content beyond templates.',
+    };
+  }
+}
 
-    const parsed = JSON.parse(raw);
+/**
+ * Detects unclear instructions using LLM with fallback to heuristics
+ */
+export async function detectUnclearInstructions(
+  title: string,
+  body: string,
+  options?: { prefetchedAssistantText?: string }
+): Promise<LLMAnalysisResult> {
+  if (!body || body.trim().length === 0) {
+    return {
+      result: false,
+      reason: 'Empty body is handled by template detection.',
+    };
+  }
 
-    if (typeof parsed.result === 'boolean' && typeof parsed.reason === 'string') {
-      return parsed;
-    } else {
-      throw new Error('Missing or invalid fields in LLM response');
+  if (!isOpenAILlmEnabled()) {
+    return {
+      result: false,
+      reason: 'OPENAI_API_KEY is not set; LLM clarity check skipped.',
+    };
+  }
+
+  if (options?.prefetchedAssistantText !== undefined) {
+    return parseUnclearInstructionsFromAssistantText(options.prefetchedAssistantText, body);
+  }
+
+  try {
+    const prompt = buildIssueClarityPrompt(title, body);
+
+    const result = await generateText({
+      model: openai(OPENAI_CONFIG.MODEL),
+      prompt,
+      temperature: 1,
+    });
+
+    const content = result.text?.trim();
+
+    if (!content) {
+      throw new Error('Empty LLM response');
     }
+
+    return parseUnclearInstructionsFromAssistantText(content, body);
   } catch (error) {
     console.error('Error in LLM unclear instructions detection:', error);
-    // Fallback to heuristic-based detection
     const fallbackResult = fallbackUnclearInstructionsDetection(body);
     return {
       result: fallbackResult,

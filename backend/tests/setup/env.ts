@@ -2,6 +2,8 @@
 process.env.NODE_ENV = 'test';
 process.env.GITHUB_API_KEY = 'test-dummy-token';
 process.env.OPENAI_API_KEY = 'test-dummy-openai-key';
+// ユニットテストで OpenAI Batch 経路に入らないよう同期 LLM モックに寄せる
+process.env.OPENAI_SCHEDULED_LLM_SYNC = 'true';
 process.env.TZ = '+09:00';
 process.env.GITHUB_LOCAL_WORKSPACE = '/tmp/test-workspace';
 

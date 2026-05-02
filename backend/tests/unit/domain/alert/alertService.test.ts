@@ -116,7 +116,13 @@ describe('AlertService', () => {
       await AlertService.runAlert({ owner, repo });
 
       expect(mockProcessBranchAlerts).toHaveBeenCalledWith(owner, repo, expect.any(Date));
-      expect(mockProcessIssueAlertsWithProgress).toHaveBeenCalledWith(owner, repo, expect.any(Function), expect.any(Date));
+      expect(mockProcessIssueAlertsWithProgress).toHaveBeenCalledWith(
+        owner,
+        repo,
+        expect.any(Function),
+        expect.any(Date),
+        false
+      );
     });
   });
 

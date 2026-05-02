@@ -6,23 +6,8 @@ import { generateText } from 'ai';
 import { isOpenAILlmEnabled, OPENAI_CONFIG } from '../../../../config/openai';
 import { GitHubPullRequest, LLMAnalysisResult } from './types';
 
-/**
- * Analyze PR content with LLM to detect quality issues
- */
-export async function analyzePRWithLLM(pr: GitHubPullRequest): Promise<LLMAnalysisResult> {
-  const prBody = pr.body || '';
-  const prTitle = pr.title;
-
-  if (!isOpenAILlmEnabled()) {
-    return {
-      unclearChanges: false,
-      missingEvidence: false,
-      unclearReason: 'OPENAI_API_KEY is not set; LLM PR quality check skipped.',
-      missingEvidenceReason: 'OPENAI_API_KEY is not set; LLM PR quality check skipped.',
-    };
-  }
-
-  const prompt = `
+export function buildPRQualityUserPrompt(prTitle: string, prBody: string): string {
+  return `
 Please analyze the following pull request for quality issues. Respond in JSON format:
 
 {
@@ -58,12 +43,70 @@ Important Notes
 **Pull Request Description**:
 ${prBody}
   `.trim();
+}
+
+export function parsePRQualityFromAssistantText(
+  content: string,
+  prNumberForLog: number
+): LLMAnalysisResult {
+  const jsonMatch = content.match(/```(?:json)?([\s\S]*?)```/);
+  const raw = jsonMatch?.[1]?.trim() || content.trim();
+  const parsed = JSON.parse(raw);
+
+  if (
+    typeof parsed.unclearChanges === 'boolean' &&
+    typeof parsed.missingEvidence === 'boolean'
+  ) {
+    return {
+      unclearChanges: parsed.unclearChanges,
+      missingEvidence: parsed.missingEvidence,
+      unclearReason: parsed.unclearReason,
+      missingEvidenceReason: parsed.missingEvidenceReason,
+    };
+  }
+  throw new Error(`Invalid LLM response structure for PR #${prNumberForLog}`);
+}
+
+/**
+ * Analyze PR content with LLM to detect quality issues
+ */
+export async function analyzePRWithLLM(
+  pr: GitHubPullRequest,
+  options?: { prefetchedAssistantText?: string }
+): Promise<LLMAnalysisResult> {
+  const prBody = pr.body || '';
+  const prTitle = pr.title;
+
+  if (!isOpenAILlmEnabled()) {
+    return {
+      unclearChanges: false,
+      missingEvidence: false,
+      unclearReason: 'OPENAI_API_KEY is not set; LLM PR quality check skipped.',
+      missingEvidenceReason: 'OPENAI_API_KEY is not set; LLM PR quality check skipped.',
+    };
+  }
+
+  if (options?.prefetchedAssistantText !== undefined) {
+    try {
+      return parsePRQualityFromAssistantText(options.prefetchedAssistantText, pr.number);
+    } catch (error) {
+      console.error(`[LLM Analysis Error] Failed to parse batch result for PR #${pr.number}:`, error);
+      return {
+        unclearChanges: false,
+        missingEvidence: false,
+        unclearReason: 'LLM analysis failed',
+        missingEvidenceReason: 'LLM analysis failed',
+      };
+    }
+  }
+
+  const prompt = buildPRQualityUserPrompt(prTitle, prBody);
 
   try {
     const result = await generateText({
       model: openai(OPENAI_CONFIG.MODEL),
       prompt,
-      temperature: 1, // Default temperature for this model
+      temperature: 1,
     });
 
     const content = result.text?.trim();
@@ -71,30 +114,10 @@ ${prBody}
       throw new Error('Empty LLM response');
     }
 
-    // Parse JSON response
-    const jsonMatch = content.match(/```(?:json)?([\s\S]*?)```/);
-    const raw = jsonMatch?.[1]?.trim() || content;
-
-    const parsed = JSON.parse(raw);
-
-    // Validate response structure
-    if (
-      typeof parsed.unclearChanges === 'boolean' &&
-      typeof parsed.missingEvidence === 'boolean'
-    ) {
-      return {
-        unclearChanges: parsed.unclearChanges,
-        missingEvidence: parsed.missingEvidence,
-        unclearReason: parsed.unclearReason,
-        missingEvidenceReason: parsed.missingEvidenceReason,
-      };
-    } else {
-      throw new Error('Invalid LLM response structure');
-    }
+    return parsePRQualityFromAssistantText(content, pr.number);
   } catch (error) {
     console.error(`[LLM Analysis Error] Failed to analyze PR #${pr.number}:`, error);
-    
-    // Return conservative analysis on error
+
     return {
       unclearChanges: false,
       missingEvidence: false,
