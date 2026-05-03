@@ -1,6 +1,7 @@
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import { isOpenAILlmEnabled, OPENAI_CONFIG } from '../../../config/openai';
+import { getOrSetLlmRawResponse } from '../../llmCache/llmCacheService';
 import { GitHubPullRequest } from './github';
 
 export class PRCheck {
@@ -117,13 +118,21 @@ export class PRCheck {
     `.trim();
 
     try {
-      const result = await generateText({
-        model: openai(OPENAI_CONFIG.MODEL),
+      const content = await getOrSetLlmRawResponse({
+        purpose: 'github_action_unified_review',
         prompt,
         temperature: 1,
+        meta: { pr: pr.number },
+        invoke: async () => {
+          const result = await generateText({
+            model: openai(OPENAI_CONFIG.MODEL),
+            prompt,
+            temperature: 1,
+          });
+          return result.text?.trim() ?? '';
+        },
       });
 
-      const content = result.text?.trim();
       if (!content) {
         throw new Error('Empty LLM response');
       }

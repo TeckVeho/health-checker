@@ -1,7 +1,7 @@
 /**
  * Business rule validation logic for pull requests
  */
-import { GitHubPullRequest, PullRequestAlertCandidate, LLMAnalysisResult } from './types';
+import { GitHubPullRequest, PullRequestAlertCandidate } from './types';
 import { analyzePRWithLLM } from './llm';
 import { prHasLinkedIssuePerPolicy } from './github';
 
@@ -38,8 +38,7 @@ function createAlert(
 export async function validatePRQuality(
   pr: GitHubPullRequest,
   owner: string,
-  repo: string,
-  prefetchedAnalysis?: LLMAnalysisResult | null
+  repo: string
 ): Promise<PullRequestAlertCandidate[]> {
   const alerts: PullRequestAlertCandidate[] = [];
 
@@ -49,8 +48,7 @@ export async function validatePRQuality(
   }
 
   try {
-    const analysis =
-      prefetchedAnalysis != null ? prefetchedAnalysis : await analyzePRWithLLM(pr);
+    const analysis = await analyzePRWithLLM(pr);
 
     // Check for unclear changes
     if (analysis.unclearChanges) {

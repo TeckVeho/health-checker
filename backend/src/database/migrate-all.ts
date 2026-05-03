@@ -10,6 +10,7 @@ import {
   recheckSettingsAttributes,
   recheckSettingsModelOptions
 } from '../domain/recheck/recheckSchema';
+import { llmCacheAttributes, llmCacheModelOptions } from '../domain/llmCache/llmCacheSchema';
 
 /**
  * Create tables directly from schema definitions without importing model classes
@@ -43,6 +44,12 @@ async function createTablesFromSchemas(): Promise<void> {
   RecheckSettings.init(recheckSettingsAttributes, {
     sequelize,
     ...recheckSettingsModelOptions,
+  });
+
+  class LlmCache extends Model {}
+  LlmCache.init(llmCacheAttributes, {
+    sequelize,
+    ...llmCacheModelOptions,
   });
 
   /**

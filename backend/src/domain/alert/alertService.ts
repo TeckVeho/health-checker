@@ -362,13 +362,8 @@ class AlertService {
     return { owner, repo };
   }
 
-  static async processIssueAlerts(
-    owner: string,
-    repo: string,
-    processStartTime?: Date,
-    isScheduledRun = false
-  ): Promise<{ owner: string; repo: string }> {
-    const result = await checkIssues(owner, repo, undefined, { isScheduledRun });
+  static async processIssueAlerts(owner: string, repo: string, processStartTime?: Date): Promise<{ owner: string; repo: string }> {
+    const result = await checkIssues(owner, repo);
     const detectedKeySet = new Set<string>();
 
     // Process new alerts
@@ -403,23 +398,17 @@ class AlertService {
     owner: string,
     repo: string,
     onProgress?: (processed: number, total: number) => void,
-    processStartTime?: Date,
-    isScheduledRun = false
+    processStartTime?: Date
   ): Promise<{ owner: string; repo: string }> {
 
     // Call checkIssues with progress callback for issue analysis phase
-    const result = await checkIssues(
-      owner,
-      repo,
-      (progress, total) => {
-        console.log(`[AlertService] checkIssues progress: ${progress}/${total}`);
-        if (onProgress) {
-          console.log(`[AlertService] Calling onProgress from checkIssues: ${progress}/${total}`);
-          onProgress(progress, total);
-        }
-      },
-      { isScheduledRun }
-    );
+    const result = await checkIssues(owner, repo, (progress, total) => {
+      console.log(`[AlertService] checkIssues progress: ${progress}/${total}`);
+      if (onProgress) {
+        console.log(`[AlertService] Calling onProgress from checkIssues: ${progress}/${total}`);
+        onProgress(progress, total);
+      }
+    });
 
     const detectedKeySet = new Set<string>();
     const total = result.alerts?.length || 0;
@@ -700,11 +689,12 @@ class AlertService {
       // issue処理で件数ベースの進捗を実装
       await this.processIssueAlertsWithProgress(owner, repo, (progress, total) => {
         console.log(`[AlertService] processIssueAlertsWithProgress callback called: ${progress}/${total}`);
-        updateProgress('Issue Analysis', Math.round((progress / total) * 100), {
+        const phasePct = total > 0 ? Math.round((progress / total) * 100) : 0;
+        updateProgress('Issue Analysis', phasePct, {
           processedItems: progress,
           totalItems: total
         });
-      }, processStartTime, isScheduledRun);
+      }, processStartTime);
       updateProgress('Issue Analysis', 100);
       results.issue = 'checked';
       currentPhaseIndex++;
