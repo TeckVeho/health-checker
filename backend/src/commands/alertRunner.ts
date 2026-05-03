@@ -7,15 +7,18 @@ async function main() {
   if (!checksArg || !owner) {
     console.error('❌ Usage: yarn alert <checks> <owner> [repo]');
     console.error('   <checks>: branch | clone | gitleaks | issue | branch|gitleaks|issue');
+    console.error('   Batch LLM (issue/pr): set ALERT_IS_SCHEDULED_RUN=true when passing [repo]');
     process.exit(1);
   }
 
   const checks = checksArg === 'all' ? undefined : checksArg.split('|');
+  const isScheduledRun =
+    process.env.ALERT_IS_SCHEDULED_RUN === '1' || process.env.ALERT_IS_SCHEDULED_RUN === 'true';
 
   if (repo) {
     // Single repository
     try {
-      const result = await AlertService.runAlert({ owner, repo, checks });
+      const result = await AlertService.runAlert({ owner, repo, checks, isScheduledRun });
       console.log(`✅ Manual check done for ${owner}/${repo}`);
       console.log(JSON.stringify(result, null, 2));
     } catch (error) {
