@@ -1978,7 +1978,7 @@
   dependencies:
     "@primeuix/utils" "^0.6.1"
 
-"@primeuix/styles@^2.0.2", "@primeuix/styles@^2.0.3":
+"@primeuix/styles@^2.0.3":
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/@primeuix/styles/-/styles-2.0.3.tgz#e42d14c138fe092683228d65a3f6de17de70d6a0"
   integrity sha512-2ykAB6BaHzR/6TwF8ShpJTsZrid6cVIEBVlookSdvOdmlWuevGu5vWOScgIwqWwlZcvkFYAGR/SUV3OHCTBMdw==
@@ -1997,20 +1997,12 @@
   resolved "https://registry.yarnpkg.com/@primeuix/utils/-/utils-0.6.4.tgz#f436eae1be166662d424b8550a97ba0c150819e6"
   integrity sha512-pZ5f+vj7wSzRhC7KoEQRU5fvYAe+RP9+m39CTscZ3UywCD1Y2o6Fe1rRgklMPSkzUcty2jzkA0zMYkiJBD1hgg==
 
-"@primevue/auto-import-resolver@4.5.4":
-  version "4.5.4"
-  resolved "https://registry.yarnpkg.com/@primevue/auto-import-resolver/-/auto-import-resolver-4.5.4.tgz#54229e1470d7ac82b5ecdbc72c04286efa6dc11c"
-  integrity sha512-YQHrZ9PQSG/4K2BwthA2Xuna4WyS0JMHajiHD9PljaDyQtBVwCadX5ZpKcrAUWR8E/1gjva8x/si0RYxxYrRJw==
+"@primevue/auto-import-resolver@4.5.5":
+  version "4.5.5"
+  resolved "https://registry.yarnpkg.com/@primevue/auto-import-resolver/-/auto-import-resolver-4.5.5.tgz#721948486fc4c9a937f6fa119bc1dd479b92ad51"
+  integrity sha512-1LWftK+1c/pLgMyW81xqsCLESm2a8GGlLz0eg13oFBVmJdXBs9nmzF+SIhvtkRDROB8TCMwlOpyqVCi1Yw89UQ==
   dependencies:
-    "@primevue/metadata" "4.5.4"
-
-"@primevue/core@4.5.4":
-  version "4.5.4"
-  resolved "https://registry.yarnpkg.com/@primevue/core/-/core-4.5.4.tgz#65ede07d18040bb7c09b199725d561c27b7ac76b"
-  integrity sha512-lYJJB3wTrDJ8MkLctzHfrPZAqXVxoatjIsswSJzupatf6ZogJHVYADUKcn1JAkLLk8dtV1FA2AxDek663fHO5Q==
-  dependencies:
-    "@primeuix/styled" "^0.7.4"
-    "@primeuix/utils" "^0.6.2"
+    "@primevue/metadata" "4.5.5"
 
 "@primevue/core@4.5.5":
   version "4.5.5"
@@ -2020,22 +2012,14 @@
     "@primeuix/styled" "^0.7.4"
     "@primeuix/utils" "^0.6.2"
 
-"@primevue/forms@4.5.4", "@primevue/forms@^4.5.4":
-  version "4.5.4"
-  resolved "https://registry.yarnpkg.com/@primevue/forms/-/forms-4.5.4.tgz#98ff3282afe14521e4096ad6c8ced0b2eacd2a76"
-  integrity sha512-2TlD8oJEtb8vuKzY3jY0W+7NVBC/Qj0m57iWzpMUmGnEKg9sbQ2/ZiU1sTof710/liYgm4FneRTOYHIpVkiJNA==
+"@primevue/forms@4.5.5", "@primevue/forms@^4.5.4":
+  version "4.5.5"
+  resolved "https://registry.yarnpkg.com/@primevue/forms/-/forms-4.5.5.tgz#cb2604d24ee950b7df3c130f48680d0085c23cf5"
+  integrity sha512-LUeIt6oItwCZyBreQ7ycErE8aEjPmBWOTq1VPLhyaATcnzMBOZRIiwclaYk8s/tf5VYMqN9N4B80XnXoO7OdvQ==
   dependencies:
     "@primeuix/forms" "^0.1.0"
     "@primeuix/utils" "^0.6.2"
-    "@primevue/core" "4.5.4"
-
-"@primevue/icons@4.5.4":
-  version "4.5.4"
-  resolved "https://registry.yarnpkg.com/@primevue/icons/-/icons-4.5.4.tgz#dcb195dbb732fe9f3ab5db0de1bc49660d2c1f0f"
-  integrity sha512-DxgryEc7ZmUqcEhYMcxGBRyFzdtLIoy3jLtlH1zsVSRZaG+iSAcjQ88nvfkZxGUZtZBFL7sRjF6KLq3bJZJwUw==
-  dependencies:
-    "@primeuix/utils" "^0.6.2"
-    "@primevue/core" "4.5.4"
+    "@primevue/core" "4.5.5"
 
 "@primevue/icons@4.5.5":
   version "4.5.5"
@@ -2045,24 +2029,24 @@
     "@primeuix/utils" "^0.6.2"
     "@primevue/core" "4.5.5"
 
-"@primevue/metadata@4.5.4":
-  version "4.5.4"
-  resolved "https://registry.yarnpkg.com/@primevue/metadata/-/metadata-4.5.4.tgz#1fee3fbc60ca8c330371a7756cf695d0e680d996"
-  integrity sha512-jJFD0KYm8bPYgFo0JP3Dc2RkyXzrMI1XHQGsEKTysx9Jx2d1XdxtFji/ZsQeoo/RmwUNof5ciZ72URq37rnK+g==
+"@primevue/metadata@4.5.5":
+  version "4.5.5"
+  resolved "https://registry.yarnpkg.com/@primevue/metadata/-/metadata-4.5.5.tgz#686e3430b76022fb45d4e3a60e00b6ad52380c3f"
+  integrity sha512-ZYLu9m3Nm5BmL0woqCJX84EZfLBepJn+T19v5oj3PlsMpUVNnDAsm2jgYdT6/b3RkdOuccxk4Pg/0EvlATOAhA==
 
-"@primevue/nuxt-module@^4.5.4":
-  version "4.5.4"
-  resolved "https://registry.npmjs.org/@primevue/nuxt-module/-/nuxt-module-4.5.4.tgz#cfca041e2866ca9f01d57ed3e1a659c75d32c599"
-  integrity sha512-ckffyeJcBCAVhi5IkiYcpQ8EVoNv0eSZhbxBdU3T5wz5bYgo0jd9dAetMc5D2j+vGLBqcTZQnqy8eTwcN3rZHQ==
+"@primevue/nuxt-module@^4.5.5":
+  version "4.5.5"
+  resolved "https://registry.yarnpkg.com/@primevue/nuxt-module/-/nuxt-module-4.5.5.tgz#f67ce405351cdc91f18adb9c9eaaa7ca27506bae"
+  integrity sha512-MoaVMmz4gPlK2hcr+zLB+WUw4EIG7zUwdi5nNqEVGf0gCan/FBCmSwPEPSD2wE3+wrDTmoTSHjzUD2uxZVZoWg==
   dependencies:
     "@nuxt/kit" "^3"
     "@primeuix/styled" "^0.7.4"
     "@primeuix/utils" "^0.6.2"
-    "@primevue/auto-import-resolver" "4.5.4"
-    "@primevue/forms" "4.5.4"
-    "@primevue/metadata" "4.5.4"
+    "@primevue/auto-import-resolver" "4.5.5"
+    "@primevue/forms" "4.5.5"
+    "@primevue/metadata" "4.5.5"
     pathe "^1.1.2"
-    primevue "4.5.4"
+    primevue "4.5.5"
     unplugin-vue-components "28.4.1"
 
 "@primevue/themes@^4.5.4":
@@ -7691,18 +7675,7 @@ primeicons@^7.0.0:
   resolved "https://registry.npmjs.org/primeicons/-/primeicons-7.0.0.tgz"
   integrity sha512-jK3Et9UzwzTsd6tzl2RmwrVY/b8raJ3QZLzoDACj+oTJ0oX7L9Hy+XnVwgo4QVKlKpnP/Ur13SXV/pVh4LzaDw==
 
-primevue@4.5.4:
-  version "4.5.4"
-  resolved "https://registry.yarnpkg.com/primevue/-/primevue-4.5.4.tgz#ef96d1a5c8def9fd759b313c3e73646577911b5b"
-  integrity sha512-nTyEohZABFJhVIpeUxgP0EJ8vKcJAhD+Z7DYj95e7ie/MNUCjRNcGjqmE1cXtXi4z54qDfTSI9h2uJ51qz2DIw==
-  dependencies:
-    "@primeuix/styled" "^0.7.4"
-    "@primeuix/styles" "^2.0.2"
-    "@primeuix/utils" "^0.6.2"
-    "@primevue/core" "4.5.4"
-    "@primevue/icons" "4.5.4"
-
-primevue@^4.5.5:
+primevue@4.5.5, primevue@^4.5.5:
   version "4.5.5"
   resolved "https://registry.yarnpkg.com/primevue/-/primevue-4.5.5.tgz#9bbaa59583418fab2d2d74bf3b6d30f4c9a851ad"
   integrity sha512-Kv5REIewCdP806QaoU+4nBXfmpzOGFKkZ9qH4KsL6MjiAQVc4PUzypt8erl4r3Vzh3nr3aWZIxkxYRRsLGiX2A==
