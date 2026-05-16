@@ -46,7 +46,7 @@ describe('getMessage Function', () => {
 
   // Test case for message with non-existing path
   it('should throw an error for invalid message path', () => {
-    expect(() => getMessage('NONEXISTENT.KEY')).toThrowError(
+    expect(() => getMessage('NONEXISTENT.KEY')).toThrow(
       'Message path "NONEXISTENT.KEY" is invalid.'
     );
   });
