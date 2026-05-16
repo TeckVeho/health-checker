@@ -452,10 +452,17 @@ class AlertService {
 
     // Resolve old alerts that are no longer detected
     await this.resolveUndetectedAlerts(
-      owner, 
-      repo, 
-      detectedKeySet, 
-      ['pr_review_workflow_missing', 'release_labeling_workflow_missing'],
+      owner,
+      repo,
+      detectedKeySet,
+      [
+        'issue_missing_sp',
+        'issue_large_sp',
+        'issue_missing_end_date',
+        'issue_not_in_project',
+        'issue_template_only',
+        'issue_unclear_instruction',
+      ],
       processStartTime
     );
 
@@ -682,7 +689,8 @@ class AlertService {
       // issue処理で件数ベースの進捗を実装
       await this.processIssueAlertsWithProgress(owner, repo, (progress, total) => {
         console.log(`[AlertService] processIssueAlertsWithProgress callback called: ${progress}/${total}`);
-        updateProgress('Issue Analysis', Math.round((progress / total) * 100), {
+        const phasePct = total > 0 ? Math.round((progress / total) * 100) : 0;
+        updateProgress('Issue Analysis', phasePct, {
           processedItems: progress,
           totalItems: total
         });

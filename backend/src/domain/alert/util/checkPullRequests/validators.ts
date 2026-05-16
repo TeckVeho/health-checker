@@ -48,7 +48,6 @@ export async function validatePRQuality(
   }
 
   try {
-    // Analyze PR with LLM
     const analysis = await analyzePRWithLLM(pr);
 
     // Check for unclear changes

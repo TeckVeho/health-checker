@@ -127,8 +127,8 @@ describe('RepoTable', () => {
       });
 
       const columns = wrapper.findAllComponents({ name: 'Column' });
-      // 3 default columns (name, description, totalViolations) + 3 custom columns
-      expect(columns.length).toBeGreaterThanOrEqual(6);
+      // Repository + Total defaults + severity columns from props (mockColumns length 3)
+      expect(columns.length).toBeGreaterThanOrEqual(5);
     });
 
     it('should render repository name column', () => {
@@ -372,8 +372,8 @@ describe('RepoTable', () => {
       });
 
       const columns = wrapper.findAllComponents({ name: 'Column' });
-      // Should still have the default columns (name, description, totalViolations)
-      expect(columns.length).toBe(3);
+      // Default columns: Repository (name), Total violations only when columns prop is empty
+      expect(columns.length).toBe(2);
     });
   });
 

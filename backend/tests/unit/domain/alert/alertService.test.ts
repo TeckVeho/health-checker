@@ -71,6 +71,16 @@ jest.mock('sequelize', () => ({
   },
   QueryTypes: { SELECT: 'SELECT' },
   Op: { gte: 'gte' },
+  DataTypes: {
+    STRING: jest.fn().mockReturnValue('STRING'),
+    INTEGER: jest.fn().mockReturnValue('INTEGER'),
+    BIGINT: jest.fn().mockReturnValue('BIGINT'),
+    FLOAT: jest.fn().mockReturnValue('FLOAT'),
+    TEXT: jest.fn().mockReturnValue('TEXT'),
+    DATE: jest.fn().mockReturnValue('DATE'),
+    BOOLEAN: jest.fn().mockReturnValue('BOOLEAN'),
+    NOW: jest.fn().mockReturnValue('NOW'),
+  },
 }));
 
 // Import sau khi mock

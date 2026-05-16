@@ -3,7 +3,8 @@
  */
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
-import { OPENAI_CONFIG } from '../../../../config/openai';
+import { isOpenAILlmEnabled, OPENAI_CONFIG } from '../../../../config/openai';
+import { getOrSetLlmRawResponse } from '../../../llmCache/llmCacheService';
 import { GitHubPullRequest, LLMAnalysisResult } from './types';
 
 /**
@@ -12,6 +13,15 @@ import { GitHubPullRequest, LLMAnalysisResult } from './types';
 export async function analyzePRWithLLM(pr: GitHubPullRequest): Promise<LLMAnalysisResult> {
   const prBody = pr.body || '';
   const prTitle = pr.title;
+
+  if (!isOpenAILlmEnabled()) {
+    return {
+      unclearChanges: false,
+      missingEvidence: false,
+      unclearReason: 'OPENAI_API_KEY is not set; LLM PR quality check skipped.',
+      missingEvidenceReason: 'OPENAI_API_KEY is not set; LLM PR quality check skipped.',
+    };
+  }
 
   const prompt = `
 Please analyze the following pull request for quality issues. Respond in JSON format:
@@ -51,13 +61,21 @@ ${prBody}
   `.trim();
 
   try {
-    const result = await generateText({
-      model: openai(OPENAI_CONFIG.MODEL),
+    const content = await getOrSetLlmRawResponse({
+      purpose: 'pr_quality',
       prompt,
-      temperature: 1, // Default temperature for this model
+      temperature: 1,
+      meta: { pr: pr.number },
+      invoke: async () => {
+        const result = await generateText({
+          model: openai(OPENAI_CONFIG.MODEL),
+          prompt,
+          temperature: 1,
+        });
+        return result.text?.trim() ?? '';
+      },
     });
 
-    const content = result.text?.trim();
     if (!content) {
       throw new Error('Empty LLM response');
     }
@@ -84,8 +102,7 @@ ${prBody}
     }
   } catch (error) {
     console.error(`[LLM Analysis Error] Failed to analyze PR #${pr.number}:`, error);
-    
-    // Return conservative analysis on error
+
     return {
       unclearChanges: false,
       missingEvidence: false,

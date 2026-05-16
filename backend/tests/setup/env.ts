@@ -69,10 +69,13 @@ jest.mock('sequelize', () => {
     DataTypes: {
       STRING: jest.fn().mockReturnValue('STRING'),
       INTEGER: jest.fn().mockReturnValue('INTEGER'),
-      TEXT: jest.fn().mockReturnValue('TEXT'),
+      BIGINT: jest.fn().mockReturnValue('BIGINT'),
+      FLOAT: jest.fn().mockReturnValue('FLOAT'),
+      TEXT: jest.fn().mockImplementation(() => 'TEXT'),
       DATE: jest.fn().mockReturnValue('DATE'),
       BOOLEAN: jest.fn().mockReturnValue('BOOLEAN'),
       ENUM: jest.fn().mockReturnValue('ENUM'),
+      NOW: jest.fn().mockReturnValue('NOW'),
     },
   };
 });

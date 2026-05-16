@@ -3,7 +3,8 @@
  */
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
-import { OPENAI_CONFIG } from '../../../../config/openai';
+import { isOpenAILlmEnabled, OPENAI_CONFIG } from '../../../../config/openai';
+import { getOrSetLlmRawResponse } from '../../../llmCache/llmCacheService';
 import { LLMAnalysisResult } from './types';
 import { fallbackTemplateDetection, fallbackUnclearInstructionsDetection } from './parsers';
 
@@ -15,6 +16,13 @@ export async function detectTemplateOnlyIssue(title: string, body: string): Prom
     return {
       result: true,
       reason: 'The issue body is empty, which indicates template-only content.',
+    };
+  }
+
+  if (!isOpenAILlmEnabled()) {
+    return {
+      result: false,
+      reason: 'OPENAI_API_KEY is not set; LLM template check skipped.',
     };
   }
 
@@ -43,13 +51,19 @@ Respond ONLY in this JSON format:
 }
 `.trim();
 
-    const result = await generateText({
-      model: openai(OPENAI_CONFIG.MODEL),
+    const content = await getOrSetLlmRawResponse({
+      purpose: 'issue_template',
       prompt,
       temperature: 1,
+      invoke: async () => {
+        const result = await generateText({
+          model: openai(OPENAI_CONFIG.MODEL),
+          prompt,
+          temperature: 1,
+        });
+        return result.text?.trim() ?? '';
+      },
     });
-
-    const content = result.text?.trim();
 
     if (!content) {
       throw new Error('Empty LLM response');
@@ -67,7 +81,6 @@ Respond ONLY in this JSON format:
     }
   } catch (error) {
     console.error('Error in LLM template detection:', error);
-    // Fallback to heuristic-based detection
     const fallbackResult = fallbackTemplateDetection(body);
     return {
       result: fallbackResult,
@@ -84,8 +97,15 @@ Respond ONLY in this JSON format:
 export async function detectUnclearInstructions(title: string, body: string): Promise<LLMAnalysisResult> {
   if (!body || body.trim().length === 0) {
     return {
-      result: false, // Empty body is handled by template detection
+      result: false,
       reason: 'Empty body is handled by template detection.',
+    };
+  }
+
+  if (!isOpenAILlmEnabled()) {
+    return {
+      result: false,
+      reason: 'OPENAI_API_KEY is not set; LLM clarity check skipped.',
     };
   }
 
@@ -109,13 +129,19 @@ Respond ONLY in this JSON format:
 }
 `.trim();
 
-    const result = await generateText({
-      model: openai(OPENAI_CONFIG.MODEL),
+    const content = await getOrSetLlmRawResponse({
+      purpose: 'issue_clarity',
       prompt,
       temperature: 1,
+      invoke: async () => {
+        const result = await generateText({
+          model: openai(OPENAI_CONFIG.MODEL),
+          prompt,
+          temperature: 1,
+        });
+        return result.text?.trim() ?? '';
+      },
     });
-
-    const content = result.text?.trim();
 
     if (!content) {
       throw new Error('Empty LLM response');
@@ -133,7 +159,6 @@ Respond ONLY in this JSON format:
     }
   } catch (error) {
     console.error('Error in LLM unclear instructions detection:', error);
-    // Fallback to heuristic-based detection
     const fallbackResult = fallbackUnclearInstructionsDetection(body);
     return {
       result: fallbackResult,
