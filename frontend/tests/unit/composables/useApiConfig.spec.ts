@@ -173,17 +173,18 @@ describe('useApiConfig', () => {
         primevue: { options: { theme: { preset: {} } } }
       }
       
+      // No window SSR / non-browser production: fallback must not mask missing config
+      const originalWindow = global.window
+      delete (global as any).window
+
       const { apiBaseUrl } = useApiConfig()
       
       // Should throw error in production when no config is available
-      expect(() => apiBaseUrl.value).toThrow('API configuration not found. Please check your environment variables.')
+      expect(() => apiBaseUrl.value).toThrow('NUXT_PUBLIC_API_BASE_URL environment variable is not set')
       
       // Restore original values
       process.env.NODE_ENV = originalNodeEnv
-      Object.defineProperty(window, 'location', {
-        value: originalLocation,
-        writable: true
-      })
+      global.window = originalWindow
       process.env.NUXT_PUBLIC_API_BASE_URL = originalNuxtPublicApiBaseUrl
     })
   })
